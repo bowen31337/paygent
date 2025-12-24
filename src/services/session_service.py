@@ -230,7 +230,7 @@ class SessionService:
         session_id: UUID,
         tool_name: str,
         tool_args: Dict[str, Any],
-        reason: Optional[str] = None,
+        
     ) -> Optional[ApprovalRequest]:
         """Request human approval for a tool call.
 
@@ -238,7 +238,7 @@ class SessionService:
             session_id: Session ID
             tool_name: Name of the tool requiring approval
             tool_args: Arguments for the tool
-            reason: Optional reason for approval request
+            
 
         Returns:
             Created approval request
@@ -248,7 +248,7 @@ class SessionService:
                 session_id=session_id,
                 tool_name=tool_name,
                 tool_args=tool_args,
-                reason=reason,
+                
             )
 
             self.db.add(approval_request)
