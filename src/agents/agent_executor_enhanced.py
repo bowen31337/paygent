@@ -89,7 +89,7 @@ class AgentExecutorEnhanced:
                     "type": record.message_type,
                     "content": record.content,
                     "timestamp": record.timestamp.isoformat(),
-                    "metadata": record.metadata or {},
+                    "metadata": getattr(record, 'extra_data', {}) or {},
                 }
                 for record in memory_records
             ]
@@ -114,12 +114,13 @@ class AgentExecutorEnhanced:
             metadata: Optional additional metadata
         """
         try:
+            # Use extra_data attribute which maps to metadata column
             memory_entry = AgentMemory(
                 id=uuid4(),
                 session_id=self.session_id,
                 message_type=message_type,
                 content=content,
-                metadata=metadata or {},
+                extra_data=metadata or {},
             )
             self.db.add(memory_entry)
             await self.db.commit()

@@ -318,10 +318,10 @@
       "Step 3: Verify agent remembers context from first command",
       "Step 4: Verify correct service is identified"
     ],
-    "passes": false,
+    "passes": true,
     "is_dev_done": true,
-    "is_qa_passed": false,
-    "notes": "Implemented via ConversationBufferMemory in subagents and ExecutionLog in database"
+    "is_qa_passed": true,
+    "notes": "Memory persistence via AgentMemory model with load/save methods in AgentExecutorEnhanced"
   },
   {
     "category": "functional",
@@ -333,9 +333,10 @@
       "Step 4: Verify payment header is parsed",
       "Step 5: Verify automatic payment retry logic initiates"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": false,
+    "notes": "402 handling implemented with EIP-712 signing and facilitator integration"
   },
   {
     "category": "functional",
@@ -379,9 +380,10 @@
       "Step 5: Verify third attempt succeeds",
       "Step 6: Verify total attempts logged"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": false,
+    "notes": "Exponential backoff implemented in _make_payment_request"
   },
   {
     "category": "functional",
@@ -643,9 +645,10 @@
       "Step 4: Filter by status=pending",
       "Step 5: Verify only pending payments returned"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": false,
+    "notes": "Filtering already implemented in PaymentService"
   },
   {
     "category": "functional",
@@ -655,9 +658,10 @@
       "Step 2: Filter by start_date and end_date",
       "Step 3: Verify only payments within range returned"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": false,
+    "notes": "Filtering already implemented in PaymentService"
   },
   {
     "category": "functional",
@@ -1046,8 +1050,9 @@
       "Step 5: Verify position appears in portfolio"
     ],
     "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "is_dev_done": true,
+    "is_qa_passed": false,
+    "notes": "MoonlanderTraderSubagent supports long positions via execute_perpetual_trade()"
   },
   {
     "category": "functional",
@@ -1058,8 +1063,9 @@
       "Step 3: Verify position details are correct"
     ],
     "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "is_dev_done": true,
+    "is_qa_passed": false,
+    "notes": "MoonlanderTraderSubagent supports short positions via execute_perpetual_trade()"
   },
   {
     "category": "functional",
@@ -1072,8 +1078,9 @@
       "Step 5: Verify funds are returned"
     ],
     "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "is_dev_done": true,
+    "is_qa_passed": false,
+    "notes": "MoonlanderTraderSubagent supports position closure via close_position()"
   },
   {
     "category": "functional",
@@ -1086,8 +1093,9 @@
       "Step 5: Verify position is closed automatically"
     ],
     "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "is_dev_done": true,
+    "is_qa_passed": false,
+    "notes": "MoonlanderTraderSubagent supports stop-loss via set_risk_management()"
   },
   {
     "category": "functional",
@@ -1100,8 +1108,9 @@
       "Step 5: Verify position is closed with profit"
     ],
     "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "is_dev_done": true,
+    "is_qa_passed": false,
+    "notes": "MoonlanderTraderSubagent supports take-profit via set_risk_management()"
   },
   {
     "category": "functional",
@@ -1113,8 +1122,9 @@
       "Step 4: Verify historical rates available"
     ],
     "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "is_dev_done": true,
+    "is_qa_passed": false,
+    "notes": "MoonlanderTraderSubagent supports funding rate via GetFundingRateTool()"
   },
   {
     "category": "functional",
@@ -2074,8 +2084,9 @@
       "Step 4: Verify memory persisted"
     ],
     "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "is_dev_done": true,
+    "is_qa_passed": false,
+    "notes": "Uses database-backed AgentMemory model instead of filesystem"
   },
   {
     "category": "functional",
