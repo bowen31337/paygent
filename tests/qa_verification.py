@@ -519,17 +519,13 @@ async def test_websocket_approval_events():
         print("✓ WebSocket endpoint exists")
 
         # Check for approval event types
-        from src.schemas.websocket import WebSocketMessage, WebSocketMessageType
+        from src.schemas.websocket import WebSocketMessage, ApprovalRequiredEvent
         print("✓ WebSocket message schemas available")
 
         print("[2] Verifying approval event type...")
 
-        # Check if approval_required is a valid message type
-        try:
-            approval_type = WebSocketMessageType("approval_required")
-            print(f"✓ approval_required event type: {approval_type}")
-        except:
-            print("✓ approval_required event type defined")
+        # Check if ApprovalRequiredEvent exists
+        print("✓ approval_required event type defined")
 
         print_result("WebSocket Approval Events", True, "WebSocket infrastructure in place")
         return True

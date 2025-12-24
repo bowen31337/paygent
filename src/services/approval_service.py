@@ -8,7 +8,7 @@ import asyncio
 import logging
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any, AsyncGenerator
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -38,6 +38,7 @@ class ApprovalService:
         """Create a new approval request."""
         # Note: amount and token are not stored in the model, but can be included in tool_args
         approval_request = ApprovalRequest(
+            id=uuid4(),
             session_id=session_id,
             tool_name=tool_name,
             tool_args=tool_args,
