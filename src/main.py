@@ -17,6 +17,7 @@ from src.core.database import init_db, close_db
 from src.core.cache import init_cache, close_cache
 from src.api import router as api_router
 from src.middleware.metrics import metrics_middleware
+from src.middleware.rate_limiter import rate_limit_middleware
 
 # Configure logging
 logging.basicConfig(
@@ -108,6 +109,9 @@ app.add_middleware(
 
 # Add metrics middleware
 app.middleware("http")(metrics_middleware)
+
+# Add rate limiting middleware
+app.middleware("http")(rate_limit_middleware)
 
 
 # Global exception handler

@@ -9,26 +9,39 @@ import logging
 import time
 from typing import Optional, Callable, Any
 from functools import wraps
+from collections import defaultdict
+import threading
 
 from fastapi import Request, HTTPException, status
 from fastapi.responses import JSONResponse
-from redis import Redis
+
+try:
+    from redis import Redis
+    from redis.exceptions import RedisError
+    REDIS_AVAILABLE = True
+except ImportError:
+    Redis = None
+    REDIS_AVAILABLE = False
 
 from src.core.config import settings
-from src.core.cache import get_redis_client
 
 logger = logging.getLogger(__name__)
 
 
 class RateLimiter:
     """
-    Rate limiter using Redis as the backend.
+    Rate limiter using Redis as the backend with in-memory fallback.
 
     Supports:
     - Per-IP rate limiting
     - Per-user rate limiting (when authenticated)
     - Configurable limits per endpoint
+    - In-memory fallback when Redis unavailable
     """
+
+    # In-memory storage for rate limits (thread-safe)
+    _in_memory_counts: dict = defaultdict(lambda: {"count": 0, "reset_time": 0})
+    _lock = threading.Lock()
 
     def __init__(
         self,
@@ -48,15 +61,25 @@ class RateLimiter:
         self._redis_available = False
 
         # Try to get Redis client if not provided
-        if self.redis is None:
+        if self.redis is None and REDIS_AVAILABLE:
             try:
-                self.redis = get_redis_client()
-            except Exception:
+                # Try to connect to Redis
+                self.redis = Redis.from_url(
+                    settings.effective_redis_url,
+                    decode_responses=True,
+                    socket_connect_timeout=2,
+                    socket_timeout=2,
+                )
+                # Test connection
+                self.redis.ping()
+                self._redis_available = True
+            except Exception as e:
+                logger.warning(f"Redis not available for rate limiting: {e}, using in-memory fallback")
                 self.redis = None
-
-        self._redis_available = self.redis is not None
-        if not self._redis_available:
-            logger.warning("Redis not available for rate limiting, using in-memory fallback")
+        elif self.redis is not None:
+            self._redis_available = True
+        else:
+            logger.warning("Redis library not available for rate limiting, using in-memory fallback")
 
     def _get_key(self, request: Request, user_id: Optional[str] = None) -> str:
         """
@@ -78,22 +101,50 @@ class RateLimiter:
 
     def _get_count(self, key: str) -> int:
         """Get current request count for the key."""
-        try:
-            count = self.redis.get(key)
-            return int(count) if count else 0
-        except Exception as e:
-            logger.error(f"Error getting rate limit count: {e}")
-            return 0
+        if self._redis_available:
+            try:
+                count = self.redis.get(key)
+                return int(count) if count else 0
+            except RedisError as e:
+                logger.error(f"Error getting rate limit count from Redis: {e}")
+                # Fall through to in-memory
+
+        # In-memory fallback
+        with self._lock:
+            now = int(time.time())
+            data = self._in_memory_counts[key]
+
+            # Reset if window expired
+            if now >= data["reset_time"]:
+                data["count"] = 0
+                data["reset_time"] = now + self.window_seconds
+
+            return data["count"]
 
     def _increment_count(self, key: str, ttl: int) -> None:
         """Increment request count and set TTL."""
-        try:
-            pipe = self.redis.pipeline()
-            pipe.incr(key)
-            pipe.expire(key, ttl)
-            pipe.execute()
-        except Exception as e:
-            logger.error(f"Error incrementing rate limit: {e}")
+        if self._redis_available:
+            try:
+                pipe = self.redis.pipeline()
+                pipe.incr(key)
+                pipe.expire(key, ttl)
+                pipe.execute()
+                return
+            except RedisError as e:
+                logger.error(f"Error incrementing rate limit in Redis: {e}")
+                # Fall through to in-memory
+
+        # In-memory fallback
+        with self._lock:
+            now = int(time.time())
+            data = self._in_memory_counts[key]
+
+            # Reset if window expired
+            if now >= data["reset_time"]:
+                data["count"] = 1
+                data["reset_time"] = now + self.window_seconds
+            else:
+                data["count"] += 1
 
     def check_limit(self, request: Request, user_id: Optional[str] = None) -> tuple[bool, int, int]:
         """
@@ -106,32 +157,30 @@ class RateLimiter:
         Returns:
             Tuple of (is_allowed, remaining_requests, reset_time)
         """
-        # If Redis is not available, allow all requests (fail-open)
-        if not self._redis_available:
-            return True, self.requests_per_minute, int(time.time()) + self.window_seconds
-
         key = self._get_key(request, user_id)
 
-        try:
-            current_count = self._get_count(key)
-            is_allowed = current_count < self.requests_per_minute
-            remaining = max(0, self.requests_per_minute - current_count)
+        current_count = self._get_count(key)
+        is_allowed = current_count < self.requests_per_minute
+        remaining = max(0, self.requests_per_minute - current_count)
 
-            # Increment the count for this request
-            self._increment_count(key, self.window_seconds)
+        # Increment the count for this request
+        self._increment_count(key, self.window_seconds)
 
-            # Calculate reset time
-            ttl = self.redis.ttl(key)
-            if ttl <= 0:
-                ttl = self.window_seconds
-            reset_time = int(time.time()) + ttl
+        # Calculate reset time
+        if self._redis_available:
+            try:
+                ttl = self.redis.ttl(key)
+                if ttl <= 0:
+                    ttl = self.window_seconds
+                reset_time = int(time.time()) + ttl
+            except RedisError:
+                reset_time = int(time.time()) + self.window_seconds
+        else:
+            # Use in-memory reset time
+            with self._lock:
+                reset_time = self._in_memory_counts[key]["reset_time"]
 
-            return is_allowed, remaining, reset_time
-
-        except Exception as e:
-            # If Redis fails, allow the request (fail-open)
-            logger.warning(f"Rate limiter error, allowing request: {e}")
-            return True, self.requests_per_minute, int(time.time()) + self.window_seconds
+        return is_allowed, remaining, reset_time
 
     def get_headers(self, remaining: int, reset_time: int) -> dict:
         """Generate rate limit headers."""
