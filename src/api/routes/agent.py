@@ -19,6 +19,7 @@ from sqlalchemy import select
 
 from src.core.database import get_db
 from src.models.agent_sessions import AgentSession, ExecutionLog
+from src.agents.agent_executor import execute_agent_command
 
 router = APIRouter()
 
@@ -111,58 +112,24 @@ async def get_or_create_session(
     return new_session
 
 
-async def mock_agent_execution(command: str, session_id: UUID) -> dict:
+async def enhanced_agent_execution(command: str, session_id: UUID, budget_limit_usd: Optional[float] = None) -> dict:
     """
-    Mock agent execution for testing purposes.
+    Enhanced agent execution using command parsing and tools.
 
-    In a real implementation, this would:
-    - Use an LLM to parse the command
-    - Create a plan using write_todos
-    - Execute tools (payments, swaps, etc.)
-    - Return structured results
-
-    For now, we return a simple mock response based on the command content.
+    This implementation:
+    - Parses the natural language command to extract intent
+    - Routes to appropriate tool (payment, swap, balance, etc.)
+    - Executes the tool with extracted parameters
+    - Returns structured results
     """
-    command_lower = command.lower()
+    # Use the enhanced agent executor
+    result = await execute_agent_command(
+        command=command,
+        session_id=session_id,
+        budget_limit_usd=budget_limit_usd
+    )
 
-    # Simple command parsing for mock responses
-    if "pay" in command_lower or "transfer" in command_lower:
-        return {
-            "action": "payment",
-            "description": f"Executed payment: {command}",
-            "amount": "0.10",
-            "token": "USDC",
-            "recipient": "0x1234...5678",
-            "tx_hash": "0xmocktxhash1234567890abcdef1234567890abcdef1234567890abcdef12345678",
-            "status": "confirmed"
-        }
-    elif "swap" in command_lower or "exchange" in command_lower:
-        return {
-            "action": "swap",
-            "description": f"Executed swap: {command}",
-            "from_token": "CRO",
-            "to_token": "USDC",
-            "amount": "100",
-            "received": "42.50",
-            "status": "completed"
-        }
-    elif "balance" in command_lower or "check" in command_lower:
-        return {
-            "action": "query",
-            "description": f"Balance check: {command}",
-            "balances": [
-                {"token": "CRO", "amount": "1000.00"},
-                {"token": "USDC", "amount": "250.00"}
-            ],
-            "status": "completed"
-        }
-    else:
-        return {
-            "action": "general",
-            "description": f"Processed command: {command}",
-            "status": "completed",
-            "note": "This is a mock response. Real agent execution would use LLM and tools."
-        }
+    return result
 
 
 @router.post(
@@ -205,20 +172,24 @@ async def execute_command(
     await db.commit()
     await db.refresh(execution_log)
 
-    # Execute the command (mock implementation)
+    # Execute the command using enhanced agent
     try:
-        result = await mock_agent_execution(request.command, session.id)
+        result = await enhanced_agent_execution(
+            request.command,
+            session.id,
+            request.budget_limit_usd
+        )
 
         # Update execution log
-        execution_log.status = "completed"
+        execution_log.status = "completed" if result.get("success") else "failed"
         execution_log.result = result
-        execution_log.duration_ms = 100  # Mock duration
+        execution_log.duration_ms = 150  # Mock duration
         execution_log.total_cost = 0.01  # Mock cost
         await db.commit()
 
         return ExecuteCommandResponse(
             session_id=session.id,
-            status="completed",
+            status="completed" if result.get("success") else "failed",
             result=result,
             total_cost_usd=0.01,
         )
@@ -313,13 +284,13 @@ async def execute_command_stream(
                 await asyncio.sleep(0.3)
 
             # Event 4: Complete
-            result = await mock_agent_execution(request.command, session.id)
+            result = await enhanced_agent_execution(request.command, session.id)
             yield f"event: complete\ndata: {dict_to_json({'result': result, 'session_id': str(session.id), 'timestamp': datetime.utcnow().isoformat()})}\n\n"
 
             # Update execution log
-            execution_log.status = "completed"
+            execution_log.status = "completed" if result.get("success") else "failed"
             execution_log.result = result
-            execution_log.duration_ms = 100
+            execution_log.duration_ms = 150
             execution_log.total_cost = 0.01
             await db.commit()
 

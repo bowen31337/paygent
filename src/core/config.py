@@ -67,6 +67,14 @@ class Settings(BaseSettings):
         default=None,
         description="Agent wallet private key (development only)"
     )
+    default_wallet_address: str = Field(
+        default="0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
+        description="Default agent wallet address"
+    )
+    default_daily_limit_usd: float = Field(
+        default=1000.0,
+        description="Default daily spending limit in USD"
+    )
 
     # Database Configuration
     # Vercel Postgres (production)

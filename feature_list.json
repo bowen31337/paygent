@@ -209,9 +209,9 @@
       "Step 4: Verify token is identified as USDC",
       "Step 5: Verify recipient context is understood"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "functional",
@@ -222,9 +222,9 @@
       "Step 3: Verify response contains token balances",
       "Step 4: Verify CRO and USDC balances are included"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "functional",
@@ -236,9 +236,9 @@
       "Step 4: Verify slippage protection is applied",
       "Step 5: Verify swap execution is attempted"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "functional",

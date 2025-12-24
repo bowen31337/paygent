@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
+from src.services.payment_service import PaymentService
 
 router = APIRouter()
 
@@ -92,12 +93,31 @@ async def get_payment_history(
     - status: Payment status
     - start_date/end_date: Date range
     """
-    # TODO: Implement payment history retrieval
-    return PaymentListResponse(
-        payments=[],
-        total=0,
+    payment_service = PaymentService(db)
+    result = await payment_service.get_payment_history(
+        status=status,
+        start_date=start_date,
+        end_date=end_date,
         offset=offset,
         limit=limit,
+    )
+
+    if not result["success"]:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=result.get("message", "Failed to get payment history"),
+        )
+
+    # Format payments
+    payments = [
+        PaymentInfo(**p) for p in result["payments"]
+    ]
+
+    return PaymentListResponse(
+        payments=payments,
+        total=result["total"],
+        offset=result["offset"],
+        limit=result["limit"],
     )
 
 
@@ -111,15 +131,17 @@ async def get_payment_stats(
     db: AsyncSession = Depends(get_db),
 ) -> PaymentStats:
     """Get aggregate payment statistics."""
-    # TODO: Implement payment stats
-    return PaymentStats(
-        total_payments=0,
-        total_amount_usd=0.0,
-        confirmed_payments=0,
-        pending_payments=0,
-        failed_payments=0,
-        success_rate=0.0,
-    )
+    payment_service = PaymentService(db)
+    result = await payment_service.get_payment_stats()
+
+    if not result["success"]:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=result.get("message", "Failed to get payment stats"),
+        )
+
+    stats = result["stats"]
+    return PaymentStats(**stats)
 
 
 @router.get(
@@ -133,11 +155,16 @@ async def get_payment(
     db: AsyncSession = Depends(get_db),
 ) -> PaymentInfo:
     """Get details of a specific payment."""
-    # TODO: Implement payment retrieval
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Payment {payment_id} not found",
-    )
+    payment_service = PaymentService(db)
+    result = await payment_service.get_payment(payment_id)
+
+    if not result["success"]:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=result.get("message", f"Payment {payment_id} not found"),
+        )
+
+    return PaymentInfo(**result["payment"])
 
 
 @router.post(
