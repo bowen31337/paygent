@@ -7,12 +7,15 @@ requests for sensitive agent operations.
 
 from typing import Optional
 from uuid import UUID
+from datetime import datetime
+from sqlalchemy import select
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
+from src.models.agent_sessions import ApprovalRequest as ApprovalRequestModel
 
 router = APIRouter()
 
@@ -80,10 +83,37 @@ async def list_pending_approvals(
 
     Optionally filter by session_id.
     """
-    # TODO: Implement pending approvals listing
+    # Build query
+    query = select(ApprovalRequestModel).where(ApprovalRequestModel.decision == "pending")
+
+    if session_id:
+        query = query.where(ApprovalRequestModel.session_id == session_id)
+
+    # Order by oldest first
+    query = query.order_by(ApprovalRequestModel.created_at.asc())
+
+    result = await db.execute(query)
+    requests = result.scalars().all()
+
+    # Convert to response format
+    request_list = [
+        ApprovalRequest(
+            id=req.id,
+            session_id=req.session_id,
+            tool_name=req.tool_name,
+            tool_args=req.tool_args,
+            decision=req.decision,
+            edited_args=req.edited_args,
+            estimated_cost_usd=float(req.estimated_cost) if req.estimated_cost else None,
+            created_at=req.created_at.isoformat(),
+            decision_made_at=req.decision_made_at.isoformat() if req.decision_made_at else None,
+        )
+        for req in requests
+    ]
+
     return ApprovalListResponse(
-        requests=[],
-        total=0,
+        requests=request_list,
+        total=len(request_list),
     )
 
 
@@ -98,10 +128,27 @@ async def get_approval_request(
     db: AsyncSession = Depends(get_db),
 ) -> ApprovalRequest:
     """Get details of a specific approval request."""
-    # TODO: Implement approval request retrieval
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Approval request {request_id} not found",
+    result = await db.execute(
+        select(ApprovalRequestModel).where(ApprovalRequestModel.id == request_id)
+    )
+    req = result.scalar_one_or_none()
+
+    if not req:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Approval request {request_id} not found",
+        )
+
+    return ApprovalRequest(
+        id=req.id,
+        session_id=req.session_id,
+        tool_name=req.tool_name,
+        tool_args=req.tool_args,
+        decision=req.decision,
+        edited_args=req.edited_args,
+        estimated_cost_usd=float(req.estimated_cost) if req.estimated_cost else None,
+        created_at=req.created_at.isoformat(),
+        decision_made_at=req.decision_made_at.isoformat() if req.decision_made_at else None,
     )
 
 
@@ -120,11 +167,36 @@ async def approve_request(
     Approve a pending request.
 
     This will resume the paused agent execution with the original arguments.
+
+    NOTE: This is a mock implementation. In production, this would
+    signal the agent to resume execution.
     """
-    # TODO: Implement approval logic
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Approval request {request_id} not found",
+    result = await db.execute(
+        select(ApprovalRequestModel).where(ApprovalRequestModel.id == request_id)
+    )
+    req = result.scalar_one_or_none()
+
+    if not req:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Approval request {request_id} not found",
+        )
+
+    if req.decision != "pending":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Request has already been {req.decision}",
+        )
+
+    # Update status
+    req.decision = "approved"
+    req.decision_made_at = datetime.utcnow()
+    await db.commit()
+
+    return ApprovalResponse(
+        request_id=request_id,
+        decision="approved",
+        message="Request approved. Agent execution will resume.",
     )
 
 
@@ -143,11 +215,36 @@ async def reject_request(
     Reject a pending request.
 
     This will stop the agent execution and log the rejection.
+
+    NOTE: This is a mock implementation. In production, this would
+    signal the agent to stop execution.
     """
-    # TODO: Implement rejection logic
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Approval request {request_id} not found",
+    result = await db.execute(
+        select(ApprovalRequestModel).where(ApprovalRequestModel.id == request_id)
+    )
+    req = result.scalar_one_or_none()
+
+    if not req:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Approval request {request_id} not found",
+        )
+
+    if req.decision != "pending":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Request has already been {req.decision}",
+        )
+
+    # Update status
+    req.decision = "rejected"
+    req.decision_made_at = datetime.utcnow()
+    await db.commit()
+
+    return ApprovalResponse(
+        request_id=request_id,
+        decision="rejected",
+        message=f"Request rejected. Reason: {request.reason if request and request.reason else 'No reason provided'}",
     )
 
 
@@ -167,9 +264,35 @@ async def edit_and_approve(
 
     This allows modifying parameters (e.g., reducing payment amount)
     before approving the operation.
+
+    NOTE: This is a mock implementation. In production, this would
+    signal the agent to resume execution with edited arguments.
     """
-    # TODO: Implement edit and approval logic
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Approval request {request_id} not found",
+    result = await db.execute(
+        select(ApprovalRequestModel).where(ApprovalRequestModel.id == request_id)
+    )
+    req = result.scalar_one_or_none()
+
+    if not req:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Approval request {request_id} not found",
+        )
+
+    if req.decision != "pending":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Request has already been {req.decision}",
+        )
+
+    # Update status with edited args
+    req.decision = "edited"
+    req.edited_args = request.edited_args
+    req.decision_made_at = datetime.utcnow()
+    await db.commit()
+
+    return ApprovalResponse(
+        request_id=request_id,
+        decision="edited",
+        message=f"Request edited and approved. Agent will resume with modified arguments.",
     )

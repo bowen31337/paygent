@@ -34,10 +34,10 @@ class CommandParser:
     # Patterns for different command types
     PATTERNS = {
         "payment": [
-            r"pay\s+([\d.]+)\s+(\w+)\s+to\s+(\w+)",
-            r"pay\s+([\d.]+)\s+(\w+)\s+for\s+(\w+)",
-            r"transfer\s+([\d.]+)\s+(\w+)\s+to\s+(\w+)",
-            r"send\s+([\d.]+)\s+(\w+)\s+to\s+(\w+)",
+            r"pay\s+([\d.]+)\s+(\w+)\s+to\s+(.+)$",  # Capture everything after "to"
+            r"pay\s+([\d.]+)\s+(\w+)\s+for\s+(.+)$",  # Alternative: "for" instead of "to"
+            r"transfer\s+([\d.]+)\s+(\w+)\s+to\s+(.+)$",
+            r"send\s+([\d.]+)\s+(\w+)\s+to\s+(.+)$",
         ],
         "swap": [
             r"swap\s+([\d.]+)\s+(\w+)\s+(?:for|to)\s+(\w+)",
@@ -112,13 +112,15 @@ class CommandParser:
 
         if intent == "payment":
             # Pattern: pay 0.10 USDC to service
+            recipient = groups[2]
+            print(f"DEBUG: Payment recipient extracted: '{recipient}'")
             return ParsedCommand(
                 intent="payment",
                 action="pay",
                 parameters={
                     "amount": float(groups[0]),
                     "token": groups[1].upper(),
-                    "recipient": groups[2],
+                    "recipient": recipient,
                 },
                 confidence=0.95,
                 raw_command=raw_command,

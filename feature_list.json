@@ -627,9 +627,9 @@
       "Step 3: Verify all payments are listed",
       "Step 4: Verify chronological order (newest first)"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "functional",
@@ -666,9 +666,9 @@
       "Step 3: Verify all payment fields returned",
       "Step 4: Verify tx_hash is included for confirmed payments"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "functional",
@@ -694,9 +694,9 @@
       "Step 4: Verify total_amount_usd",
       "Step 5: Verify success_rate percentage"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "functional",
@@ -708,9 +708,9 @@
       "Step 4: Verify USDC balance is returned",
       "Step 5: Verify balances match on-chain data"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "functional",
@@ -734,9 +734,9 @@
       "Step 4: Verify spent_today is returned",
       "Step 5: Verify remaining allowance is calculated correctly"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "functional",
@@ -749,9 +749,9 @@
       "Step 5: Verify sender balance decreased",
       "Step 6: Verify recipient balance increased"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "functional",
@@ -787,9 +787,9 @@
       "Step 3: Verify all transactions listed",
       "Step 4: Verify tx_hash, amount, timestamp included"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "functional",

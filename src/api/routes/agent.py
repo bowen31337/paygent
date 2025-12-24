@@ -20,6 +20,7 @@ from sqlalchemy import select
 from src.core.database import get_db
 from src.models.agent_sessions import AgentSession, ExecutionLog
 from src.agents.agent_executor import execute_agent_command
+from src.agents.agent_executor_enhanced import execute_agent_command_enhanced
 
 router = APIRouter()
 
@@ -112,20 +113,24 @@ async def get_or_create_session(
     return new_session
 
 
-async def enhanced_agent_execution(command: str, session_id: UUID, budget_limit_usd: Optional[float] = None) -> dict:
+async def enhanced_agent_execution(command: str, session_id: UUID, db: AsyncSession, budget_limit_usd: Optional[float] = None) -> dict:
     """
-    Enhanced agent execution using command parsing and tools.
+    Enhanced agent execution using command parsing and tools with full logging.
 
     This implementation:
     - Parses the natural language command to extract intent
+    - Creates execution plan (write_todos) for complex operations
     - Routes to appropriate tool (payment, swap, balance, etc.)
     - Executes the tool with extracted parameters
+    - Logs all tool calls to execution_logs table
+    - Enforces budget limits
     - Returns structured results
     """
-    # Use the enhanced agent executor
-    result = await execute_agent_command(
+    # Use the enhanced agent executor with database logging
+    result = await execute_agent_command_enhanced(
         command=command,
         session_id=session_id,
+        db=db,
         budget_limit_usd=budget_limit_usd
     )
 
@@ -177,6 +182,7 @@ async def execute_command(
         result = await enhanced_agent_execution(
             request.command,
             session.id,
+            db,
             request.budget_limit_usd
         )
 
@@ -284,7 +290,7 @@ async def execute_command_stream(
                 await asyncio.sleep(0.3)
 
             # Event 4: Complete
-            result = await enhanced_agent_execution(request.command, session.id)
+            result = await enhanced_agent_execution(request.command, session.id, db)
             yield f"event: complete\ndata: {dict_to_json({'result': result, 'session_id': str(session.id), 'timestamp': datetime.utcnow().isoformat()})}\n\n"
 
             # Update execution log

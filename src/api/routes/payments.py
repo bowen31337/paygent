@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
 from src.services.payment_service import PaymentService
+from src.services.x402_service import X402PaymentService
 
 router = APIRouter()
 
@@ -187,9 +188,26 @@ async def execute_x402_payment(
     3. Submit payment to facilitator
     4. Retry request with payment header
     5. Return service response
+
+    NOTE: This is a mock implementation. In production, this would
+    interact with the actual x402 facilitator.
     """
-    # TODO: Implement x402 payment execution
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="x402 payment not yet implemented",
+    x402_service = X402PaymentService()
+    result = await x402_service.execute_payment(
+        service_url=request.service_url,
+        amount=request.amount,
+        token=request.token,
+    )
+
+    if not result["success"]:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=result.get("message", "x402 payment execution failed"),
+        )
+
+    return ExecuteX402Response(
+        payment_id=result["payment_id"],
+        tx_hash=result.get("tx_hash"),
+        status=result["status"],
+        service_response=result.get("service_response"),
     )

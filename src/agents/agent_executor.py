@@ -126,7 +126,9 @@ class AgentExecutor:
             }
 
         # Intelligently discover service endpoint
+        print(f"DEBUG: Calling _resolve_service_endpoint with: {params.get('recipient', 'api')}")
         service_url = self._resolve_service_endpoint(params.get("recipient", "api"))
+        print(f"DEBUG: Resolved service URL: {service_url}")
 
         # Execute x402 payment
         tool = self.tools["x402_payment"]
@@ -152,37 +154,65 @@ class AgentExecutor:
         Returns:
             Service URL for the discovered service, or fallback URL
         """
+        print(f"DEBUG: _resolve_service_endpoint called with: {service_name}")
         try:
+            print(f"DEBUG: Resolving service: {service_name}")
             # Try to discover service using the services tool
             discover_tool = self.tools.get("discover_services")
             if discover_tool:
+                print(f"DEBUG: Found discover_services tool")
                 # Search for services containing the service name
                 result = discover_tool.run(category=None, mcp_compatible=True)
+                print(f"DEBUG: Discovery result: {result}")
 
-                if result.get("success") and result.get("services"):
+                if result.get("services"):
                     services = result["services"]
+                    print(f"DEBUG: Found {len(services)} services")
+
+                    # Normalize query for better matching
+                    query_lower = service_name.lower().strip()
 
                     # Look for exact matches first
                     for service in services:
-                        if service_name.lower() in service["name"].lower():
-                            logger.info(f"Found service: {service['name']} -> {service['endpoint']}")
+                        service_name_lower = service["name"].lower()
+                        service_desc_lower = service.get("description", "").lower()
+
+                        print(f"DEBUG: Checking service: '{service_name_lower}' vs query: '{query_lower}'")
+
+                        # Check if query is in service name
+                        if query_lower in service_name_lower:
+                            print(f"DEBUG: Found name match: {service['name']} -> {service['endpoint']}")
                             return service["endpoint"]
 
-                        if service_name.lower() in service["description"].lower():
-                            logger.info(f"Found service: {service['name']} -> {service['endpoint']}")
+                        # Check if query is in service description
+                        if query_lower in service_desc_lower:
+                            print(f"DEBUG: Found description match: {service['name']} -> {service['endpoint']}")
+                            return service["endpoint"]
+
+                    # Try partial matching - look for key terms
+                    key_terms = ['market', 'data', 'api', 'cronos', 'crypto', 'trading']
+                    for service in services:
+                        service_name_lower = service["name"].lower()
+                        service_desc_lower = service.get("description", "").lower()
+
+                        # Count how many key terms match
+                        matches = sum(1 for term in key_terms if term in query_lower and term in service_name_lower)
+
+                        if matches >= 2:  # At least 2 key terms match
+                            print(f"DEBUG: Found partial match with {matches} key terms: {service['name']} -> {service['endpoint']}")
                             return service["endpoint"]
 
                     # If no exact match, return the first MCP-compatible service
                     if services:
-                        logger.info(f"No exact match for '{service_name}', using first available service: {services[0]['name']}")
+                        print(f"DEBUG: No exact match for '{service_name}', using first available service: {services[0]['name']}")
                         return services[0]["endpoint"]
 
             # Fallback to hardcoded URL
-            logger.warning(f"Service discovery failed for '{service_name}', using fallback URL")
+            print(f"DEBUG: Service discovery failed for '{service_name}', using fallback URL")
             return "https://api.example.com"
 
         except Exception as e:
-            logger.error(f"Service resolution failed: {e}")
+            print(f"DEBUG: Service resolution failed: {e}")
             return "https://api.example.com"
 
     async def _execute_swap(
