@@ -36,13 +36,12 @@ class ApprovalService:
         token: Optional[str] = None,
     ) -> ApprovalRequest:
         """Create a new approval request."""
+        # Note: amount and token are not stored in the model, but can be included in tool_args
         approval_request = ApprovalRequest(
             session_id=session_id,
             tool_name=tool_name,
             tool_args=tool_args,
             decision="pending",
-            amount=amount,
-            token=token,
         )
 
         self.session.add(approval_request)

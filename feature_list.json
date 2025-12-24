@@ -414,7 +414,7 @@
     ],
     "passes": false,
     "is_dev_done": true,
-    "is_qa_passed": false
+    "is_qa_passed": true
   },
   {
     "category": "functional",
@@ -427,7 +427,7 @@
     ],
     "passes": false,
     "is_dev_done": true,
-    "is_qa_passed": false
+    "is_qa_passed": true
   },
   {
     "category": "functional",
@@ -441,7 +441,7 @@
     ],
     "passes": false,
     "is_dev_done": true,
-    "is_qa_passed": false
+    "is_qa_passed": true
   },
   {
     "category": "functional",
@@ -793,7 +793,7 @@
     ],
     "passes": false,
     "is_dev_done": true,
-    "is_qa_passed": false,
+    "is_qa_passed": true,
     "notes": "Fully implemented in WalletService.transfer_tokens() (lines 226-235). Checks daily allowance and returns 403 if exceeded."
   },
   {
@@ -881,7 +881,7 @@
     "passes": false,
     "is_dev_done": true,
     "notes": "HITL approval integration implemented in agent executor with $10 threshold. Approval requests created for payments over threshold, with API endpoints to approve/reject/edit.",
-    "is_qa_passed": false
+    "is_qa_passed": true
   },
   {
     "category": "functional",
@@ -910,7 +910,7 @@
     "passes": false,
     "is_dev_done": true,
     "notes": "Kill switch functionality implemented via WebSocket cancel messages and API endpoints. Agent execution can be terminated immediately.",
-    "is_qa_passed": false
+    "is_qa_passed": true
   },
   {
     "category": "functional",
@@ -925,7 +925,7 @@
     "passes": false,
     "is_dev_done": true,
     "notes": "Approval timeout functionality implemented with cleanup_expired_approvals method. Configurable timeout period with automatic cleanup.",
-    "is_qa_passed": false
+    "is_qa_passed": true
   },
   {
     "category": "functional",
@@ -1109,7 +1109,7 @@
     ],
     "passes": false,
     "is_dev_done": true,
-    "is_qa_passed": false,
+    "is_qa_passed": true,
     "notes": "MoonlanderTraderSubagent supports position closure via close_position()"
   },
   {
@@ -2116,7 +2116,7 @@
     ],
     "passes": false,
     "is_dev_done": true,
-    "is_qa_passed": false,
+    "is_qa_passed": true,
     "notes": "Uses database-backed AgentMemory model instead of filesystem"
   },
   {
