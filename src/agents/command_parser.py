@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 class ParsedCommand:
     """Parsed command with intent and parameters."""
 
-    intent: str  # e.g., "payment", "swap", "balance_check", "service_discovery"
-    action: str  # e.g., "pay", "transfer", "swap", "check"
+    intent: str  # e.g., "payment", "swap", "balance_check", "service_discovery", "perpetual_trade"
+    action: str  # e.g., "pay", "transfer", "swap", "check", "open"
     parameters: Dict[str, Any]
     confidence: float  # 0.0 to 1.0
     raw_command: str
@@ -44,6 +44,11 @@ class CommandParser:
             r"exchange\s+([\d.]+)\s+(\w+)\s+(?:for|to)\s+(\w+)",
             r"trade\s+([\d.]+)\s+(\w+)\s+(?:for|to)\s+(\w+)",
         ],
+        "perpetual_trade": [
+            r"(?:open|long|short)\s+(?:a\s+)?([\d.]+)\s+(\w+)\s+(long|short)\s+(?:position\s+)?(?:on\s+)?(\w+)",
+            r"(?:open|long|short)\s+(?:a\s+)?([\d.]+)\s+(\w+)\s+(?:position\s+)?(?:on\s+)?(\w+)",
+            r"(?:open|long|short)\s+(?:a\s+)?([\d.]+)\s+(\w+)\s+(?:position\s+)?(?:on\s+)?(\w+)\s+with\s+([\d.]+)x\s+leverage",
+        ],
         "balance_check": [
             r"(?:check|show|get|what(?:'s| is))\s+(?:my\s+)?(?:wallet\s+)?balance",
             r"how\s+much\s+(\w+)\s+do\s+i\s+have",
@@ -60,6 +65,7 @@ class CommandParser:
     INTENT_KEYWORDS = {
         "payment": ["pay", "transfer", "send", "payment"],
         "swap": ["swap", "exchange", "trade"],
+        "perpetual_trade": ["long", "short", "position", "leverage", "perpetual"],
         "balance_check": ["balance", "how much", "check"],
         "service_discovery": ["find", "search", "discover", "list services", "available"],
     }
@@ -113,7 +119,6 @@ class CommandParser:
         if intent == "payment":
             # Pattern: pay 0.10 USDC to service
             recipient = groups[2]
-            print(f"DEBUG: Payment recipient extracted: '{recipient}'")
             return ParsedCommand(
                 intent="payment",
                 action="pay",
@@ -135,6 +140,41 @@ class CommandParser:
                     "from_token": groups[1].upper(),
                     "to_token": groups[2].upper(),
                     "amount": float(groups[0]),
+                },
+                confidence=0.95,
+                raw_command=raw_command,
+            )
+
+        elif intent == "perpetual_trade":
+            # Pattern: open 100 USDC long position on BTC with 10x leverage
+            # Groups: [0]=amount, [1]=token, [2]=direction (optional), [3]=symbol, [4]=leverage (optional)
+            amount = float(groups[0])
+            token = groups[1].upper()
+
+            # Handle different pattern variations
+            if len(groups) >= 4 and groups[3]:
+                # Pattern with direction and symbol
+                direction = groups[2] if groups[2] else "long"
+                symbol = groups[3]
+            else:
+                # Pattern without explicit direction
+                direction = "long"  # Default to long
+                symbol = groups[2] if len(groups) > 2 else "BTC"
+
+            # Check for leverage in groups
+            leverage = 10.0  # Default leverage
+            if len(groups) > 4 and groups[4]:
+                leverage = float(groups[4])
+
+            return ParsedCommand(
+                intent="perpetual_trade",
+                action="open",
+                parameters={
+                    "amount": amount,
+                    "token": token,
+                    "direction": direction.lower(),
+                    "symbol": symbol.upper(),
+                    "leverage": leverage,
                 },
                 confidence=0.95,
                 raw_command=raw_command,
@@ -234,6 +274,10 @@ class CommandParser:
                     parameters["from_token"] = amounts[0][1].upper()
                 if len(amounts) >= 2:
                     parameters["to_token"] = amounts[1][1].upper()
+            elif intent == "perpetual_trade":
+                if len(amounts) >= 1:
+                    parameters["amount"] = float(amounts[0][0])
+                    parameters["token"] = amounts[0][1].upper()
 
         # Extract tokens
         tokens = re.findall(r"\b(CRO|USDC|USDT|ETH|WBTC|BTC)\b", command, re.IGNORECASE)
@@ -248,6 +292,25 @@ class CommandParser:
         )
         if categories:
             parameters["category"] = categories[0].lower()
+
+        # Extract direction for perpetual trades
+        if intent == "perpetual_trade":
+            if "long" in command_lower:
+                parameters["direction"] = "long"
+            elif "short" in command_lower:
+                parameters["direction"] = "short"
+            else:
+                parameters["direction"] = "long"  # Default
+
+            # Extract symbol
+            symbol_match = re.search(r"\b(BTC|ETH|CRO)\b", command, re.IGNORECASE)
+            if symbol_match:
+                parameters["symbol"] = symbol_match.group(1).upper()
+
+            # Extract leverage
+            leverage_match = re.search(r"([\d.]+)x\s+leverage", command_lower)
+            if leverage_match:
+                parameters["leverage"] = float(leverage_match.group(1))
 
         return parameters
 
@@ -265,6 +328,10 @@ def test_parser():
         "Transfer 50 USDC to market data feed",
         "Exchange 100 CRO to USDC",
         "What is my balance",
+        "Open a 100 USDC long position on BTC with 10x leverage",
+        "Open a 50 USDC short position on ETH",
+        "Long 200 USDC BTC",
+        "Short 100 USDC ETH with 5x leverage",
     ]
 
     print("Command Parser Test Results")

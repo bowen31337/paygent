@@ -22,13 +22,20 @@ from src.tools.simple_tools import get_all_tools
 from src.models.agent_sessions import ExecutionLog, AgentSession
 from src.core.database import get_db
 
-# Try to import the subagent, but fall back gracefully if langchain isn't available
+# Try to import the subagents, but fall back gracefully if langchain isn't available
 try:
     from src.agents.vvs_trader_subagent import VVSTraderSubagent
     HAS_VVS_SUBAGENT = True
 except ImportError:
     VVSTraderSubagent = None
     HAS_VVS_SUBAGENT = False
+
+try:
+    from src.agents.moonlander_trader_subagent import MoonlanderTraderSubagent
+    HAS_MOONLANDER_SUBAGENT = True
+except ImportError:
+    MoonlanderTraderSubagent = None
+    HAS_MOONLANDER_SUBAGENT = False
 
 logger = logging.getLogger(__name__)
 
@@ -119,6 +126,11 @@ class AgentExecutorEnhanced:
                     parsed, budget_limit_usd
                 )
 
+            elif parsed.intent == "perpetual_trade":
+                result = await self._execute_perpetual_trade_with_logging(
+                    parsed, budget_limit_usd
+                )
+
             elif parsed.intent == "balance_check":
                 result = await self._execute_balance_check_with_logging(parsed)
 
@@ -134,6 +146,7 @@ class AgentExecutorEnhanced:
                         "Pay 0.10 USDC to API service",
                         "Check my wallet balance",
                         "Swap 10 CRO for USDC",
+                        "Open a 100 USDC long position on BTC with 10x leverage",
                         "Find available services"
                     ],
                     "parsed_intent": parsed.intent,
@@ -205,7 +218,7 @@ class AgentExecutorEnhanced:
         if parsed.intent in ["balance_check", "service_discovery"]:
             return None
 
-        # Create plan for payment/swap operations
+        # Create plan for payment/swap/perpetual trade operations
         if parsed.intent == "payment":
             return {
                 "approach": "Execute x402 payment flow",
@@ -265,6 +278,39 @@ class AgentExecutorEnhanced:
                         "id": 4,
                         "description": "Verify token balances",
                         "outcome": "Confirm new balances",
+                        "status": "pending"
+                    }
+                ],
+                "total_steps": 4,
+                "created_at": datetime.utcnow().isoformat()
+            }
+
+        elif parsed.intent == "perpetual_trade":
+            return {
+                "approach": "Execute perpetual trade via Moonlander",
+                "steps": [
+                    {
+                        "id": 1,
+                        "description": "Parse trade parameters",
+                        "outcome": "Extract direction, symbol, amount, leverage",
+                        "status": "completed"
+                    },
+                    {
+                        "id": 2,
+                        "description": "Spawn Moonlander subagent",
+                        "outcome": "Create specialized trading agent",
+                        "status": "pending"
+                    },
+                    {
+                        "id": 3,
+                        "description": "Open position",
+                        "outcome": "Execute perpetual trade with risk management",
+                        "status": "pending"
+                    },
+                    {
+                        "id": 4,
+                        "description": "Set stop-loss/take-profit",
+                        "outcome": "Configure risk management orders",
                         "status": "pending"
                     }
                 ],
@@ -411,6 +457,126 @@ class AgentExecutorEnhanced:
             "result": swap_result,
             "total_cost_usd": 0.0  # Swaps don't have a direct cost (gas is separate)
         }
+
+    async def _execute_perpetual_trade_with_logging(
+        self,
+        parsed: ParsedCommand,
+        budget_limit_usd: Optional[float]
+    ) -> Dict[str, Any]:
+        """Execute a perpetual trade command with Moonlander subagent and logging."""
+        params = parsed.parameters
+
+        # Step 1: Check budget limit
+        if budget_limit_usd and params.get("amount", 0) > budget_limit_usd:
+            return {
+                "success": False,
+                "error": f"Position size ${params['amount']} exceeds budget limit ${budget_limit_usd}",
+                "suggestion": "Increase budget limit or reduce position size",
+                "total_cost_usd": 0.0
+            }
+
+        # Step 2: Log trade parameters
+        await self._log_tool_call(
+            "parse_perpetual_trade",
+            {
+                "direction": params.get("direction", "long"),
+                "symbol": params.get("symbol", "BTC"),
+                "amount": params["amount"],
+                "token": params.get("token", "USDC"),
+                "leverage": params.get("leverage", 10.0),
+            },
+            {"status": "parsed"}
+        )
+
+        # Step 3: Spawn Moonlander subagent and execute trade
+        if HAS_MOONLANDER_SUBAGENT and MoonlanderTraderSubagent:
+            # Create Moonlander trader subagent
+            moonlander_subagent = MoonlanderTraderSubagent(
+                db=self.db,
+                session_id=uuid4(),  # New session for subagent
+                parent_agent_id=self.session_id,
+            )
+
+            # Execute perpetual trade via subagent
+            trade_result = await moonlander_subagent.execute_perpetual_trade(
+                direction=params.get("direction", "long"),
+                symbol=params.get("symbol", "BTC"),
+                amount=params["amount"],
+                leverage=params.get("leverage", 10.0),
+            )
+
+            await self._log_tool_call(
+                "moonlander_trader_subagent",
+                {
+                    "direction": params.get("direction", "long"),
+                    "symbol": params.get("symbol", "BTC"),
+                    "amount": params["amount"],
+                    "leverage": params.get("leverage", 10.0),
+                },
+                trade_result
+            )
+
+            # Step 4: Set risk management orders if trade was successful
+            if trade_result.get("success"):
+                risk_result = await moonlander_subagent.set_risk_management(
+                    symbol=params.get("symbol", "BTC"),
+                    stop_loss=trade_result["trade_details"]["liquidation_price"] * 0.95,  # 5% from liquidation
+                    take_profit=trade_result["trade_details"]["entry_price"] * 1.1,  # 10% profit
+                )
+
+                await self._log_tool_call(
+                    "set_risk_management",
+                    {
+                        "symbol": params.get("symbol", "BTC"),
+                        "stop_loss": trade_result["trade_details"]["liquidation_price"] * 0.95,
+                        "take_profit": trade_result["trade_details"]["entry_price"] * 1.1,
+                    },
+                    risk_result
+                )
+
+                # Combine results
+                return {
+                    "success": True,
+                    "action": "perpetual_trade",
+                    "result": {
+                        "trade": trade_result,
+                        "risk_management": risk_result,
+                    },
+                    "total_cost_usd": 0.0,  # Trading doesn't have direct cost (fees are separate)
+                }
+            else:
+                return trade_result
+        else:
+            # Fallback to simple tool if subagent not available
+            tool = self.tools.get("swap_tokens")  # Reuse swap tool as fallback
+            if tool:
+                trade_result = tool.run(
+                    from_token=params.get("token", "USDC"),
+                    to_token=params.get("symbol", "BTC"),
+                    amount=params["amount"]
+                )
+
+                await self._log_tool_call(
+                    "perpetual_trade_fallback",
+                    {
+                        "direction": params.get("direction", "long"),
+                        "symbol": params.get("symbol", "BTC"),
+                        "amount": params["amount"],
+                    },
+                    trade_result
+                )
+
+                return {
+                    "success": True,
+                    "action": "perpetual_trade_fallback",
+                    "result": trade_result,
+                    "total_cost_usd": 0.0,
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": "Moonlander subagent not available and no fallback tool",
+                }
 
     async def _execute_balance_check_with_logging(
         self,
