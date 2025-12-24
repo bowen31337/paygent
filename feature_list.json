@@ -267,7 +267,8 @@
     ],
     "passes": true,
     "is_dev_done": true,
-    "is_qa_passed": false
+    "is_qa_passed": false,
+    "notes": "VVSTraderSubagent implemented with LangChain integration. AgentExecutorEnhanced has fallback to simple swap tool if langchain not available."
   },
   {
     "category": "functional",
@@ -281,7 +282,7 @@
     "passes": false,
     "is_dev_done": true,
     "is_qa_passed": false,
-    "notes": "Implemented MoonlanderTraderSubagent with perpetual trading, command parser support, and agent executor integration"
+    "notes": "Implemented MoonlanderTraderSubagent with perpetual trading, command parser support, and agent executor integration. Cannot be QA tested without langchain dependency installed."
   },
   {
     "category": "functional",
@@ -321,7 +322,7 @@
     "passes": true,
     "is_dev_done": true,
     "is_qa_passed": true,
-    "notes": "Memory persistence via AgentMemory model with load/save methods in AgentExecutorEnhanced"
+    "notes": "Memory persistence fully implemented with AgentMemory model. load_memory() and save_memory() methods in AgentExecutorEnhanced. Verified with 3 unit tests: payment command, balance check, and session reuse with memory context."
   },
   {
     "category": "functional",
@@ -336,7 +337,7 @@
     "passes": true,
     "is_dev_done": true,
     "is_qa_passed": false,
-    "notes": "402 handling implemented with EIP-712 signing and facilitator integration"
+    "notes": "402 handling implemented in X402PaymentService with EIP-712 signing and facilitator integration. Full flow: request -> 402 -> parse header -> sign -> submit to facilitator -> retry with proof."
   },
   {
     "category": "functional",
@@ -351,8 +352,9 @@
       "Step 7: Verify typed data structure is correct"
     ],
     "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": true
+    "is_dev_done": true,
+    "is_qa_passed": false,
+    "notes": "EIP-712 signature generation implemented in src/x402/signature.py using eth-account. Requires AGENT_WALLET_PRIVATE_KEY env var for signing. Mock facilitator available for testing."
   },
   {
     "category": "functional",
@@ -366,8 +368,9 @@
       "Step 6: Verify tx_hash is recorded"
     ],
     "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "is_dev_done": true,
+    "is_qa_passed": false,
+    "notes": "Facilitator integration implemented with mock facilitator in src/x402/mock_facilitator.py. Real facilitator URL configurable via x402_facilitator_url setting."
   },
   {
     "category": "functional",
@@ -382,8 +385,8 @@
     ],
     "passes": true,
     "is_dev_done": true,
-    "is_qa_passed": false,
-    "notes": "Exponential backoff implemented in _make_payment_request"
+    "is_qa_passed": true,
+    "notes": "Exponential backoff implemented in _make_payment_request with retry_attempts=3 and retry_delay=1.0s. Uses 2^attempt multiplier for delays."
   },
   {
     "category": "functional",
