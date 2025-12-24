@@ -7,7 +7,8 @@ API keys, and passwords are never exposed in logs or error messages.
 
 import re
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Set, Optional, List
+from functools import lru_cache
 
 # Patterns to detect and redact sensitive information
 SENSITIVE_PATTERNS = [
@@ -202,3 +203,182 @@ def sanitize(data: Any) -> Any:
         return [sanitize(item) for item in data]
     else:
         return data
+
+
+# =============================================================================
+# Tool Allowlist Security
+# =============================================================================
+
+class ToolAllowlistError(Exception):
+    """Raised when a tool is not in the allowlist."""
+    pass
+
+
+class ToolAllowlist:
+    """
+    Manages a allowlist of permitted tools for agent execution.
+
+    This provides security by restricting which tools an agent can invoke,
+    preventing unauthorized or dangerous operations.
+    """
+
+    # Default allowlist - all safe tools
+    DEFAULT_ALLOWED_TOOLS: Set[str] = {
+        "check_balance",
+        "discover_services",
+        "x402_payment",
+        "swap_tokens",
+        "vvs_quote",
+        "vvs_liquidity",
+        "vvs_farm",
+        "transfer_tokens",
+        "get_approval",
+    }
+
+    # Tools that are always blocked (dangerous operations)
+    BLOCKED_TOOLS: Set[str] = {
+        "exec",
+        "eval",
+        "system",
+        "subprocess",
+        "os.system",
+        "os.exec",
+        "os.popen",
+        "shell",
+        "bash",
+        "sh",
+        "python",
+        "javascript",
+        "execute_sql",
+        "drop_table",
+        "delete_all",
+        "transfer_all",
+        "withdraw_all",
+    }
+
+    def __init__(self, allowed_tools: Optional[Set[str]] = None):
+        """
+        Initialize the tool allowlist.
+
+        Args:
+            allowed_tools: Set of allowed tool names. If None, uses DEFAULT_ALLOWED_TOOLS.
+        """
+        if allowed_tools is None:
+            self.allowed_tools = self.DEFAULT_ALLOWED_TOOLS.copy()
+        else:
+            self.allowed_tools = allowed_tools.copy()
+
+        logger.info(f"ToolAllowlist initialized with {len(self.allowed_tools)} allowed tools")
+
+    def is_allowed(self, tool_name: str) -> bool:
+        """
+        Check if a tool is allowed to be executed.
+
+        Args:
+            tool_name: Name of the tool to check
+
+        Returns:
+            True if the tool is allowed, False otherwise
+        """
+        # Always block dangerous tools
+        if tool_name in self.BLOCKED_TOOLS:
+            logger.warning(f"Tool '{tool_name}' is in BLOCKED_TOOLS - denied")
+            return False
+
+        # Check if tool is in allowlist
+        allowed = tool_name in self.allowed_tools
+
+        if not allowed:
+            logger.warning(f"Tool '{tool_name}' not in allowlist - denied")
+
+        return allowed
+
+    def validate_tool_call(self, tool_name: str, tool_args: Dict[str, Any]) -> None:
+        """
+        Validate a tool call, raising an exception if not allowed.
+
+        Args:
+            tool_name: Name of the tool being called
+            tool_args: Arguments being passed to the tool
+
+        Raises:
+            ToolAllowlistError: If the tool is not allowed
+        """
+        if not self.is_allowed(tool_name):
+            raise ToolAllowlistError(
+                f"Tool '{tool_name}' is not in the allowlist and cannot be executed. "
+                f"Allowed tools: {sorted(self.allowed_tools)}"
+            )
+
+        logger.info(f"Tool call validated: {tool_name}")
+
+    def add_tool(self, tool_name: str) -> None:
+        """Add a tool to the allowlist."""
+        self.allowed_tools.add(tool_name)
+        logger.info(f"Added tool '{tool_name}' to allowlist")
+
+    def remove_tool(self, tool_name: str) -> None:
+        """Remove a tool from the allowlist."""
+        if tool_name in self.allowed_tools:
+            self.allowed_tools.remove(tool_name)
+            logger.info(f"Removed tool '{tool_name}' from allowlist")
+
+    def get_allowed_tools(self) -> Set[str]:
+        """Get the current set of allowed tools."""
+        return self.allowed_tools.copy()
+
+
+# Global tool allowlist instance
+_tool_allowlist: Optional[ToolAllowlist] = None
+
+
+def get_tool_allowlist() -> ToolAllowlist:
+    """
+    Get the global tool allowlist instance.
+
+    Returns:
+        ToolAllowlist instance
+    """
+    global _tool_allowlist
+    if _tool_allowlist is None:
+        _tool_allowlist = ToolAllowlist()
+    return _tool_allowlist
+
+
+def configure_tool_allowlist(allowed_tools: Set[str]) -> None:
+    """
+    Configure the global tool allowlist.
+
+    Args:
+        allowed_tools: Set of allowed tool names
+    """
+    global _tool_allowlist
+    _tool_allowlist = ToolAllowlist(allowed_tools)
+    logger.info(f"Configured global tool allowlist with {len(allowed_tools)} tools")
+
+
+def is_tool_allowed(tool_name: str) -> bool:
+    """
+    Check if a tool is allowed using the global allowlist.
+
+    Args:
+        tool_name: Name of the tool to check
+
+    Returns:
+        True if allowed, False otherwise
+    """
+    return get_tool_allowlist().is_allowed(tool_name)
+
+
+def validate_tool_call(tool_name: str, tool_args: Dict[str, Any]) -> None:
+    """
+    Validate a tool call using the global allowlist.
+
+    Args:
+        tool_name: Name of the tool
+        tool_args: Arguments for the tool
+
+    Raises:
+        ToolAllowlistError: If the tool is not allowed
+    """
+    get_tool_allowlist().validate_tool_call(tool_name, tool_args)

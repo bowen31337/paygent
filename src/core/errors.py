@@ -60,6 +60,15 @@ class DailyLimitExceededError(SafeException):
     pass
 
 
+class PaygentError(Exception):
+    """Base exception for Paygent application errors."""
+
+    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+        self.message = message
+        self.details = details or {}
+        super().__init__(message)
+
+
 def create_safe_error_message(
     error: Exception, include_detail: bool = False
 ) -> str:

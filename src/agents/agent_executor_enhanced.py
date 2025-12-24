@@ -25,6 +25,7 @@ from src.core.database import get_db
 from src.services.x402_service import X402PaymentService
 from src.services.approval_service import ApprovalService, BudgetLimitService
 from src.services.metrics_service import metrics_collector
+from src.core.security import get_tool_allowlist, ToolAllowlistError
 
 # Try to import the subagents, but fall back gracefully if langchain isn't available
 try:
@@ -56,13 +57,14 @@ class AgentExecutorEnhanced:
     5. Tracks execution time and cost
     """
 
-    def __init__(self, session_id: UUID, db: AsyncSession):
+    def __init__(self, session_id: UUID, db: AsyncSession, use_allowlist: bool = True):
         """
         Initialize the enhanced agent executor.
 
         Args:
             session_id: Session ID for this execution
             db: Database session for logging
+            use_allowlist: Whether to enforce tool allowlist security
         """
         self.session_id = session_id
         self.db = db
@@ -71,9 +73,13 @@ class AgentExecutorEnhanced:
         self.tool_calls: List[Dict[str, Any]] = []
         self.current_execution_log_id: Optional[UUID] = None
         self.memory: List[Dict[str, Any]] = []
+        self.use_allowlist = use_allowlist
+        self.allowlist = get_tool_allowlist() if use_allowlist else None
 
         logger.info(f"AgentExecutorEnhanced initialized for session {session_id}")
         logger.info(f"Available tools: {list(self.tools.keys())}")
+        if use_allowlist:
+            logger.info(f"Tool allowlist enabled: {len(self.allowlist.allowed_tools)} allowed tools")
 
     async def load_memory(self) -> None:
         """
@@ -163,6 +169,41 @@ class AgentExecutorEnhanced:
 
         return "\n".join(context_parts)
 
+    def _validate_intent_allowed(self, intent: str) -> bool:
+        """
+        Validate that an intent is allowed by the tool allowlist.
+
+        Args:
+            intent: The parsed intent to validate
+
+        Returns:
+            True if the intent is allowed, False otherwise
+
+        Raises:
+            ToolAllowlistError: If the intent is not allowed
+        """
+        if not self.use_allowlist or self.allowlist is None:
+            return True
+
+        # Map intents to their corresponding tool names
+        intent_to_tool = {
+            "payment": "x402_payment",
+            "swap": "swap_tokens",
+            "perpetual_trade": "moonlander_trader",  # Will use subagent
+            "balance_check": "check_balance",
+            "service_discovery": "discover_services",
+        }
+
+        tool_name = intent_to_tool.get(intent)
+        if tool_name:
+            # Validate the tool
+            self.allowlist.validate_tool_call(tool_name, {})
+            return True
+
+        # Unknown intent - allow by default but log warning
+        logger.warning(f"Unknown intent '{intent}' - allowing but may need allowlist update")
+        return True
+
     async def execute_command(
         self,
         command: str,
@@ -207,11 +248,36 @@ class AgentExecutorEnhanced:
                 f"(confidence: {parsed.confidence:.2f})"
             )
 
-            # Step 2: Generate plan for complex operations
+            # Step 2: Validate intent against allowlist
+            try:
+                self._validate_intent_allowed(parsed.intent)
+            except ToolAllowlistError as e:
+                # Update execution log with error
+                duration_ms = int((time.time() - start_time) * 1000)
+                execution_log.result = {
+                    "success": False,
+                    "error": str(e),
+                    "allowlist_violation": True,
+                }
+                execution_log.tool_calls = self.tool_calls
+                execution_log.duration_ms = duration_ms
+                execution_log.status = "blocked"
+                await self.db.commit()
+
+                return {
+                    "success": False,
+                    "error": str(e),
+                    "allowlist_violation": True,
+                    "session_id": str(self.session_id),
+                    "command": command,
+                    "execution_log_id": str(execution_log.id),
+                }
+
+            # Step 3: Generate plan for complex operations
             plan = self._generate_execution_plan(parsed, command)
             execution_log.plan = plan
 
-            # Step 3: Execute based on intent
+            # Step 4: Execute based on intent
             if parsed.intent == "payment":
                 result = await self._execute_payment_with_logging(
                     parsed, budget_limit_usd

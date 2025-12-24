@@ -8,6 +8,7 @@ import logging
 from typing import Optional, Dict, Any
 
 from src.connectors.vvs import VVSFinanceConnector
+from src.core.security import get_tool_allowlist, ToolAllowlistError
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,16 @@ class SimpleTool:
     def run(self, **kwargs) -> Dict[str, Any]:
         """Execute the tool."""
         raise NotImplementedError
+
+    def validate_allowlist(self, **kwargs) -> None:
+        """
+        Validate that this tool is allowed by the tool allowlist.
+
+        Raises:
+            ToolAllowlistError: If the tool is not in the allowlist
+        """
+        allowlist = get_tool_allowlist()
+        allowlist.validate_tool_call(self.name, kwargs)
 
 
 class CheckBalanceTool(SimpleTool):
