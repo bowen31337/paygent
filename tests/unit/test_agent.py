@@ -163,36 +163,84 @@ class TestAgentExecute:
             assert isinstance(data["total_cost_usd"], (int, float))
 
     @pytest.mark.asyncio
-    async def test_execute_command_stores_in_database(self, db_session):
-        """Test that execute command stores session and log in database."""
-        from sqlalchemy import select
-        from src.models.agent_sessions import AgentSession, ExecutionLog
-
+    async def test_execute_command_stream_returns_200(self, db_session):
+        """Test that execute command stream returns 200 status."""
         async with AsyncClient(
             transport=ASGITransport(app=app),
             base_url="http://test"
         ) as client:
             response = await client.post(
-                "/api/v1/agent/execute",
-                json={"command": "Test command"}
+                "/api/v1/agent/stream",
+                json={"command": "Pay 0.10 USDC to access the market data API"}
             )
-            data = response.json()
-            session_id = data["session_id"]
+            assert response.status_code == 200
+            assert response.headers["content-type"] == "text/event-stream; charset=utf-8"
 
-            # Verify session exists in DB
-            result = await db_session.execute(
-                select(AgentSession).where(AgentSession.id == session_id)
+    @pytest.mark.asyncio
+    async def test_execute_command_stream_returns_events(self, db_session):
+        """Test that execute command stream returns Server-Sent Events."""
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test"
+        ) as client:
+            response = await client.post(
+                "/api/v1/agent/stream",
+                json={"command": "Pay 0.10 USDC to access the market data API"}
             )
-            session = result.scalar_one_or_none()
-            assert session is not None
 
-            # Verify execution log exists
-            result = await db_session.execute(
-                select(ExecutionLog).where(ExecutionLog.session_id == session_id)
-            )
-            log = result.scalar_one_or_none()
-            assert log is not None
-            assert log.command == "Test command"
+            # Read the entire response content
+            content = response.content.decode('utf-8')
+
+            # Check for event types in the stream
+            assert "event: thinking" in content
+            assert "event: tool_call" in content
+            assert "event: tool_result" in content
+            assert "event: complete" in content
+
+            # Check for proper SSE formatting
+            assert "data:" in content
+            assert "\n\n" in content
+
+    @pytest.mark.asyncio
+    async def test_execute_command_stores_in_database(self, db_session):
+        """Test that execute command stores session and log in database."""
+        from sqlalchemy import select
+        from src.models.agent_sessions import AgentSession, ExecutionLog
+
+        # Override the get_db dependency to use our test db_session
+        async def override_get_db():
+            yield db_session
+
+        app.dependency_overrides[get_db] = override_get_db
+
+        try:
+            async with AsyncClient(
+                transport=ASGITransport(app=app),
+                base_url="http://test"
+            ) as client:
+                response = await client.post(
+                    "/api/v1/agent/execute",
+                    json={"command": "Test command"}
+                )
+                data = response.json()
+                session_id = UUID(data["session_id"])
+
+                # Verify session exists in DB
+                result = await db_session.execute(
+                    select(AgentSession).where(AgentSession.id == session_id)
+                )
+                session = result.scalar_one_or_none()
+                assert session is not None
+
+                # Verify execution log exists
+                result = await db_session.execute(
+                    select(ExecutionLog).where(ExecutionLog.session_id == session_id)
+                )
+                log = result.scalar_one_or_none()
+                assert log is not None
+                assert log.command == "Test command"
+        finally:
+            app.dependency_overrides.clear()
 
 
 class TestAgentSessions:
@@ -223,3 +271,108 @@ class TestAgentSessions:
             assert "offset" in data
             assert "limit" in data
             assert isinstance(data["sessions"], list)
+
+    @pytest.mark.asyncio
+    async def test_get_session_returns_200(self, db_session):
+        """Test that get session returns 200 for existing session."""
+        from uuid import uuid4
+        from sqlalchemy import select
+        from src.models.agent_sessions import AgentSession
+
+        # Create a test session in the database
+        test_session = AgentSession(
+            id=uuid4(),
+            user_id=uuid4(),
+            wallet_address=None,
+            config={}
+        )
+        db_session.add(test_session)
+        await db_session.commit()
+
+        # Override the get_db dependency to use our test db_session
+        async def override_get_db():
+            yield db_session
+
+        app.dependency_overrides[get_db] = override_get_db
+
+        try:
+            async with AsyncClient(
+                transport=ASGITransport(app=app),
+                base_url="http://test"
+            ) as client:
+                response = await client.get(f"/api/v1/agent/sessions/{test_session.id}")
+                assert response.status_code == 200
+
+                data = response.json()
+                assert "id" in data
+                assert "created_at" in data
+                assert "status" in data
+        finally:
+            app.dependency_overrides.clear()
+
+    @pytest.mark.asyncio
+    async def test_get_session_returns_404_for_nonexistent(self, db_session):
+        """Test that get session returns 404 for non-existent session."""
+        from uuid import uuid4
+
+        # Use a non-existent UUID
+        nonexistent_id = uuid4()
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test"
+        ) as client:
+            response = await client.get(f"/api/v1/agent/sessions/{nonexistent_id}")
+            assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_terminate_session_returns_200(self, db_session):
+        """Test that terminate session returns 200 for existing session."""
+        from uuid import uuid4
+        from sqlalchemy import select
+        from src.models.agent_sessions import AgentSession
+
+        # Create a test session in the database
+        test_session = AgentSession(
+            id=uuid4(),
+            user_id=uuid4(),
+            wallet_address=None,
+            config={}
+        )
+        db_session.add(test_session)
+        await db_session.commit()
+
+        # Override the get_db dependency to use our test db_session
+        async def override_get_db():
+            yield db_session
+
+        app.dependency_overrides[get_db] = override_get_db
+
+        try:
+            async with AsyncClient(
+                transport=ASGITransport(app=app),
+                base_url="http://test"
+            ) as client:
+                response = await client.delete(f"/api/v1/agent/sessions/{test_session.id}")
+                assert response.status_code == 200
+
+                data = response.json()
+                assert "message" in data
+                assert "session_id" in data
+        finally:
+            app.dependency_overrides.clear()
+
+    @pytest.mark.asyncio
+    async def test_terminate_session_returns_404_for_nonexistent(self, db_session):
+        """Test that terminate session returns 404 for non-existent session."""
+        from uuid import uuid4
+
+        # Use a non-existent UUID
+        nonexistent_id = uuid4()
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test"
+        ) as client:
+            response = await client.delete(f"/api/v1/agent/sessions/{nonexistent_id}")
+            assert response.status_code == 404

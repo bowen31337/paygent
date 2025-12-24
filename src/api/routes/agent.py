@@ -5,6 +5,8 @@ This module provides endpoints for executing natural language commands
 via AI agents and managing agent sessions.
 """
 
+import asyncio
+import json
 from typing import Optional
 from uuid import UUID, uuid4
 from datetime import datetime
@@ -82,7 +84,7 @@ async def get_or_create_session(
 ) -> AgentSession:
     """
     Get an existing session or create a new one.
-    
+
     For testing purposes, we use a fixed user_id if not provided.
     """
     if session_id:
@@ -95,7 +97,7 @@ async def get_or_create_session(
             session.last_active = datetime.utcnow()
             await db.commit()
             return session
-    
+
     # Create new session
     new_session = AgentSession(
         id=uuid4(),
@@ -112,17 +114,17 @@ async def get_or_create_session(
 async def mock_agent_execution(command: str, session_id: UUID) -> dict:
     """
     Mock agent execution for testing purposes.
-    
+
     In a real implementation, this would:
     - Use an LLM to parse the command
     - Create a plan using write_todos
     - Execute tools (payments, swaps, etc.)
     - Return structured results
-    
+
     For now, we return a simple mock response based on the command content.
     """
     command_lower = command.lower()
-    
+
     # Simple command parsing for mock responses
     if "pay" in command_lower or "transfer" in command_lower:
         return {
@@ -191,7 +193,7 @@ async def execute_command(
         session_id=request.session_id,
         config={"budget_limit": request.budget_limit_usd} if request.budget_limit_usd else None
     )
-    
+
     # Create execution log
     execution_log = ExecutionLog(
         id=uuid4(),
@@ -202,18 +204,18 @@ async def execute_command(
     db.add(execution_log)
     await db.commit()
     await db.refresh(execution_log)
-    
+
     # Execute the command (mock implementation)
     try:
         result = await mock_agent_execution(request.command, session.id)
-        
+
         # Update execution log
         execution_log.status = "completed"
         execution_log.result = result
         execution_log.duration_ms = 100  # Mock duration
         execution_log.total_cost = 0.01  # Mock cost
         await db.commit()
-        
+
         return ExecuteCommandResponse(
             session_id=session.id,
             status="completed",
@@ -225,7 +227,7 @@ async def execute_command(
         execution_log.status = "failed"
         execution_log.result = {"error": str(e)}
         await db.commit()
-        
+
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Agent execution failed: {str(e)}",
@@ -252,12 +254,98 @@ async def execute_command_stream(
     - approval_required: Human approval needed
     - complete: Execution finished
     - error: An error occurred
+
+    Returns:
+        StreamingResponse: Server-Sent Events stream with execution events
     """
-    # TODO: Implement streaming execution
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Streaming execution not yet implemented",
+    # Get or create session
+    session = await get_or_create_session(
+        db,
+        session_id=request.session_id,
+        config={"budget_limit": request.budget_limit_usd} if request.budget_limit_usd else None
     )
+
+    # Create execution log
+    execution_log = ExecutionLog(
+        id=uuid4(),
+        session_id=session.id,
+        command=request.command,
+        status="running",
+    )
+    db.add(execution_log)
+    await db.commit()
+    await db.refresh(execution_log)
+
+    async def event_generator():
+        """
+        Generator function that yields Server-Sent Events.
+        """
+        try:
+            # Event 1: Thinking
+            yield f"event: thinking\ndata: {dict_to_json({'message': 'Analyzing your command...', 'timestamp': datetime.utcnow().isoformat()})}\n\n"
+            await asyncio.sleep(0.1)
+
+            # Event 2: Tool call (simulated based on command)
+            command_lower = request.command.lower()
+            if "pay" in command_lower or "transfer" in command_lower:
+                yield f"event: tool_call\ndata: {dict_to_json({'tool': 'x402_payment', 'arguments': {'amount': 0.10, 'token': 'USDC', 'recipient': 'service'}, 'timestamp': datetime.utcnow().isoformat()})}\n\n"
+                await asyncio.sleep(0.2)
+
+                # Event 3: Tool result
+                yield f"event: tool_result\ndata: {dict_to_json({'tool': 'x402_payment', 'result': {'status': 'confirmed', 'tx_hash': '0xmocktxhash1234567890abcdef1234567890abcdef1234567890abcdef12345678'}, 'timestamp': datetime.utcnow().isoformat()})}\n\n"
+                await asyncio.sleep(0.1)
+
+            elif "swap" in command_lower or "exchange" in command_lower:
+                yield f"event: tool_call\ndata: {dict_to_json({'tool': 'vvs_swap', 'arguments': {'from': 'CRO', 'to': 'USDC', 'amount': 100}, 'timestamp': datetime.utcnow().isoformat()})}\n\n"
+                await asyncio.sleep(0.2)
+
+                yield f"event: tool_result\ndata: {dict_to_json({'tool': 'vvs_swap', 'result': {'received': 42.50, 'status': 'completed'}, 'timestamp': datetime.utcnow().isoformat()})}\n\n"
+                await asyncio.sleep(0.1)
+
+            elif "balance" in command_lower or "check" in command_lower:
+                yield f"event: tool_call\ndata: {dict_to_json({'tool': 'check_balance', 'arguments': {}, 'timestamp': datetime.utcnow().isoformat()})}\n\n"
+                await asyncio.sleep(0.15)
+
+                yield f"event: tool_result\ndata: {dict_to_json({'tool': 'check_balance', 'result': {'balances': {'CRO': 1000.0, 'USDC': 250.0}}, 'timestamp': datetime.utcnow().isoformat()})}\n\n"
+                await asyncio.sleep(0.1)
+            else:
+                # General command - just thinking
+                await asyncio.sleep(0.3)
+
+            # Event 4: Complete
+            result = await mock_agent_execution(request.command, session.id)
+            yield f"event: complete\ndata: {dict_to_json({'result': result, 'session_id': str(session.id), 'timestamp': datetime.utcnow().isoformat()})}\n\n"
+
+            # Update execution log
+            execution_log.status = "completed"
+            execution_log.result = result
+            execution_log.duration_ms = 100
+            execution_log.total_cost = 0.01
+            await db.commit()
+
+        except Exception as e:
+            # Update execution log with error
+            execution_log.status = "failed"
+            execution_log.result = {"error": str(e)}
+            await db.commit()
+
+            # Error event
+            yield f"event: error\ndata: {dict_to_json({'error': str(e), 'timestamp': datetime.utcnow().isoformat()})}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+def dict_to_json(data: dict) -> str:
+    """Convert dict to JSON string for SSE."""
+    return json.dumps(data)
 
 
 @router.get(
@@ -272,10 +360,30 @@ async def list_sessions(
     db: AsyncSession = Depends(get_db),
 ) -> SessionListResponse:
     """List all agent sessions with pagination."""
-    # TODO: Implement session listing
+    # Build query
+    query = select(AgentSession).offset(offset).limit(limit)
+    result = await db.execute(query)
+    sessions = result.scalars().all()
+
+    # Get total count
+    count_query = select(AgentSession.id)
+    count_result = await db.execute(count_query)
+    total = len(count_result.scalars().all())
+
     return SessionListResponse(
-        sessions=[],
-        total=0,
+        sessions=[
+            SessionInfo(
+                id=session.id,
+                user_id=session.user_id,
+                wallet_address=session.wallet_address,
+                config=session.config,
+                created_at=session.created_at.isoformat(),
+                last_active=session.last_active.isoformat(),
+                status="active",
+            )
+            for session in sessions
+        ],
+        total=total,
         offset=offset,
         limit=limit,
     )
@@ -292,10 +400,25 @@ async def get_session(
     db: AsyncSession = Depends(get_db),
 ) -> SessionInfo:
     """Get details of a specific agent session."""
-    # TODO: Implement session retrieval
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Session {session_id} not found",
+    result = await db.execute(
+        select(AgentSession).where(AgentSession.id == session_id)
+    )
+    session = result.scalar_one_or_none()
+
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Session {session_id} not found",
+        )
+
+    return SessionInfo(
+        id=session.id,
+        user_id=session.user_id,
+        wallet_address=session.wallet_address,
+        config=session.config,
+        created_at=session.created_at.isoformat(),
+        last_active=session.last_active.isoformat(),
+        status="active",
     )
 
 
@@ -310,8 +433,19 @@ async def terminate_session(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Terminate an active agent session."""
-    # TODO: Implement session termination
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Session {session_id} not found",
+    result = await db.execute(
+        select(AgentSession).where(AgentSession.id == session_id)
     )
+    session = result.scalar_one_or_none()
+
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Session {session_id} not found",
+        )
+
+    # Delete the session
+    await db.delete(session)
+    await db.commit()
+
+    return {"message": f"Session {session_id} terminated successfully", "session_id": str(session_id)}

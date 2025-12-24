@@ -6,13 +6,15 @@ services in the Paygent marketplace.
 """
 
 from typing import Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func as sql_func
 
 from src.core.database import get_db
+from src.models.services import Service
 
 router = APIRouter()
 
@@ -110,10 +112,48 @@ async def discover_services(
     - min_reputation: Minimum reputation score
     - mcp_compatible: MCP protocol compatibility
     """
-    # TODO: Implement service discovery
+    # Build query with filters
+    query = select(Service)
+
+    # Apply filters
+    if min_price is not None:
+        query = query.where(Service.price_amount >= min_price)
+    if max_price is not None:
+        query = query.where(Service.price_amount <= max_price)
+    if min_reputation is not None:
+        query = query.where(Service.reputation_score >= min_reputation)
+    if mcp_compatible is not None:
+        query = query.where(Service.mcp_compatible == mcp_compatible)
+
+    # Get total count
+    count_query = select(sql_func.count()).select_from(query.subquery())
+    count_result = await db.execute(count_query)
+    total = count_result.scalar_one()
+
+    # Apply pagination and ordering
+    query = query.order_by(Service.reputation_score.desc()).offset(offset).limit(limit)
+    result = await db.execute(query)
+    services = result.scalars().all()
+
     return ServiceListResponse(
-        services=[],
-        total=0,
+        services=[
+            ServiceInfo(
+                id=service.id,
+                name=service.name,
+                description=service.description,
+                endpoint=service.endpoint,
+                pricing_model=service.pricing_model,
+                price_amount=service.price_amount,
+                price_token=service.price_token,
+                mcp_compatible=service.mcp_compatible,
+                reputation_score=service.reputation_score,
+                total_calls=service.total_calls,
+                created_at=service.created_at.isoformat(),
+                updated_at=service.updated_at.isoformat(),
+            )
+            for service in services
+        ],
+        total=total,
         offset=offset,
         limit=limit,
     )
@@ -130,10 +170,28 @@ async def get_service(
     db: AsyncSession = Depends(get_db),
 ) -> ServiceInfo:
     """Get details of a specific service."""
-    # TODO: Implement service retrieval
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Service {service_id} not found",
+    result = await db.execute(select(Service).where(Service.id == service_id))
+    service = result.scalar_one_or_none()
+
+    if not service:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Service {service_id} not found",
+        )
+
+    return ServiceInfo(
+        id=service.id,
+        name=service.name,
+        description=service.description,
+        endpoint=service.endpoint,
+        pricing_model=service.pricing_model,
+        price_amount=service.price_amount,
+        price_token=service.price_token,
+        mcp_compatible=service.mcp_compatible,
+        reputation_score=service.reputation_score,
+        total_calls=service.total_calls,
+        created_at=service.created_at.isoformat(),
+        updated_at=service.updated_at.isoformat(),
     )
 
 
@@ -148,10 +206,24 @@ async def get_service_pricing(
     db: AsyncSession = Depends(get_db),
 ) -> ServicePricing:
     """Get current pricing for a service."""
-    # TODO: Implement pricing retrieval
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Service {service_id} not found",
+    result = await db.execute(select(Service).where(Service.id == service_id))
+    service = result.scalar_one_or_none()
+
+    if not service:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Service {service_id} not found",
+        )
+
+    # Map token address to symbol (simplified - in production, use a registry)
+    token_symbol = "USDC" if "usdc" in service.price_token.lower() else service.price_token[:6]
+
+    return ServicePricing(
+        service_id=service.id,
+        pricing_model=service.pricing_model,
+        price_amount=service.price_amount,
+        price_token=service.price_token,
+        token_symbol=token_symbol,
     )
 
 
@@ -171,10 +243,36 @@ async def create_service(
 
     Requires admin authentication.
     """
-    # TODO: Implement service creation with admin auth
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Service creation not yet implemented",
+    # Create new service
+    new_service = Service(
+        id=uuid4(),
+        name=request.name,
+        description=request.description,
+        endpoint=request.endpoint,
+        pricing_model=request.pricing_model,
+        price_amount=request.price_amount,
+        price_token=request.price_token,
+        mcp_compatible=request.mcp_compatible,
+        reputation_score=0.0,
+        total_calls=0,
+    )
+    db.add(new_service)
+    await db.commit()
+    await db.refresh(new_service)
+
+    return ServiceInfo(
+        id=new_service.id,
+        name=new_service.name,
+        description=new_service.description,
+        endpoint=new_service.endpoint,
+        pricing_model=new_service.pricing_model,
+        price_amount=new_service.price_amount,
+        price_token=new_service.price_token,
+        mcp_compatible=new_service.mcp_compatible,
+        reputation_score=new_service.reputation_score,
+        total_calls=new_service.total_calls,
+        created_at=new_service.created_at.isoformat(),
+        updated_at=new_service.updated_at.isoformat(),
     )
 
 
@@ -194,8 +292,43 @@ async def update_service(
 
     Requires admin authentication.
     """
-    # TODO: Implement service update with admin auth
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Service {service_id} not found",
+    result = await db.execute(select(Service).where(Service.id == service_id))
+    service = result.scalar_one_or_none()
+
+    if not service:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Service {service_id} not found",
+        )
+
+    # Update fields if provided
+    if request.name is not None:
+        service.name = request.name
+    if request.description is not None:
+        service.description = request.description
+    if request.endpoint is not None:
+        service.endpoint = request.endpoint
+    if request.pricing_model is not None:
+        service.pricing_model = request.pricing_model
+    if request.price_amount is not None:
+        service.price_amount = request.price_amount
+    if request.mcp_compatible is not None:
+        service.mcp_compatible = request.mcp_compatible
+
+    await db.commit()
+    await db.refresh(service)
+
+    return ServiceInfo(
+        id=service.id,
+        name=service.name,
+        description=service.description,
+        endpoint=service.endpoint,
+        pricing_model=service.pricing_model,
+        price_amount=service.price_amount,
+        price_token=service.price_token,
+        mcp_compatible=service.mcp_compatible,
+        reputation_score=service.reputation_score,
+        total_calls=service.total_calls,
+        created_at=service.created_at.isoformat(),
+        updated_at=service.updated_at.isoformat(),
     )
