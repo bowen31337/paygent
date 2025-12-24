@@ -189,7 +189,7 @@ def create_thinking_event(session_id: str, command: str, step: int = None, total
         total_steps=total_steps,
         thought_process=thought_process
     )
-    return ThinkingEvent(type="thinking", data=data.dict())
+    return ThinkingEvent(type="thinking", data=data.model_dump(mode='json'))
 
 
 def create_tool_call_event(session_id: str, tool_name: str, tool_args: Dict[str, Any], tool_id: str = None) -> ToolCallEvent:
@@ -200,7 +200,7 @@ def create_tool_call_event(session_id: str, tool_name: str, tool_args: Dict[str,
         tool_args=tool_args,
         tool_id=tool_id
     )
-    return ToolCallEvent(type="tool_call", data=data.dict())
+    return ToolCallEvent(type="tool_call", data=data.model_dump(mode='json'))
 
 
 def create_tool_result_event(session_id: str, tool_id: str, result: Any, success: bool, error: str = None) -> ToolResultEvent:
@@ -212,7 +212,7 @@ def create_tool_result_event(session_id: str, tool_id: str, result: Any, success
         success=success,
         error=error
     )
-    return ToolResultEvent(type="tool_result", data=data.dict())
+    return ToolResultEvent(type="tool_result", data=data.model_dump(mode='json'))
 
 
 def create_approval_required_event(
@@ -236,7 +236,7 @@ def create_approval_required_event(
         currency=currency,
         estimated_cost=estimated_cost
     )
-    return ApprovalRequiredEvent(type="approval_required", data=data.dict())
+    return ApprovalRequiredEvent(type="approval_required", data=data.model_dump(mode='json'))
 
 
 def create_complete_event(
@@ -258,7 +258,7 @@ def create_complete_event(
         duration_ms=duration_ms,
         tool_calls=tool_calls
     )
-    return CompleteEvent(type="complete", data=data.dict())
+    return CompleteEvent(type="complete", data=data.model_dump(mode='json'))
 
 
 def create_error_event(
@@ -276,7 +276,7 @@ def create_error_event(
         error_type=error_type,
         details=details
     )
-    return ErrorEvent(type="error", data=data.dict())
+    return ErrorEvent(type="error", data=data.model_dump(mode='json'))
 
 
 def create_subagent_start_event(
@@ -294,7 +294,7 @@ def create_subagent_start_event(
         task=task,
         parent_agent=parent_agent
     )
-    return SubagentStartEvent(type="subagent_start", data=data.dict())
+    return SubagentStartEvent(type="subagent_start", data=data.model_dump(mode='json'))
 
 
 def create_subagent_end_event(
@@ -314,4 +314,4 @@ def create_subagent_end_event(
         duration_ms=duration_ms,
         error=error
     )
-    return SubagentEndEvent(type="subagent_end", data=data.dict())
+    return SubagentEndEvent(type="subagent_end", data=data.model_dump(mode='json'))

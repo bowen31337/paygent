@@ -15,6 +15,7 @@ from typing import Any, Dict, Optional
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
 from starlette.status import WS_1008_POLICY_VIOLATION
+from pydantic import BaseModel
 
 from src.core.config import settings
 from src.core.auth import get_current_user, get_current_user_optional
@@ -81,26 +82,39 @@ class ConnectionManager:
             del self.execution_tasks[session_id]
         logger.info(f"WebSocket disconnected for session {session_id}, user {user_id}")
 
-    async def send_personal_message(self, message: Dict[str, Any], session_id: str):
+    async def send_personal_message(self, message: Dict[str, Any] | BaseModel, session_id: str):
         """Send a message to a specific client."""
         if session_id in self.active_connections:
             websocket = self.active_connections[session_id]
             try:
-                await websocket.send_text(json.dumps(message))
+                # Use jsonable_encoder to handle datetime and other non-JSON types
+                if isinstance(message, BaseModel):
+                    message_dict = message.model_dump(mode='json')
+                else:
+                    message_dict = jsonable_encoder(message)
+                await websocket.send_text(json.dumps(message_dict))
                 # Record sent message metric
                 metrics_collector.record_websocket_message(received=False)
-                logger.debug(f"Sent message to session {session_id}: {message['type']}")
+                msg_type = message_dict.get('type', 'unknown')
+                logger.debug(f"Sent message to session {session_id}: {msg_type}")
             except Exception as e:
                 logger.error(f"Failed to send message to session {session_id}: {e}")
                 # Remove broken connection
                 self.disconnect(session_id, self.get_user_id_by_session(session_id))
 
-    async def broadcast(self, message: Dict[str, Any]):
+    async def broadcast(self, message: Dict[str, Any] | BaseModel):
         """Broadcast a message to all connected clients."""
+        # Convert to dict if needed
+        if isinstance(message, BaseModel):
+            message_dict = message.model_dump(mode='json')
+        else:
+            message_dict = jsonable_encoder(message)
+
         for session_id, websocket in self.active_connections.items():
             try:
-                await websocket.send_text(json.dumps(message))
-                logger.debug(f"Broadcasted message to session {session_id}: {message['type']}")
+                await websocket.send_text(json.dumps(message_dict))
+                msg_type = message_dict.get('type', 'unknown')
+                logger.debug(f"Broadcasted message to session {session_id}: {msg_type}")
             except Exception as e:
                 logger.error(f"Failed to broadcast to session {session_id}: {e}")
                 self.disconnect(session_id, self.get_user_id_by_session(session_id))
@@ -207,7 +221,7 @@ async def websocket_endpoint(
             WebSocketEvent(
                 type="connected",
                 data={"session_id": session_id_str, "user_id": user_id}
-            ).dict(),
+            ),
             session_id_str
         )
         print("DEBUG: Connected event sent")
@@ -231,7 +245,7 @@ async def websocket_endpoint(
                     ErrorEvent(
                         type="error",
                         data={"message": "Invalid JSON format"}
-                    ).dict(),
+                    ),
                     session_id_str
                 )
             except Exception as e:
@@ -240,7 +254,7 @@ async def websocket_endpoint(
                     ErrorEvent(
                         type="error",
                         data={"message": str(e)}
-                    ).dict(),
+                    ),
                     session_id_str
                 )
 
@@ -274,7 +288,7 @@ async def handle_websocket_message(
             ErrorEvent(
                 type="error",
                 data={"message": f"Unknown message type: {message_type}"}
-            ).dict(),
+            ),
             session_id
         )
 
@@ -306,7 +320,7 @@ async def handle_execute_message(
                 "command": execute_msg.command,
                 "timestamp": execution_log.created_at.isoformat() if execution_log else None
             }
-        ).dict(),
+        ),
         session_id
     )
 
@@ -335,7 +349,7 @@ async def handle_execute_message(
                         "currency": result.get("token", "USDC"),
                         "estimated_cost": f"{result.get('amount', 0)} {result.get('token', 'USDC')}"
                     }
-                ).dict(),
+                ),
                 session_id
             )
             return
@@ -353,7 +367,7 @@ async def handle_execute_message(
                             "tool_args": tool_call.get("tool_args", {}),
                             "timestamp": tool_call.get("timestamp")
                         }
-                    ).dict(),
+                    ),
                     session_id
                 )
 
@@ -367,7 +381,7 @@ async def handle_execute_message(
                             "result": tool_call.get("result", {}),
                             "success": True
                         }
-                    ).dict(),
+                    ),
                     session_id
                 )
 
@@ -386,7 +400,7 @@ async def handle_execute_message(
                     "duration_ms": result.get("duration_ms"),
                     "tool_calls": result.get("tool_calls", [])
                 }
-            ).dict(),
+            ),
             session_id
         )
 
@@ -401,7 +415,7 @@ async def handle_execute_message(
                     "message": str(e),
                     "timestamp": asyncio.get_event_loop().time()
                 }
-            ).dict(),
+            ),
             session_id
         )
 
@@ -432,7 +446,7 @@ async def handle_approve_message(
                         "request_id": str(approve_msg.request_id),
                         "decision": "approved"
                     }
-                ).dict(),
+                ),
                 session_id
             )
         else:
@@ -447,7 +461,7 @@ async def handle_approve_message(
                     "request_id": str(approve_msg.request_id),
                     "message": str(e)
                 }
-            ).dict(),
+            ),
             session_id
         )
 
@@ -478,7 +492,7 @@ async def handle_reject_message(
                         "request_id": str(reject_msg.request_id),
                         "decision": "rejected"
                     }
-                ).dict(),
+                ),
                 session_id
             )
         else:
@@ -493,7 +507,7 @@ async def handle_reject_message(
                     "request_id": str(reject_msg.request_id),
                     "message": str(e)
                 }
-            ).dict(),
+            ),
             session_id
         )
 
@@ -531,7 +545,7 @@ async def handle_edit_message(
                         "decision": "edited",
                         "edited_args": edit_msg.edited_args
                     }
-                ).dict(),
+                ),
                 session_id
             )
         else:
@@ -546,7 +560,7 @@ async def handle_edit_message(
                     "request_id": str(edit_msg.request_id),
                     "message": str(e)
                 }
-            ).dict(),
+            ),
             session_id
         )
 
@@ -580,7 +594,7 @@ async def handle_cancel_message(
                     "session_id": session_id,
                     "message": "Cancellation request received"
                 }
-            ).dict(),
+            ),
             session_id
         )
 
@@ -593,7 +607,7 @@ async def handle_cancel_message(
                     "execution_id": str(cancel_msg.execution_id),
                     "message": str(e)
                 }
-            ).dict(),
+            ),
             session_id
         )
 
@@ -602,7 +616,7 @@ async def handle_cancel_message(
 async def send_thinking_event(session_id: str, data: Dict[str, Any]):
     """Send a thinking event to the client."""
     await manager.send_personal_message(
-        ThinkingEvent(type="thinking", data=data).dict(),
+        ThinkingEvent(type="thinking", data=data),
         session_id
     )
 
@@ -610,7 +624,7 @@ async def send_thinking_event(session_id: str, data: Dict[str, Any]):
 async def send_tool_call_event(session_id: str, data: Dict[str, Any]):
     """Send a tool call event to the client."""
     await manager.send_personal_message(
-        ToolCallEvent(type="tool_call", data=data).dict(),
+        ToolCallEvent(type="tool_call", data=data),
         session_id
     )
 
@@ -618,7 +632,7 @@ async def send_tool_call_event(session_id: str, data: Dict[str, Any]):
 async def send_tool_result_event(session_id: str, data: Dict[str, Any]):
     """Send a tool result event to the client."""
     await manager.send_personal_message(
-        ToolResultEvent(type="tool_result", data=data).dict(),
+        ToolResultEvent(type="tool_result", data=data),
         session_id
     )
 
@@ -626,7 +640,7 @@ async def send_tool_result_event(session_id: str, data: Dict[str, Any]):
 async def send_approval_required_event(session_id: str, data: Dict[str, Any]):
     """Send an approval required event to the client."""
     await manager.send_personal_message(
-        ApprovalRequiredEvent(type="approval_required", data=data).dict(),
+        ApprovalRequiredEvent(type="approval_required", data=data),
         session_id
     )
 
@@ -634,7 +648,7 @@ async def send_approval_required_event(session_id: str, data: Dict[str, Any]):
 async def send_complete_event(session_id: str, data: Dict[str, Any]):
     """Send a complete event to the client."""
     await manager.send_personal_message(
-        CompleteEvent(type="complete", data=data).dict(),
+        CompleteEvent(type="complete", data=data),
         session_id
     )
 
@@ -642,7 +656,7 @@ async def send_complete_event(session_id: str, data: Dict[str, Any]):
 async def send_error_event(session_id: str, data: Dict[str, Any]):
     """Send an error event to the client."""
     await manager.send_personal_message(
-        ErrorEvent(type="error", data=data).dict(),
+        ErrorEvent(type="error", data=data),
         session_id
     )
 
@@ -650,7 +664,7 @@ async def send_error_event(session_id: str, data: Dict[str, Any]):
 async def send_subagent_start_event(session_id: str, data: Dict[str, Any]):
     """Send a subagent start event to the client."""
     await manager.send_personal_message(
-        SubagentStartEvent(type="subagent_start", data=data).dict(),
+        SubagentStartEvent(type="subagent_start", data=data),
         session_id
     )
 
@@ -658,6 +672,6 @@ async def send_subagent_start_event(session_id: str, data: Dict[str, Any]):
 async def send_subagent_end_event(session_id: str, data: Dict[str, Any]):
     """Send a subagent end event to the client."""
     await manager.send_personal_message(
-        SubagentEndEvent(type="subagent_end", data=data).dict(),
+        SubagentEndEvent(type="subagent_end", data=data),
         session_id
     )

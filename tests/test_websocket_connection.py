@@ -38,7 +38,7 @@ class TestWebSocketConnection:
     @pytest.mark.asyncio
     async def test_websocket_connects_successfully(self, session_id: str):
         """Test that WebSocket connection establishes successfully."""
-        uri = f"ws://localhost:8000/api/v1/ws?session_id={session_id}"
+        uri = f"ws://localhost:8000/api/v1/ws/?session_id={session_id}"
 
         try:
             async with websockets.connect(uri) as websocket:
