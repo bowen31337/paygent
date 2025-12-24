@@ -126,8 +126,8 @@ manager = ConnectionManager()
 @router.websocket("/ws")
 async def websocket_endpoint(
     websocket: WebSocket,
-    session_id: UUID,
-    user_id: Optional[str] = Depends(get_current_user_optional)
+    session_id: str,
+    token: Optional[str] = None
 ):
     """
     WebSocket endpoint for real-time agent execution and HITL workflows.
@@ -135,8 +135,18 @@ async def websocket_endpoint(
     Args:
         websocket: WebSocket connection
         session_id: Agent session ID
-        user_id: Current authenticated user (optional)
+        token: Optional authentication token
     """
+    # Get user_id from token if provided
+    user_id = None
+    if token:
+        try:
+            from src.core.auth import verify_token
+            token_data = verify_token(token)
+            user_id = token_data.user_id if token_data else None
+        except Exception:
+            logger.warning("Token validation failed, continuing without auth")
+
     # If no user_id and not in debug mode, require authentication
     if not user_id and not settings.debug:
         await websocket.close(code=WS_1008_POLICY_VIOLATION, reason="Authentication required")

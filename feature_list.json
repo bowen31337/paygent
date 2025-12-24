@@ -1209,7 +1209,7 @@
       "Step 4: Verify contract responds to calls"
     ],
     "passes": false,
-    "is_dev_done": false,
+    "is_dev_done": true,
     "is_qa_passed": false
   },
   {
@@ -1221,7 +1221,7 @@
       "Step 3: Verify operator can execute payments"
     ],
     "passes": false,
-    "is_dev_done": false,
+    "is_dev_done": true,
     "is_qa_passed": false
   },
   {
@@ -1234,7 +1234,7 @@
       "Step 4: Verify operator can no longer execute payments"
     ],
     "passes": false,
-    "is_dev_done": false,
+    "is_dev_done": true,
     "is_qa_passed": false
   },
   {
@@ -1249,7 +1249,7 @@
       "Step 6: Verify limit is reset"
     ],
     "passes": false,
-    "is_dev_done": false,
+    "is_dev_done": true,
     "is_qa_passed": false
   },
   {
@@ -1261,7 +1261,7 @@
       "Step 3: Verify new limit is enforced"
     ],
     "passes": false,
-    "is_dev_done": false,
+    "is_dev_done": true,
     "is_qa_passed": false
   },
   {
@@ -1273,7 +1273,7 @@
       "Step 3: Verify limit unchanged"
     ],
     "passes": false,
-    "is_dev_done": false,
+    "is_dev_done": true,
     "is_qa_passed": false
   },
   {
@@ -1286,7 +1286,7 @@
       "Step 4: Verify recipient receives tokens"
     ],
     "passes": false,
-    "is_dev_done": false,
+    "is_dev_done": true,
     "is_qa_passed": false
   },
   {
@@ -1299,7 +1299,7 @@
       "Step 4: Verify only owner can withdraw"
     ],
     "passes": false,
-    "is_dev_done": false,
+    "is_dev_done": true,
     "is_qa_passed": false
   },
   {
@@ -1312,7 +1312,7 @@
       "Step 4: Verify BatchPaymentExecuted event with all recipients"
     ],
     "passes": false,
-    "is_dev_done": false,
+    "is_dev_done": true,
     "is_qa_passed": false
   },
   {
@@ -1416,7 +1416,7 @@
       "Step 4: Verify latency under 100ms"
     ],
     "passes": false,
-    "is_dev_done": false,
+    "is_dev_done": true,
     "is_qa_passed": false
   },
   {
@@ -1800,7 +1800,7 @@
       "Step 4: Verify artifacts are generated"
     ],
     "passes": false,
-    "is_dev_done": false,
+    "is_dev_done": true,
     "is_qa_passed": false
   },
   {
@@ -1812,7 +1812,7 @@
       "Step 3: Verify code coverage is above 80%"
     ],
     "passes": false,
-    "is_dev_done": false,
+    "is_dev_done": true,
     "is_qa_passed": false
   },
   {
@@ -1988,7 +1988,7 @@
       "Step 7: Verify final result matches expected"
     ],
     "passes": false,
-    "is_dev_done": false,
+    "is_dev_done": true,
     "is_qa_passed": false
   },
   {

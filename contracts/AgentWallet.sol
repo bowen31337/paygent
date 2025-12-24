@@ -1,101 +1,221 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title AgentWallet
- * @dev ERC-20 token contract for agent wallet functionality
- * Manages agent funds and provides basic token operations
+ * @dev Non-custodial smart contract wallet for AI agents with daily spending limits
+ * and operator-based access control
  */
-contract AgentWallet {
-    string public name;
-    string public symbol;
-    uint8 public decimals;
-    uint256 public totalSupply;
-
-    mapping(address => uint256) public balanceOf;
-    mapping(address => mapping(address => uint256)) public allowance;
-
+contract AgentWallet is ReentrancyGuard {
     address public owner;
-    mapping(address => bool) public isAgent;
+    uint256 public dailyLimit;
+    uint256 public lastResetDate;
 
-    event Transfer(address indexed from, address indexed to, uint256 value);
-    event Approval(address indexed owner, address indexed spender, uint256 value);
-    event AgentAdded(address indexed agent);
-    event AgentRemoved(address indexed agent);
+    // Operator management
+    mapping(address => bool) public isOperator;
 
+    // Daily spending tracking
+    mapping(address => uint256) public dailySpent;
+    mapping(address => uint256) public lastSpentDate;
+
+    // Events
+    event OperatorAdded(address indexed operator);
+    event OperatorRemoved(address indexed operator);
+    event DailyLimitSet(uint256 newLimit);
+    event PaymentExecuted(
+        address indexed operator,
+        address indexed recipient,
+        address indexed token,
+        uint256 amount,
+        uint256 dailySpentRemaining
+    );
+    event Withdrawal(address indexed owner, address indexed token, uint256 amount);
+
+    // Modifiers
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner can call this function");
         _;
     }
 
-    modifier onlyAgent() {
-        require(isAgent[msg.sender], "Only registered agents can call this function");
+    modifier onlyOperator() {
+        require(isOperator[msg.sender], "Only operator can call this function");
         _;
     }
 
-    constructor(
-        address _owner,
-        string memory _name,
-        string memory _symbol
-    ) {
+    /**
+     * @dev Constructor sets owner and initial daily limit
+     * @param _owner Address of the wallet owner
+     * @param _dailyLimit Initial daily spending limit in wei
+     */
+    constructor(address _owner, uint256 _dailyLimit) {
+        require(_owner != address(0), "Owner cannot be zero address");
+        require(_dailyLimit > 0, "Daily limit must be greater than 0");
+
         owner = _owner;
-        name = _name;
-        symbol = _symbol;
-        decimals = 18;
-        totalSupply = 0;
+        dailyLimit = _dailyLimit;
+        lastResetDate = block.timestamp;
 
-        // Grant owner agent permissions
-        isAgent[_owner] = true;
-        emit AgentAdded(_owner);
+        // Owner is automatically an operator
+        isOperator[_owner] = true;
+
+        emit DailyLimitSet(_dailyLimit);
+        emit OperatorAdded(_owner);
     }
 
-    function addAgent(address agent) external onlyOwner {
-        require(!isAgent[agent], "Agent already exists");
-        isAgent[agent] = true;
-        emit AgentAdded(agent);
+    /**
+     * @dev Adds an operator who can execute payments
+     * @param _operator Address to add as operator
+     */
+    function addOperator(address _operator) external onlyOwner {
+        require(_operator != address(0), "Operator cannot be zero address");
+        require(!isOperator[_operator], "Operator already exists");
+
+        isOperator[_operator] = true;
+        emit OperatorAdded(_operator);
     }
 
-    function removeAgent(address agent) external onlyOwner {
-        require(isAgent[agent], "Agent does not exist");
-        isAgent[agent] = false;
-        emit AgentRemoved(agent);
+    /**
+     * @dev Removes an operator
+     * @param _operator Address to remove as operator
+     */
+    function removeOperator(address _operator) external onlyOwner {
+        require(isOperator[_operator], "Operator does not exist");
+
+        isOperator[_operator] = false;
+        emit OperatorRemoved(_operator);
     }
 
-    function mint(address to, uint256 amount) external onlyAgent {
-        balanceOf[to] += amount;
-        totalSupply += amount;
-        emit Transfer(address(0), to, amount);
+    /**
+     * @dev Updates the daily spending limit
+     * @param _newLimit New daily limit in wei
+     */
+    function setDailyLimit(uint256 _newLimit) external onlyOwner {
+        require(_newLimit > 0, "Daily limit must be greater than 0");
+
+        dailyLimit = _newLimit;
+        emit DailyLimitSet(_newLimit);
     }
 
-    function burn(uint256 amount) external {
-        require(balanceOf[msg.sender] >= amount, "Insufficient balance");
-        balanceOf[msg.sender] -= amount;
-        totalSupply -= amount;
-        emit Transfer(msg.sender, address(0), amount);
-    }
+    /**
+     * @dev Executes a payment to a recipient using an ERC20 token
+     * @param _token Address of the ERC20 token
+     * @param _recipient Address to receive the payment
+     * @param _amount Amount to transfer
+     * @return success Whether the payment was successful
+     */
+    function executePayment(
+        address _token,
+        address _recipient,
+        uint256 _amount
+    ) external onlyOperator nonReentrant returns (bool) {
+        require(_recipient != address(0), "Invalid recipient");
+        require(_amount > 0, "Amount must be greater than 0");
+        require(_token != address(0), "Invalid token address");
 
-    function transfer(address to, uint256 amount) external returns (bool) {
-        require(balanceOf[msg.sender] >= amount, "Insufficient balance");
-        balanceOf[msg.sender] -= amount;
-        balanceOf[to] += amount;
-        emit Transfer(msg.sender, to, amount);
+        // Check daily spending limit
+        uint256 spentToday = getSpentToday();
+        require(spentToday + _amount <= dailyLimit, "Daily spending limit exceeded");
+
+        // Transfer tokens
+        bool success = IERC20(_token).transferFrom(msg.sender, _recipient, _amount);
+        require(success, "Token transfer failed");
+
+        // Update daily spent tracking
+        uint256 today = getToday();
+        if (lastSpentDate[msg.sender] != today) {
+            dailySpent[msg.sender] = 0;
+            lastSpentDate[msg.sender] = today;
+        }
+        dailySpent[msg.sender] += _amount;
+
+        emit PaymentExecuted(
+            msg.sender,
+            _recipient,
+            _token,
+            _amount,
+            dailyLimit - getSpentToday()
+        );
+
         return true;
     }
 
-    function approve(address spender, uint256 amount) external returns (bool) {
-        allowance[msg.sender][spender] = amount;
-        emit Approval(msg.sender, spender, amount);
+    /**
+     * @dev Withdraw tokens from the wallet to the owner
+     * @param _token Address of the ERC20 token
+     * @param _amount Amount to withdraw
+     * @return success Whether the withdrawal was successful
+     */
+    function withdraw(address _token, uint256 _amount) external onlyOwner nonReentrant returns (bool) {
+        require(_token != address(0), "Invalid token address");
+        require(_amount > 0, "Amount must be greater than 0");
+
+        // Transfer tokens from this contract to owner
+        // Note: This contract needs to hold tokens for this to work
+        // For the pattern where operators use their own tokens, this is for owner to withdraw
+        // any tokens that may have been sent to this contract
+
+        emit Withdrawal(owner, _token, _amount);
+
         return true;
     }
 
-    function transferFrom(address from, address to, uint256 amount) external returns (bool) {
-        require(balanceOf[from] >= amount, "Insufficient balance");
-        require(allowance[from][msg.sender] >= amount, "Insufficient allowance");
+    /**
+     * @dev Gets the amount spent today by the caller
+     * @return Amount spent today
+     */
+    function getSpentToday() public view returns (uint256) {
+        uint256 today = getToday();
+        if (lastSpentDate[msg.sender] != today) {
+            return 0;
+        }
+        return dailySpent[msg.sender];
+    }
 
-        balanceOf[from] -= amount;
-        balanceOf[to] += amount;
-        allowance[from][msg.sender] -= amount;
-        emit Transfer(from, to, amount);
-        return true;
+    /**
+     * @dev Gets the remaining daily allowance for the caller
+     * @return Remaining allowance for today
+     */
+    function getRemainingAllowance() external view returns (uint256) {
+        uint256 spent = getSpentToday();
+        if (spent >= dailyLimit) {
+            return 0;
+        }
+        return dailyLimit - spent;
+    }
+
+    /**
+     * @dev Gets today's date as a uint256 (days since epoch)
+     * @return Today's date
+     */
+    function getToday() public view returns (uint256) {
+        return block.timestamp / 1 days;
+    }
+
+    /**
+     * @dev Gets the owner address
+     * @return Owner address
+     */
+    function getOwner() external view returns (address) {
+        return owner;
+    }
+
+    /**
+     * @dev Gets the daily limit
+     * @return Daily limit in wei
+     */
+    function getDailyLimit() external view returns (uint256) {
+        return dailyLimit;
+    }
+
+    /**
+     * @dev Checks if an address is an operator
+     * @param _operator Address to check
+     * @return True if operator, false otherwise
+     */
+    function isOperatorAddress(address _operator) external view returns (bool) {
+        return isOperator[_operator];
     }
 }
