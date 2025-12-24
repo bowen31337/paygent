@@ -81,3 +81,19 @@ class ServiceSubscription(Base):
 
     def __repr__(self) -> str:
         return f"<ServiceSubscription(id={self.id}, status='{self.status}')>"
+
+
+class AgentMemory(Base):
+    """Agent memory model for storing conversation history across sessions."""
+
+    __tablename__ = "agent_memory"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    session_id: Mapped[UUID] = mapped_column(ForeignKey("agent_sessions.id"))
+    message_type: Mapped[str] = mapped_column(String(20), nullable=False)  # human, ai, system
+    content: Mapped[str] = mapped_column(String, nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+    extra_data: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON, name="metadata")  # Renamed to avoid SQLAlchemy conflict
+
+    def __repr__(self) -> str:
+        return f"<AgentMemory(id={self.id}, session={self.session_id}, type='{self.message_type}')>"

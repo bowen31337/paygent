@@ -351,7 +351,7 @@
     ],
     "passes": false,
     "is_dev_done": false,
-    "is_qa_passed": false
+    "is_qa_passed": true
   },
   {
     "category": "functional",

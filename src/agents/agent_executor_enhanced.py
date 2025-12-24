@@ -8,6 +8,7 @@ This module provides comprehensive agent execution with:
 - Tool call tracking
 """
 
+import json
 import logging
 import time
 from typing import Dict, Any, Optional, List
@@ -19,7 +20,7 @@ from sqlalchemy import select
 
 from src.agents.command_parser import CommandParser, ParsedCommand
 from src.tools.simple_tools import get_all_tools
-from src.models.agent_sessions import ExecutionLog, AgentSession
+from src.models.agent_sessions import ExecutionLog, AgentSession, AgentMemory
 from src.core.database import get_db
 
 # Try to import the subagents, but fall back gracefully if langchain isn't available
@@ -66,9 +67,97 @@ class AgentExecutorEnhanced:
         self.tools = get_all_tools()
         self.tool_calls: List[Dict[str, Any]] = []
         self.current_execution_log_id: Optional[UUID] = None
+        self.memory: List[Dict[str, Any]] = []
 
         logger.info(f"AgentExecutorEnhanced initialized for session {session_id}")
         logger.info(f"Available tools: {list(self.tools.keys())}")
+
+    async def load_memory(self) -> None:
+        """
+        Load conversation memory from database for this session.
+        """
+        try:
+            result = await self.db.execute(
+                select(AgentMemory)
+                .where(AgentMemory.session_id == self.session_id)
+                .order_by(AgentMemory.timestamp)
+            )
+            memory_records = result.scalars().all()
+
+            self.memory = [
+                {
+                    "type": record.message_type,
+                    "content": record.content,
+                    "timestamp": record.timestamp.isoformat(),
+                    "metadata": record.metadata or {},
+                }
+                for record in memory_records
+            ]
+
+            logger.info(f"Loaded {len(self.memory)} memory entries for session {self.session_id}")
+        except Exception as e:
+            logger.warning(f"Failed to load memory: {e}")
+            self.memory = []
+
+    async def save_memory(
+        self,
+        message_type: str,
+        content: str,
+        metadata: Optional[Dict[str, Any]] = None
+    ) -> None:
+        """
+        Save a message to the conversation memory.
+
+        Args:
+            message_type: Type of message ('human', 'ai', 'system')
+            content: The message content
+            metadata: Optional additional metadata
+        """
+        try:
+            memory_entry = AgentMemory(
+                id=uuid4(),
+                session_id=self.session_id,
+                message_type=message_type,
+                content=content,
+                metadata=metadata or {},
+            )
+            self.db.add(memory_entry)
+            await self.db.commit()
+
+            # Also update in-memory cache
+            self.memory.append({
+                "type": message_type,
+                "content": content,
+                "timestamp": datetime.utcnow().isoformat(),
+                "metadata": metadata or {},
+            })
+
+            logger.debug(f"Saved memory entry: {message_type}")
+        except Exception as e:
+            logger.error(f"Failed to save memory: {e}")
+            await self.db.rollback()
+
+    def get_memory_context(self, max_messages: int = 10) -> str:
+        """
+        Get formatted memory context for LLM prompts.
+
+        Args:
+            max_messages: Maximum number of recent messages to include
+
+        Returns:
+            Formatted string of conversation history
+        """
+        if not self.memory:
+            return ""
+
+        recent = self.memory[-max_messages:]
+        context_parts = []
+
+        for msg in recent:
+            role = "User" if msg["type"] == "human" else "Assistant" if msg["type"] == "ai" else "System"
+            context_parts.append(f"{role}: {msg['content']}")
+
+        return "\n".join(context_parts)
 
     async def execute_command(
         self,
@@ -87,6 +176,9 @@ class AgentExecutorEnhanced:
         """
         start_time = time.time()
         logger.info(f"Session {self.session_id}: Executing command - {command}")
+
+        # Load existing memory for this session
+        await self.load_memory()
 
         # Create execution log
         execution_log = ExecutionLog(
@@ -164,6 +256,28 @@ class AgentExecutorEnhanced:
             execution_log.status = "completed" if result.get("success") else "failed"
             await self.db.commit()
 
+            # Store conversation in memory for persistence across commands
+            # Save user message
+            await self.save_memory(
+                message_type="human",
+                content=command,
+                metadata={
+                    "intent": parsed.intent,
+                    "confidence": parsed.confidence,
+                }
+            )
+
+            # Save agent response
+            await self.save_memory(
+                message_type="ai",
+                content=json.dumps(result),
+                metadata={
+                    "duration_ms": duration_ms,
+                    "success": result.get("success", False),
+                    "total_cost_usd": result.get("total_cost_usd", 0.0),
+                }
+            )
+
             # Add metadata to result
             result["session_id"] = str(self.session_id)
             result["command"] = command
@@ -172,6 +286,7 @@ class AgentExecutorEnhanced:
             result["execution_log_id"] = str(execution_log.id)
             result["duration_ms"] = duration_ms
             result["plan"] = plan
+            result["memory_context"] = self.get_memory_context()
 
             return result
 

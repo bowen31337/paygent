@@ -12,7 +12,8 @@ from typing import Any, Dict, Optional
 
 from eth_account import Account
 from eth_account.messages import encode_typed_data
-from eth_typing import HexStr
+from eth_typing import HexStr, ChecksumAddress
+from eth_utils import to_checksum_address
 from pydantic import BaseModel, Field
 
 from src.core.config import settings
@@ -160,8 +161,13 @@ class EIP712SignatureGenerator:
                     "message": "No signer account configured",
                 }
 
-            # Create message - ensure address is a clean string
-            wallet_address = str(payment_data.wallet_address).strip().strip("'").strip('"')
+            # Create message - ensure wallet address is a proper string
+            # The payment_data.wallet_address might be coming in with extra quotes
+            wallet_address = str(payment_data.wallet_address)
+            # Remove any surrounding quotes that might have been added
+            if wallet_address.startswith(("'", '"')) and wallet_address.endswith(("'", '"')):
+                wallet_address = wallet_address[1:-1]
+
             message = {
                 "serviceUrl": payment_data.service_url,
                 "amount": payment_data.amount,
@@ -169,30 +175,29 @@ class EIP712SignatureGenerator:
                 "description": payment_data.description or "",
                 "timestamp": payment_data.timestamp,
                 "nonce": payment_data.nonce,
-                "walletAddress": wallet_address.lower() if wallet_address.startswith('0x') else wallet_address,
+                "walletAddress": wallet_address,
             }
 
             # Encode typed data
-            # Include the full types structure with EIP712Domain
-            full_types = {
-                "EIP712Domain": self.TYPES["EIP712Domain"],
-                "Payment": self.TYPES["Payment"],
-            }
             encoded_message = encode_typed_data(
                 domain_data=self.domain,
-                message_types=full_types,
+                message_types={"Payment": self.TYPES["Payment"]},
                 message_data=message,
             )
 
             # Sign message
             signed_message = self.account.sign_message(encoded_message)
 
-            # Create signature object
+            # Create signature object - ensure signature has 0x prefix
+            signature_hex = signed_message.signature.hex()
+            if not signature_hex.startswith("0x"):
+                signature_hex = "0x" + signature_hex
+
             signature = {
                 "domain": self.domain,
                 "types": {"Payment": self.TYPES["Payment"]},
                 "message": message,
-                "signature": signed_message.signature.hex(),
+                "signature": signature_hex,
                 "signerAddress": self.account.address,
             }
 
