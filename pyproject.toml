@@ -103,6 +103,7 @@ dev-dependencies = [
     "types-redis>=4.6.0",
     "ruff>=0.1.0",
     "playwright>=1.40.0",
+    "fakeredis>=2.33.0",
 ]
 
 [tool.ruff]

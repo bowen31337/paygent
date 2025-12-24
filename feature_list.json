@@ -1673,9 +1673,9 @@
       "Step 2: Verify redirect to HTTPS or rejection",
       "Step 3: Verify HTTPS connection succeeds"
     ],
-    "passes": false,
+    "passes": true,
     "is_dev_done": true,
-    "is_qa_passed": false
+    "is_qa_passed": true
   },
   {
     "category": "functional",

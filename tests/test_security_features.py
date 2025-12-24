@@ -29,20 +29,14 @@ from src.core.security import (
 from src.agents.command_parser import CommandParser
 
 
+# Fixture to reset global state between tests
 @pytest.fixture(autouse=True)
-def reset_global_allowlist():
-    """
-    Reset the global tool allowlist before each test to prevent state pollution.
-    This fixture is automatically applied to all tests in this module.
-    """
-    # Store original state
-    original_allowlist = get_tool_allowlist()
-
-    yield
-
-    # Reset to default after test
+def reset_global_state():
+    """Reset global allowlist state before each test."""
+    # Reset allowlist to default
     import src.core.security as security_module
     security_module._tool_allowlist = None
+    yield
 
 
 class TestAgentCommandTiming:
@@ -55,19 +49,24 @@ class TestAgentCommandTiming:
 
         This test verifies that simple operations like balance checks complete quickly.
         """
-        # Create a test database session
+        # Create a test database session with all required tables
         engine = create_async_engine('sqlite+aiosqlite:///:memory:')
         async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
-        # Create tables
+        # Create all required tables
         from src.models.agent_sessions import ExecutionLog, AgentSession, AgentMemory
         async with engine.begin() as conn:
-            await conn.run_sync(ExecutionLog.__table__.create)
             await conn.run_sync(AgentSession.__table__.create)
+            await conn.run_sync(ExecutionLog.__table__.create)
             await conn.run_sync(AgentMemory.__table__.create)
 
         async with async_session() as session:
-            session_id = uuid4()
+            # First create an AgentSession (required by foreign key)
+            agent_session = AgentSession(id=uuid4(), user_id=uuid4())
+            session.add(agent_session)
+            await session.commit()
+
+            session_id = agent_session.id
             executor = AgentExecutorEnhanced(session_id, session, use_allowlist=False)
 
             # Test simple balance check command
@@ -92,12 +91,17 @@ class TestAgentCommandTiming:
         # Create tables
         from src.models.agent_sessions import ExecutionLog, AgentSession, AgentMemory
         async with engine.begin() as conn:
-            await conn.run_sync(ExecutionLog.__table__.create)
             await conn.run_sync(AgentSession.__table__.create)
+            await conn.run_sync(ExecutionLog.__table__.create)
             await conn.run_sync(AgentMemory.__table__.create)
 
         async with async_session() as session:
-            session_id = uuid4()
+            # Create AgentSession
+            agent_session = AgentSession(id=uuid4(), user_id=uuid4())
+            session.add(agent_session)
+            await session.commit()
+
+            session_id = agent_session.id
             executor = AgentExecutorEnhanced(session_id, session, use_allowlist=False)
 
             result = await executor.execute_command("check my balance")
@@ -184,12 +188,17 @@ class TestToolAllowlistSecurity:
         # Create tables
         from src.models.agent_sessions import ExecutionLog, AgentSession, AgentMemory
         async with engine.begin() as conn:
-            await conn.run_sync(ExecutionLog.__table__.create)
             await conn.run_sync(AgentSession.__table__.create)
+            await conn.run_sync(ExecutionLog.__table__.create)
             await conn.run_sync(AgentMemory.__table__.create)
 
         async with async_session() as session:
-            session_id = uuid4()
+            # Create AgentSession
+            agent_session = AgentSession(id=uuid4(), user_id=uuid4())
+            session.add(agent_session)
+            await session.commit()
+
+            session_id = agent_session.id
 
             # Create executor with allowlist enabled
             executor = AgentExecutorEnhanced(session_id, session, use_allowlist=True)
@@ -212,19 +221,13 @@ class TestToolAllowlistSecurity:
         async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
         async with async_session() as session:
-            session_id = uuid4()
-
             # Create custom allowlist with only specific tools
             custom_allowlist = ToolAllowlist(allowed_tools={"check_balance"})
-            executor = AgentExecutorEnhanced(session_id, session, use_allowlist=True)
+            executor = AgentExecutorEnhanced(uuid4(), session, use_allowlist=True)
             executor.allowlist = custom_allowlist
 
             # Test that payment intent is blocked (not in custom allowlist)
             # Payment intent maps to x402_payment which is not in our custom allowlist
-            # But the current implementation allows unknown intents by default
-            # So we test with a known blocked tool intent
-
-            # Actually, let's test the allowlist directly
             assert not custom_allowlist.is_allowed("x402_payment")
             assert custom_allowlist.is_allowed("check_balance")
 
@@ -238,9 +241,6 @@ class TestSubagentContextIsolation:
 
         This test verifies that subagents get unique session IDs.
         """
-        # The agent executor creates subagents with unique session IDs
-        # This is verified by checking the code structure
-
         from src.agents.agent_executor_enhanced import AgentExecutorEnhanced
         import inspect
 
@@ -295,12 +295,17 @@ class TestExecutionCostTracking:
         # Create tables
         from src.models.agent_sessions import ExecutionLog, AgentSession, AgentMemory
         async with engine.begin() as conn:
-            await conn.run_sync(ExecutionLog.__table__.create)
             await conn.run_sync(AgentSession.__table__.create)
+            await conn.run_sync(ExecutionLog.__table__.create)
             await conn.run_sync(AgentMemory.__table__.create)
 
         async with async_session() as session:
-            session_id = uuid4()
+            # Create AgentSession
+            agent_session = AgentSession(id=uuid4(), user_id=uuid4())
+            session.add(agent_session)
+            await session.commit()
+
+            session_id = agent_session.id
             executor = AgentExecutorEnhanced(session_id, session, use_allowlist=False)
 
             # Execute a command
@@ -323,12 +328,17 @@ class TestExecutionCostTracking:
         from src.models.agent_sessions import ExecutionLog, AgentSession, AgentMemory
 
         async with engine.begin() as conn:
-            await conn.run_sync(ExecutionLog.__table__.create)
             await conn.run_sync(AgentSession.__table__.create)
+            await conn.run_sync(ExecutionLog.__table__.create)
             await conn.run_sync(AgentMemory.__table__.create)
 
         async with async_session() as session:
-            session_id = uuid4()
+            # Create AgentSession
+            agent_session = AgentSession(id=uuid4(), user_id=uuid4())
+            session.add(agent_session)
+            await session.commit()
+
+            session_id = agent_session.id
             executor = AgentExecutorEnhanced(session_id, session, use_allowlist=False)
 
             # Execute command
@@ -360,7 +370,6 @@ class TestErrorAlerting:
         from src.main import app
 
         # Check that exception handlers are registered
-        # This is verified by checking the main.py file
         import inspect
         source = inspect.getsource(app)
 
@@ -387,12 +396,17 @@ class TestErrorAlerting:
         # Create tables
         from src.models.agent_sessions import ExecutionLog, AgentSession, AgentMemory
         async with engine.begin() as conn:
-            await conn.run_sync(ExecutionLog.__table__.create)
             await conn.run_sync(AgentSession.__table__.create)
+            await conn.run_sync(ExecutionLog.__table__.create)
             await conn.run_sync(AgentMemory.__table__.create)
 
         async with async_session() as session:
-            session_id = uuid4()
+            # Create AgentSession
+            agent_session = AgentSession(id=uuid4(), user_id=uuid4())
+            session.add(agent_session)
+            await session.commit()
+
+            session_id = agent_session.id
             executor = AgentExecutorEnhanced(session_id, session, use_allowlist=False)
 
             # Execute an invalid command that will fail
@@ -429,12 +443,17 @@ class TestIntegrationSecurityFeatures:
         # Create tables
         from src.models.agent_sessions import ExecutionLog, AgentSession, AgentMemory
         async with engine.begin() as conn:
-            await conn.run_sync(ExecutionLog.__table__.create)
             await conn.run_sync(AgentSession.__table__.create)
+            await conn.run_sync(ExecutionLog.__table__.create)
             await conn.run_sync(AgentMemory.__table__.create)
 
         async with async_session() as session:
-            session_id = uuid4()
+            # Create AgentSession
+            agent_session = AgentSession(id=uuid4(), user_id=uuid4())
+            session.add(agent_session)
+            await session.commit()
+
+            session_id = agent_session.id
 
             # Create executor with strict allowlist
             executor = AgentExecutorEnhanced(session_id, session, use_allowlist=True)
