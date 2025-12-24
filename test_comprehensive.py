@@ -51,22 +51,22 @@ async def test_all_components():
         async with async_session_maker() as db:
             wallet_service = WalletService(db)
             balance_result = await wallet_service.check_balance()
-            allowance_result = await wallet_service.check_daily_allowance()
+            allowance_result = await wallet_service.get_allowance()
 
             print(f"✓ Balance Check: {len(balance_result.get('balances', {}))} tokens")
-            print(f"✓ Daily Allowance: ${allowance_result['remaining_allowance_usd']:.2f}")
+            print(f"✓ Daily Allowance: ${allowance_result.get('remaining_allowance_usd', 0):.2f}")
 
         # Test Service Registry
         print("\n🌐 Service Registry")
         print("-" * 30)
         async with async_session_maker() as db:
             registry_service = ServiceRegistryService(db)
-            services = await registry_service.get_services(limit=5)
+            services = await registry_service.discover_services(query="", limit=5)
 
             print(f"✓ Service Discovery: {len(services)} services found")
             if services:
                 service = services[0]
-                print(f"✓ Service: {service.get('name', 'Unknown')}")
+                print(f"✓ Service: {service.name}")
 
         # Test Approval Service
         print("\n✅ Approval Service")

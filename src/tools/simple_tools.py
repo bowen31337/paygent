@@ -7,6 +7,8 @@ These are basic tool implementations for the agent to use.
 import logging
 from typing import Optional, Dict, Any
 
+from src.connectors.vvs import VVSFinanceConnector
+
 logger = logging.getLogger(__name__)
 
 
@@ -79,10 +81,39 @@ class X402PaymentTool(SimpleTool):
 
 
 class SwapTokensTool(SimpleTool):
-    """Tool for swapping tokens."""
+    """Tool for swapping tokens on VVS Finance."""
 
     name = "swap_tokens"
-    description = "Swap tokens on VVS Finance DEX"
+    description = "Swap tokens on VVS Finance DEX with slippage protection"
+
+    def run(
+        self,
+        from_token: str,
+        to_token: str,
+        amount: float,
+        slippage_tolerance_percent: float = 1.0,
+        deadline: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """Execute token swap using VVS Finance connector."""
+        logger.info(f"Swapping {amount} {from_token} to {to_token}")
+
+        vvs = VVSFinanceConnector()
+        result = vvs.swap(
+            from_token=from_token,
+            to_token=to_token,
+            amount=amount,
+            slippage_tolerance=slippage_tolerance_percent,
+            deadline=deadline
+        )
+
+        return result
+
+
+class VVSQuoteTool(SimpleTool):
+    """Tool for getting price quotes from VVS Finance."""
+
+    name = "vvs_quote"
+    description = "Get price quote for token swap on VVS Finance"
 
     def run(
         self,
@@ -91,30 +122,86 @@ class SwapTokensTool(SimpleTool):
         amount: float,
         slippage_tolerance_percent: float = 1.0
     ) -> Dict[str, Any]:
-        """Execute token swap."""
-        logger.info(f"Swapping {amount} {from_token} to {to_token}")
+        """Get swap quote."""
+        logger.info(f"Getting quote for {amount} {from_token} -> {to_token}")
 
-        if from_token == "CRO" and to_token == "USDC":
-            exchange_rate = 0.075
-        elif from_token == "USDC" and to_token == "CRO":
-            exchange_rate = 13.33
+        vvs = VVSFinanceConnector()
+        quote = vvs.get_quote(
+            from_token=from_token,
+            to_token=to_token,
+            amount=amount,
+            slippage_tolerance=slippage_tolerance_percent
+        )
+
+        return quote
+
+
+class VVSLiquidityTool(SimpleTool):
+    """Tool for managing VVS Finance liquidity positions."""
+
+    name = "vvs_liquidity"
+    description = "Add or remove liquidity from VVS Finance pools"
+
+    def run(
+        self,
+        action: str,  # "add" or "remove"
+        token_a: str,
+        token_b: str,
+        amount_a: Optional[float] = None,
+        amount_b: Optional[float] = None,
+        lp_amount: Optional[float] = None,
+        slippage_tolerance_percent: float = 1.0
+    ) -> Dict[str, Any]:
+        """Manage liquidity position."""
+        vvs = VVSFinanceConnector()
+
+        if action == "add":
+            if amount_a is None or amount_b is None:
+                raise ValueError("amount_a and amount_b required for add action")
+            logger.info(f"Adding liquidity: {amount_a} {token_a} + {amount_b} {token_b}")
+            return vvs.add_liquidity(
+                token_a=token_a,
+                token_b=token_b,
+                amount_a=amount_a,
+                amount_b=amount_b,
+                slippage_tolerance=slippage_tolerance_percent
+            )
+        elif action == "remove":
+            if lp_amount is None:
+                raise ValueError("lp_amount required for remove action")
+            logger.info(f"Removing liquidity: {lp_amount} LP tokens")
+            return vvs.remove_liquidity(
+                token_a=token_a,
+                token_b=token_b,
+                lp_amount=lp_amount
+            )
         else:
-            exchange_rate = 1.0
+            raise ValueError(f"Unknown action: {action}. Use 'add' or 'remove'")
 
-        received_amount = amount * exchange_rate * (1 - slippage_tolerance_percent / 100)
-        mock_tx_hash = "0x" + "b" * 64
 
-        return {
-            "status": "completed",
-            "from_token": from_token,
-            "to_token": to_token,
-            "amount_in": str(amount),
-            "amount_out": f"{received_amount:.4f}",
-            "exchange_rate": str(exchange_rate),
-            "tx_hash": mock_tx_hash,
-            "dex": "VVS Finance",
-            "timestamp": "2025-12-24T19:00:00Z"
-        }
+class VVSFarmingTool(SimpleTool):
+    """Tool for VVS Finance yield farming."""
+
+    name = "vvs_farm"
+    description = "Stake LP tokens in VVS Finance yield farms"
+
+    def run(
+        self,
+        token_a: str,
+        token_b: str,
+        amount: float,
+        farm_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Stake LP tokens in farm."""
+        logger.info(f"Farming: staking {amount} {token_a}-{token_b} LP tokens")
+
+        vvs = VVSFinanceConnector()
+        return vvs.stake_lp_tokens(
+            token_a=token_a,
+            token_b=token_b,
+            amount=amount,
+            farm_id=farm_id
+        )
 
 
 class DiscoverServicesTool(SimpleTool):
@@ -168,5 +255,8 @@ def get_all_tools() -> Dict[str, SimpleTool]:
         "check_balance": CheckBalanceTool(),
         "x402_payment": X402PaymentTool(),
         "swap_tokens": SwapTokensTool(),
+        "vvs_quote": VVSQuoteTool(),
+        "vvs_liquidity": VVSLiquidityTool(),
+        "vvs_farm": VVSFarmingTool(),
         "discover_services": DiscoverServicesTool(),
     }

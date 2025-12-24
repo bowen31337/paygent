@@ -33,7 +33,7 @@ class ServiceInfo(BaseModel):
     price_amount: float
     price_token: str
     mcp_compatible: bool = False
-    reputation_score: float = Field(default=0.0, ge=0.0, le=1.0)
+    reputation_score: float = Field(default=0.0, ge=0.0)
     total_calls: int = 0
     created_at: str
     updated_at: str
@@ -95,7 +95,7 @@ async def discover_services(
     min_price: Optional[float] = Query(default=None, ge=0, description="Minimum price"),
     max_price: Optional[float] = Query(default=None, ge=0, description="Maximum price"),
     min_reputation: Optional[float] = Query(
-        default=None, ge=0, le=1, description="Minimum reputation score"
+        default=None, ge=0, description="Minimum reputation score"
     ),
     mcp_compatible: Optional[bool] = Query(
         default=None, description="Filter MCP-compatible services"
