@@ -12,6 +12,7 @@ from typing import Any, Dict, Optional
 
 from eth_account import Account
 from eth_account.messages import encode_typed_data
+from eth_typing import HexStr
 from pydantic import BaseModel, Field
 
 from src.core.config import settings
@@ -159,7 +160,8 @@ class EIP712SignatureGenerator:
                     "message": "No signer account configured",
                 }
 
-            # Create message
+            # Create message - ensure address is a clean string
+            wallet_address = str(payment_data.wallet_address).strip().strip("'").strip('"')
             message = {
                 "serviceUrl": payment_data.service_url,
                 "amount": payment_data.amount,
@@ -167,13 +169,18 @@ class EIP712SignatureGenerator:
                 "description": payment_data.description or "",
                 "timestamp": payment_data.timestamp,
                 "nonce": payment_data.nonce,
-                "walletAddress": payment_data.wallet_address.lower() if payment_data.wallet_address.startswith('0x') else payment_data.wallet_address,
+                "walletAddress": wallet_address.lower() if wallet_address.startswith('0x') else wallet_address,
             }
 
             # Encode typed data
+            # Include the full types structure with EIP712Domain
+            full_types = {
+                "EIP712Domain": self.TYPES["EIP712Domain"],
+                "Payment": self.TYPES["Payment"],
+            }
             encoded_message = encode_typed_data(
                 domain_data=self.domain,
-                message_types={"Payment": self.TYPES["Payment"]},
+                message_types=full_types,
                 message_data=message,
             )
 
