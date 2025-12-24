@@ -13,6 +13,7 @@ from typing import Any, Dict, Optional
 from httpx import AsyncClient, Response
 
 from src.core.config import settings
+from src.services.metrics_service import metrics_collector
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +61,8 @@ class X402PaymentService:
             )
 
             if payment_result["success"]:
+                # Record successful payment metric
+                metrics_collector.record_payment(amount_usd=amount, success=True)
                 return {
                     "success": True,
                     "payment_id": payment_result.get("payment_id"),
@@ -68,6 +71,8 @@ class X402PaymentService:
                     "message": payment_result.get("message", "Payment executed successfully"),
                 }
             else:
+                # Record failed payment metric
+                metrics_collector.record_payment(amount_usd=amount, success=False)
                 return {
                     "success": False,
                     "error": payment_result.get("error"),
@@ -76,6 +81,8 @@ class X402PaymentService:
 
         except Exception as e:
             logger.error(f"x402 payment execution failed: {e}")
+            # Record failed payment metric
+            metrics_collector.record_payment(amount_usd=amount, success=False)
             return {
                 "success": False,
                 "error": str(e),

@@ -24,6 +24,7 @@ from src.models.agent_sessions import ExecutionLog, AgentSession, AgentMemory
 from src.core.database import get_db
 from src.services.x402_service import X402PaymentService
 from src.services.approval_service import ApprovalService, BudgetLimitService
+from src.services.metrics_service import metrics_collector
 
 # Try to import the subagents, but fall back gracefully if langchain isn't available
 try:
@@ -847,5 +848,13 @@ async def execute_agent_command_enhanced(
     Returns:
         Execution result
     """
+    start_time = time.time()
     executor = AgentExecutorEnhanced(session_id, db)
-    return await executor.execute_command(command, budget_limit_usd)
+    result = await executor.execute_command(command, budget_limit_usd)
+
+    # Record metrics
+    duration_seconds = time.time() - start_time
+    success = result.get("success", False)
+    metrics_collector.record_agent_execution(duration_seconds, success=success)
+
+    return result

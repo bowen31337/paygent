@@ -16,6 +16,7 @@ from src.api.routes import (
     logs,
     websocket,
     defi,
+    metrics,
 )
 
 router = APIRouter()
@@ -29,5 +30,6 @@ router.include_router(approvals.router, prefix="/approvals", tags=["Approvals"])
 router.include_router(logs.router, prefix="/logs", tags=["Logs"])
 router.include_router(websocket.router, prefix="/ws", tags=["WebSocket"])
 router.include_router(defi.router, prefix="/defi")
+router.include_router(metrics.router, prefix="", tags=["Monitoring"])
 
 __all__ = ["router"]

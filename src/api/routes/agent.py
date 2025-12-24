@@ -22,6 +22,7 @@ from src.models.agent_sessions import AgentSession, ExecutionLog
 from src.agents.agent_executor_enhanced import execute_agent_command_enhanced, AgentExecutorEnhanced
 from src.agents.command_parser import CommandParser
 from src.tools.simple_tools import X402PaymentTool, SwapTokensTool, CheckBalanceTool, DiscoverServicesTool
+from src.services.metrics_service import metrics_collector
 
 router = APIRouter()
 
@@ -401,5 +402,8 @@ async def terminate_session(
     # Delete the session
     await db.delete(session)
     await db.commit()
+
+    # Record metrics
+    metrics_collector.record_session_terminated()
 
     return {"message": f"Session {session_id} terminated successfully", "session_id": str(session_id)}

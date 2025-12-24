@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.config import settings
 from src.models.agent_sessions import AgentSession, ApprovalRequest, ExecutionLog, ServiceSubscription
 from src.services.cache import CacheService
+from src.services.metrics_service import metrics_collector
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,9 @@ class SessionService:
         self.db.add(session)
         await self.db.flush()
         await self.db.refresh(session)
+
+        # Record metrics
+        metrics_collector.record_session_created()
 
         logger.info(f"Created session {session.id} for user {user_id}")
         return session

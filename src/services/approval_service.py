@@ -17,6 +17,7 @@ from sqlalchemy.orm import selectinload
 from src.core.database import Base, async_session_maker
 from src.models.agent_sessions import ApprovalRequest, AgentSession
 from src.models.payments import Payment
+from src.services.metrics_service import metrics_collector
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +93,8 @@ class ApprovalService:
 
         if result.rowcount > 0:
             logger.info(f"Approved request {approval_id}")
+            # Record metrics
+            metrics_collector.record_approval(granted=True)
             # Get the updated request
             return await self.get_approval_request(approval_id)
 
@@ -110,6 +113,8 @@ class ApprovalService:
 
         if result.rowcount > 0:
             logger.info(f"Rejected request {approval_id}")
+            # Record metrics
+            metrics_collector.record_approval(granted=False)
             # Get the updated request
             return await self.get_approval_request(approval_id)
 

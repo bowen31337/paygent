@@ -40,6 +40,7 @@ from src.services.approval_service import ApprovalService
 from src.services.session_service import SessionService
 from src.services.execution_log_service import ExecutionLogService
 from src.agents.agent_executor_enhanced import AgentExecutorEnhanced
+from src.services.metrics_service import metrics_collector
 from src.core.database import get_db
 from uuid import UUID, uuid4
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -62,6 +63,8 @@ class ConnectionManager:
         await websocket.accept()
         self.active_connections[session_id] = websocket
         self.user_sessions[user_id] = session_id
+        # Record metrics
+        metrics_collector.record_websocket_connection()
         logger.info(f"WebSocket connected for session {session_id}, user {user_id}")
 
     def disconnect(self, session_id: str, user_id: str):
@@ -84,6 +87,8 @@ class ConnectionManager:
             websocket = self.active_connections[session_id]
             try:
                 await websocket.send_text(json.dumps(message))
+                # Record sent message metric
+                metrics_collector.record_websocket_message(received=False)
                 logger.debug(f"Sent message to session {session_id}: {message['type']}")
             except Exception as e:
                 logger.error(f"Failed to send message to session {session_id}: {e}")
@@ -123,7 +128,7 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
-@router.websocket("/ws")
+@router.websocket("/")
 async def websocket_endpoint(
     websocket: WebSocket,
     session_id: str,
@@ -137,6 +142,8 @@ async def websocket_endpoint(
         session_id: Agent session ID
         token: Optional authentication token
     """
+    logger.info(f"WebSocket connection attempt - session_id: {session_id}, type: {type(session_id)}, debug: {settings.debug}")
+
     # Get user_id from token if provided
     user_id = None
     if token:
@@ -149,6 +156,7 @@ async def websocket_endpoint(
 
     # If no user_id and not in debug mode, require authentication
     if not user_id and not settings.debug:
+        logger.warning("WebSocket: Authentication required")
         await websocket.close(code=WS_1008_POLICY_VIOLATION, reason="Authentication required")
         return
 
@@ -162,9 +170,18 @@ async def websocket_endpoint(
     # Validate session exists - get db session for validation
     async for db in get_db():
         session_service = SessionService(db)
-        session = await session_service.get_session(session_id)
+        # Convert session_id string to UUID for get_session
+        try:
+            session_uuid = UUID(session_id)
+        except ValueError:
+            logger.warning(f"WebSocket: Invalid session ID format: {session_id}")
+            await websocket.close(code=WS_1008_POLICY_VIOLATION, reason="Invalid session ID format")
+            return
+        session = await session_service.get_session(session_uuid)
         break
+    logger.info(f"WebSocket: Session lookup result: {session}")
     if not session:
+        logger.warning(f"WebSocket: Invalid session {session_id}")
         await websocket.close(code=WS_1008_POLICY_VIOLATION, reason="Invalid session")
         return
 
@@ -185,6 +202,8 @@ async def websocket_endpoint(
         while True:
             try:
                 data = await websocket.receive_text()
+                # Record received message metric
+                metrics_collector.record_websocket_message(received=True)
                 message = WebSocketMessage.parse_raw(data)
                 # Get database session for message handling
                 async for db in get_db():

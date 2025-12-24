@@ -51,7 +51,7 @@ class TestWebSocketStreaming:
     def test_websocket_connection(self, client, test_session):
         """Test WebSocket connection establishment."""
         # Test connection without authentication (should work in debug mode)
-        with client.websocket_connect(f"/ws?session_id={test_session.id}") as websocket:
+        with client.websocket_connect(f"/api/v1/ws/?session_id={test_session.id}") as websocket:
             # Receive connection established event
             data = websocket.receive_text()
             message = json.loads(data)
@@ -61,7 +61,7 @@ class TestWebSocketStreaming:
 
     def test_error_handling(self, client, test_session):
         """Test error handling in WebSocket communication."""
-        with client.websocket_connect(f"/ws?session_id={test_session.id}") as websocket:
+        with client.websocket_connect(f"/api/v1/ws/?session_id={test_session.id}") as websocket:
             # First, receive connection established event
             websocket.receive_text()
 

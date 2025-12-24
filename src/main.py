@@ -16,6 +16,7 @@ from src.core.config import settings
 from src.core.database import init_db, close_db
 from src.core.cache import init_cache, close_cache
 from src.api import router as api_router
+from src.middleware.metrics import metrics_middleware
 
 # Configure logging
 logging.basicConfig(
@@ -104,6 +105,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add metrics middleware
+app.middleware("http")(metrics_middleware)
 
 
 # Global exception handler
