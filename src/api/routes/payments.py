@@ -271,3 +271,112 @@ async def execute_x402_payment(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create payment record: {str(e)}",
         )
+
+
+class ExecuteApprovedPaymentRequest(BaseModel):
+    """Request to execute a payment that has been approved."""
+
+    approval_id: UUID
+    edited_args: Optional[dict] = None
+
+
+class ExecuteApprovedPaymentResponse(BaseModel):
+    """Response for executing an approved payment."""
+
+    payment_id: UUID
+    approval_id: UUID
+    success: bool
+    message: str
+    tx_hash: Optional[str] = None
+    status: str
+
+
+@router.post(
+    "/execute-approved",
+    response_model=ExecuteApprovedPaymentResponse,
+    summary="Execute approved payment",
+    description="Execute a payment that has been approved via HITL workflow.",
+)
+async def execute_approved_payment(
+    request: ExecuteApprovedPaymentRequest,
+    db: AsyncSession = Depends(get_db),
+) -> ExecuteApprovedPaymentResponse:
+    """
+    Execute a payment that has been approved via HITL workflow.
+
+    This endpoint is called after a payment approval request has been
+    approved by a human operator.
+    """
+    from src.models.agent_sessions import ApprovalRequest
+    from src.services.approval_service import ApprovalService
+    from sqlalchemy import select
+
+    try:
+        # Get the approval request
+        approval_service = ApprovalService(db)
+        approval = await approval_service.get_approval_request(request.approval_id)
+
+        if not approval:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Approval request {request.approval_id} not found"
+            )
+
+        if approval.decision != "approved" and approval.decision != "edited":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Approval request {request.approval_id} is not approved (status: {approval.decision})"
+            )
+
+        # Use edited args if provided, otherwise use original args
+        payment_args = request.edited_args or approval.tool_args
+
+        # Extract payment parameters
+        service_url = payment_args.get("service_url")
+        amount = payment_args.get("amount")
+        token = payment_args.get("token", "USDC")
+
+        if not service_url or amount is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid payment arguments in approval request"
+            )
+
+        # Execute the payment using x402 service
+        x402_service = X402PaymentService()
+        result = await x402_service.execute_payment(
+            service_url=service_url,
+            amount=amount,
+            token=token,
+            description=payment_args.get("description", f"Approved payment for {service_url}"),
+        )
+
+        # Create payment record
+        payment_service = PaymentService(db)
+        payment = await payment_service.create_payment(
+            agent_wallet=settings.default_wallet_address,
+            recipient=service_url,
+            amount=amount,
+            token=token,
+            service_id=None,  # Could be derived from service_url if needed
+            tx_hash=result.get("tx_hash"),
+            status=result.get("status", "confirmed" if result.get("success") else "failed"),
+        )
+
+        return ExecuteApprovedPaymentResponse(
+            payment_id=payment.id,
+            approval_id=request.approval_id,
+            success=result.get("success", False),
+            message=result.get("message", "Payment executed successfully"),
+            tx_hash=result.get("tx_hash"),
+            status=result.get("status", "confirmed" if result.get("success") else "failed"),
+        )
+
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions as-is
+    except Exception as e:
+        logger.error(f"Failed to execute approved payment: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to execute approved payment: {str(e)}",
+        )

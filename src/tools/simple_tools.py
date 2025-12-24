@@ -136,7 +136,7 @@ class DiscoverServicesTool(SimpleTool):
             {
                 "id": "market-data-btc",
                 "name": "Market Data API (Updated)",
-                "description": "Real-time cryptocurrency market data",
+                "description": "Real-time cryptocurrency market data from Crypto.com MCP Server",
                 "endpoint": "https://api.marketdata.example.com",
                 "category": "market_data",
                 "price_amount": "0.15",

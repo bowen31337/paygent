@@ -12,6 +12,7 @@ from src.models.agent_sessions import (
     ExecutionLog,
     ApprovalRequest,
     ServiceSubscription,
+    AgentMemory,
 )
 
 __all__ = [

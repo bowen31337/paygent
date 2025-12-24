@@ -331,7 +331,7 @@ class X402PaymentService:
             generator = get_signature_generator()
 
             # Get wallet address (mock for development)
-            wallet_address = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"  # Mock address
+            wallet_address = "0xFCAd0B19bB29D4674531d6f115237E16AfCE377c"  # Mock checksum address
 
             # Create payment data
             payment_data = generator.create_payment_data(

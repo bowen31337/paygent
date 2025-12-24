@@ -23,6 +23,7 @@ from src.tools.simple_tools import get_all_tools
 from src.models.agent_sessions import ExecutionLog, AgentSession, AgentMemory
 from src.core.database import get_db
 from src.services.x402_service import X402PaymentService
+from src.services.approval_service import ApprovalService, BudgetLimitService
 
 # Try to import the subagents, but fall back gracefully if langchain isn't available
 try:
@@ -465,19 +466,52 @@ class AgentExecutorEnhanced:
         parsed: ParsedCommand,
         budget_limit_usd: Optional[float]
     ) -> Dict[str, Any]:
-        """Execute a payment command with logging using X402PaymentService."""
+        """Execute a payment command with HITL approval checks and logging using X402PaymentService."""
         params = parsed.parameters
+        amount = params["amount"]
+        token = params.get("token", "USDC")
 
         # Step 1: Check budget limit
-        if budget_limit_usd and params.get("amount", 0) > budget_limit_usd:
+        if budget_limit_usd and amount > budget_limit_usd:
             return {
                 "success": False,
-                "error": f"Payment amount ${params['amount']} exceeds budget limit ${budget_limit_usd}",
+                "error": f"Payment amount ${amount} exceeds budget limit ${budget_limit_usd}",
                 "suggestion": "Increase budget limit or reduce payment amount",
                 "total_cost_usd": 0.0
             }
 
-        # Step 2: Discover service endpoint
+        # Step 2: Check if high-value transaction requires HITL approval
+        high_value_threshold = 10.0  # $10 threshold for approval
+        requires_approval = amount > high_value_threshold
+
+        if requires_approval:
+            # Create approval request
+            approval_service = ApprovalService(self.db)
+            approval_request = await approval_service.create_approval_request(
+                session_id=self.session_id,
+                tool_name="x402_payment",
+                tool_args={
+                    "service_url": None,  # Will be resolved after approval
+                    "amount": amount,
+                    "token": token,
+                    "description": f"Payment for {params.get('recipient', 'service')}",
+                },
+                amount=amount,
+                token=token,
+            )
+
+            return {
+                "success": False,
+                "requires_approval": True,
+                "approval_id": str(approval_request.id),
+                "amount": amount,
+                "token": token,
+                "message": f"Payment of ${amount} {token} requires human approval (amount exceeds ${high_value_threshold})",
+                "next_steps": "Use /api/v1/approvals/{approval_id}/approve to approve, or /reject to reject",
+                "total_cost_usd": 0.0
+            }
+
+        # Step 3: Discover service endpoint
         await self._log_tool_call(
             "resolve_service_endpoint",
             {"recipient": params.get("recipient", "api")},
@@ -492,7 +526,7 @@ class AgentExecutorEnhanced:
             {"service_url": service_url, "status": "completed"}
         )
 
-        # Step 3: Execute x402 payment using X402PaymentService
+        # Step 4: Execute x402 payment using X402PaymentService
         x402_service = X402PaymentService()
         payment_result = await x402_service.execute_payment(
             service_url=service_url,

@@ -1,0 +1,317 @@
+"""
+WebSocket message and event schemas for real-time communication.
+
+Defines the data structures for WebSocket messages and events used in
+agent execution streaming and HITL workflows.
+"""
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Union
+from uuid import UUID
+
+from pydantic import BaseModel, Field
+
+
+class WebSocketMessage(BaseModel):
+    """Base WebSocket message structure."""
+    type: str = Field(..., description="Message type")
+    data: Dict[str, Any] = Field(..., description="Message data")
+
+
+# Message Types for Client -> Server
+class ExecuteMessage(BaseModel):
+    """Execute agent command message."""
+    command: str = Field(..., description="Natural language command to execute")
+    plan: Optional[List[Dict[str, Any]]] = Field(None, description="Optional execution plan")
+
+
+class ApproveMessage(BaseModel):
+    """Approve approval request message."""
+    request_id: UUID = Field(..., description="Approval request ID")
+
+
+class RejectMessage(BaseModel):
+    """Reject approval request message."""
+    request_id: UUID = Field(..., description="Approval request ID")
+
+
+class EditMessage(BaseModel):
+    """Edit and approve approval request message."""
+    request_id: UUID = Field(..., description="Approval request ID")
+    edited_args: Dict[str, Any] = Field(..., description="Edited tool arguments")
+
+
+class CancelMessage(BaseModel):
+    """Cancel execution message."""
+    execution_id: UUID = Field(..., description="Execution ID to cancel")
+
+
+# Event Types for Server -> Client
+class WebSocketEvent(BaseModel):
+    """Base WebSocket event structure."""
+    type: str = Field(..., description="Event type")
+    data: Dict[str, Any] = Field(..., description="Event data")
+    timestamp: Optional[datetime] = Field(default_factory=datetime.utcnow, description="Event timestamp")
+
+
+class ThinkingEvent(WebSocketEvent):
+    """Agent is processing/thinking."""
+    type: str = "thinking"
+    data: Dict[str, Any] = Field(..., description="Thinking event data")
+
+
+class ToolCallEvent(WebSocketEvent):
+    """Agent called a tool."""
+    type: str = "tool_call"
+    data: Dict[str, Any] = Field(..., description="Tool call data")
+
+
+class ToolResultEvent(WebSocketEvent):
+    """Agent received tool result."""
+    type: str = "tool_result"
+    data: Dict[str, Any] = Field(..., description="Tool result data")
+
+
+class ApprovalRequiredEvent(WebSocketEvent):
+    """Approval required for operation."""
+    type: str = "approval_required"
+    data: Dict[str, Any] = Field(..., description="Approval request data")
+
+
+class CompleteEvent(WebSocketEvent):
+    """Execution completed."""
+    type: str = "complete"
+    data: Dict[str, Any] = Field(..., description="Completion data")
+
+
+class ErrorEvent(WebSocketEvent):
+    """Error occurred."""
+    type: str = "error"
+    data: Dict[str, Any] = Field(..., description="Error data")
+
+
+class SubagentStartEvent(WebSocketEvent):
+    """Subagent started."""
+    type: str = "subagent_start"
+    data: Dict[str, Any] = Field(..., description="Subagent start data")
+
+
+class SubagentEndEvent(WebSocketEvent):
+    """Subagent completed."""
+    type: str = "subagent_end"
+    data: Dict[str, Any] = Field(..., description="Subagent end data")
+
+
+# Event Data Schemas
+class ThinkingEventData(BaseModel):
+    """Data for thinking events."""
+    session_id: str
+    command: str
+    step: Optional[int] = None
+    total_steps: Optional[int] = None
+    thought_process: Optional[str] = None
+
+
+class ToolCallEventData(BaseModel):
+    """Data for tool call events."""
+    session_id: str
+    tool_name: str
+    tool_args: Dict[str, Any]
+    tool_id: Optional[str] = None
+
+
+class ToolResultEventData(BaseModel):
+    """Data for tool result events."""
+    session_id: str
+    tool_id: str
+    result: Any
+    success: bool
+    error: Optional[str] = None
+
+
+class ApprovalRequiredEventData(BaseModel):
+    """Data for approval required events."""
+    session_id: str
+    request_id: UUID
+    tool_name: str
+    tool_args: Dict[str, Any]
+    reason: str
+    amount: Optional[str] = None
+    currency: Optional[str] = None
+    estimated_cost: Optional[str] = None
+
+
+class CompleteEventData(BaseModel):
+    """Data for complete events."""
+    session_id: str
+    execution_id: UUID
+    result: Any
+    success: bool
+    total_cost: Optional[str] = None
+    duration_ms: Optional[int] = None
+    tool_calls: Optional[List[Dict[str, Any]]] = None
+
+
+class ErrorEventData(BaseModel):
+    """Data for error events."""
+    session_id: Optional[str] = None
+    execution_id: Optional[UUID] = None
+    message: str
+    error_type: Optional[str] = None
+    details: Optional[Dict[str, Any]] = None
+
+
+class SubagentStartEventData(BaseModel):
+    """Data for subagent start events."""
+    session_id: str
+    subagent_id: str
+    subagent_type: str
+    task: str
+    parent_agent: str
+
+
+class SubagentEndEventData(BaseModel):
+    """Data for subagent end events."""
+    session_id: str
+    subagent_id: str
+    result: Any
+    success: bool
+    duration_ms: Optional[int] = None
+    error: Optional[str] = None
+
+
+# Convenience functions for creating events
+def create_thinking_event(session_id: str, command: str, step: int = None, total_steps: int = None, thought_process: str = None) -> ThinkingEvent:
+    """Create a thinking event."""
+    data = ThinkingEventData(
+        session_id=session_id,
+        command=command,
+        step=step,
+        total_steps=total_steps,
+        thought_process=thought_process
+    )
+    return ThinkingEvent(type="thinking", data=data.dict())
+
+
+def create_tool_call_event(session_id: str, tool_name: str, tool_args: Dict[str, Any], tool_id: str = None) -> ToolCallEvent:
+    """Create a tool call event."""
+    data = ToolCallEventData(
+        session_id=session_id,
+        tool_name=tool_name,
+        tool_args=tool_args,
+        tool_id=tool_id
+    )
+    return ToolCallEvent(type="tool_call", data=data.dict())
+
+
+def create_tool_result_event(session_id: str, tool_id: str, result: Any, success: bool, error: str = None) -> ToolResultEvent:
+    """Create a tool result event."""
+    data = ToolResultEventData(
+        session_id=session_id,
+        tool_id=tool_id,
+        result=result,
+        success=success,
+        error=error
+    )
+    return ToolResultEvent(type="tool_result", data=data.dict())
+
+
+def create_approval_required_event(
+    session_id: str,
+    request_id: UUID,
+    tool_name: str,
+    tool_args: Dict[str, Any],
+    reason: str,
+    amount: str = None,
+    currency: str = None,
+    estimated_cost: str = None
+) -> ApprovalRequiredEvent:
+    """Create an approval required event."""
+    data = ApprovalRequiredEventData(
+        session_id=session_id,
+        request_id=request_id,
+        tool_name=tool_name,
+        tool_args=tool_args,
+        reason=reason,
+        amount=amount,
+        currency=currency,
+        estimated_cost=estimated_cost
+    )
+    return ApprovalRequiredEvent(type="approval_required", data=data.dict())
+
+
+def create_complete_event(
+    session_id: str,
+    execution_id: UUID,
+    result: Any,
+    success: bool,
+    total_cost: str = None,
+    duration_ms: int = None,
+    tool_calls: List[Dict[str, Any]] = None
+) -> CompleteEvent:
+    """Create a complete event."""
+    data = CompleteEventData(
+        session_id=session_id,
+        execution_id=execution_id,
+        result=result,
+        success=success,
+        total_cost=total_cost,
+        duration_ms=duration_ms,
+        tool_calls=tool_calls
+    )
+    return CompleteEvent(type="complete", data=data.dict())
+
+
+def create_error_event(
+    message: str,
+    session_id: str = None,
+    execution_id: UUID = None,
+    error_type: str = None,
+    details: Dict[str, Any] = None
+) -> ErrorEvent:
+    """Create an error event."""
+    data = ErrorEventData(
+        session_id=session_id,
+        execution_id=execution_id,
+        message=message,
+        error_type=error_type,
+        details=details
+    )
+    return ErrorEvent(type="error", data=data.dict())
+
+
+def create_subagent_start_event(
+    session_id: str,
+    subagent_id: str,
+    subagent_type: str,
+    task: str,
+    parent_agent: str
+) -> SubagentStartEvent:
+    """Create a subagent start event."""
+    data = SubagentStartEventData(
+        session_id=session_id,
+        subagent_id=subagent_id,
+        subagent_type=subagent_type,
+        task=task,
+        parent_agent=parent_agent
+    )
+    return SubagentStartEvent(type="subagent_start", data=data.dict())
+
+
+def create_subagent_end_event(
+    session_id: str,
+    subagent_id: str,
+    result: Any,
+    success: bool,
+    duration_ms: int = None,
+    error: str = None
+) -> SubagentEndEvent:
+    """Create a subagent end event."""
+    data = SubagentEndEventData(
+        session_id=session_id,
+        subagent_id=subagent_id,
+        result=result,
+        success=success,
+        duration_ms=duration_ms,
+        error=error
+    )
+    return SubagentEndEvent(type="subagent_end", data=data.dict())

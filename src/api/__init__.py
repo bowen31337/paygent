@@ -14,6 +14,7 @@ from src.api.routes import (
     wallet,
     approvals,
     logs,
+    websocket,
 )
 
 router = APIRouter()
@@ -25,5 +26,6 @@ router.include_router(payments.router, prefix="/payments", tags=["Payments"])
 router.include_router(wallet.router, prefix="/wallet", tags=["Wallet"])
 router.include_router(approvals.router, prefix="/approvals", tags=["Approvals"])
 router.include_router(logs.router, prefix="/logs", tags=["Logs"])
+router.include_router(websocket.router, prefix="/ws", tags=["WebSocket"])
 
 __all__ = ["router"]

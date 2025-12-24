@@ -335,6 +335,20 @@ class CommandParser:
         return parameters
 
 
+def parse_command(command: str) -> ParsedCommand:
+    """
+    Convenience function to parse a command.
+
+    Args:
+        command: Natural language command string
+
+    Returns:
+        ParsedCommand object
+    """
+    parser = CommandParser()
+    return parser.parse(command)
+
+
 def test_parser():
     """Test the command parser with sample commands."""
     parser = CommandParser()
