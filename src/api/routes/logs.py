@@ -93,20 +93,20 @@ async def get_logs(
     - start_date/end_date: Date range
     """
     # Build query
-    query = select(ExecutionLog)
+    query = select(ExecutionLogModel)
 
     # Apply filters
     if session_id:
-        query = query.where(ExecutionLog.session_id == session_id)
+        query = query.where(ExecutionLogModel.session_id == session_id)
     if status_filter:
-        query = query.where(ExecutionLog.status == status_filter)
+        query = query.where(ExecutionLogModel.status == status_filter)
     if start_date:
-        query = query.where(ExecutionLog.created_at >= start_date)
+        query = query.where(ExecutionLogModel.created_at >= start_date)
     if end_date:
-        query = query.where(ExecutionLog.created_at <= end_date)
+        query = query.where(ExecutionLogModel.created_at <= end_date)
 
     # Order by most recent first
-    query = query.order_by(ExecutionLog.created_at.desc())
+    query = query.order_by(ExecutionLogModel.created_at.desc())
 
     # Get total count
     count_query = select(func.count()).select_from(query.subquery())
@@ -122,7 +122,17 @@ async def get_logs(
     log_list = []
     for log in logs:
         # Parse tool_calls if it's stored as JSON
-        tool_calls = log.tool_calls if log.tool_calls else []
+        tool_calls_data = log.tool_calls if log.tool_calls else []
+        tool_calls = []
+        for tc in tool_calls_data:
+            # Handle both dict and already formatted data
+            if isinstance(tc, dict):
+                # Ensure required fields exist
+                if "arguments" not in tc and "tool_args" in tc:
+                    tc["arguments"] = tc.pop("tool_args")
+                tool_calls.append(ToolCall(**tc))
+            else:
+                tool_calls.append(tc)
 
         log_list.append(
             ExecutionLog(
@@ -130,7 +140,7 @@ async def get_logs(
                 session_id=log.session_id,
                 command=log.command,
                 plan=log.plan,
-                tool_calls=[ToolCall(**tc) for tc in tool_calls],
+                tool_calls=tool_calls,
                 result=log.result,
                 total_cost_usd=float(log.total_cost) if log.total_cost else None,
                 duration_ms=log.duration_ms,
@@ -159,7 +169,7 @@ async def get_log(
 ) -> ExecutionLog:
     """Get details of a specific execution log."""
     result = await db.execute(
-        select(ExecutionLog).where(ExecutionLog.id == log_id)
+        select(ExecutionLogModel).where(ExecutionLogModel.id == log_id)
     )
     log = result.scalar_one_or_none()
 
@@ -170,14 +180,22 @@ async def get_log(
         )
 
     # Parse tool_calls if it's stored as JSON
-    tool_calls = log.tool_calls if log.tool_calls else []
+    tool_calls_data = log.tool_calls if log.tool_calls else []
+    tool_calls = []
+    for tc in tool_calls_data:
+        if isinstance(tc, dict):
+            if "arguments" not in tc and "tool_args" in tc:
+                tc["arguments"] = tc.pop("tool_args")
+            tool_calls.append(ToolCall(**tc))
+        else:
+            tool_calls.append(tc)
 
     return ExecutionLog(
         id=log.id,
         session_id=log.session_id,
         command=log.command,
         plan=log.plan,
-        tool_calls=[ToolCall(**tc) for tc in tool_calls],
+        tool_calls=tool_calls,
         result=log.result,
         total_cost_usd=float(log.total_cost) if log.total_cost else None,
         duration_ms=log.duration_ms,
@@ -219,9 +237,9 @@ async def get_session_summary(
 
     # Get all logs for this session
     logs_result = await db.execute(
-        select(ExecutionLog)
-        .where(ExecutionLog.session_id == session_id)
-        .order_by(ExecutionLog.created_at.asc())
+        select(ExecutionLogModel)
+        .where(ExecutionLogModel.session_id == session_id)
+        .order_by(ExecutionLogModel.created_at.asc())
     )
     logs = logs_result.scalars().all()
 

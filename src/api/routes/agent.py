@@ -113,30 +113,6 @@ async def get_or_create_session(
     return new_session
 
 
-async def enhanced_agent_execution(command: str, session_id: UUID, db: AsyncSession, budget_limit_usd: Optional[float] = None) -> dict:
-    """
-    Enhanced agent execution using command parsing and tools with full logging.
-
-    This implementation:
-    - Parses the natural language command to extract intent
-    - Creates execution plan (write_todos) for complex operations
-    - Routes to appropriate tool (payment, swap, balance, etc.)
-    - Executes the tool with extracted parameters
-    - Logs all tool calls to execution_logs table
-    - Enforces budget limits
-    - Returns structured results
-    """
-    # Use the enhanced agent executor with database logging
-    result = await execute_agent_command_enhanced(
-        command=command,
-        session_id=session_id,
-        db=db,
-        budget_limit_usd=budget_limit_usd
-    )
-
-    return result
-
-
 @router.post(
     "/execute",
     response_model=ExecuteCommandResponse,
@@ -153,9 +129,10 @@ async def execute_command(
 
     The agent will:
     1. Parse the command to understand intent
-    2. Create an execution plan
+    2. Create an execution plan (write_todos)
     3. Execute tools as needed (payments, swaps, etc.)
-    4. Return the result
+    4. Log all tool calls to database
+    5. Return the result
 
     For high-value operations, human-in-the-loop approval may be required.
     """
@@ -166,45 +143,22 @@ async def execute_command(
         config={"budget_limit": request.budget_limit_usd} if request.budget_limit_usd else None
     )
 
-    # Create execution log
-    execution_log = ExecutionLog(
-        id=uuid4(),
-        session_id=session.id,
-        command=request.command,
-        status="running",
-    )
-    db.add(execution_log)
-    await db.commit()
-    await db.refresh(execution_log)
-
-    # Execute the command using enhanced agent
+    # Execute using enhanced agent executor (which handles all logging internally)
     try:
-        result = await enhanced_agent_execution(
-            request.command,
-            session.id,
-            db,
-            request.budget_limit_usd
+        result = await execute_agent_command_enhanced(
+            command=request.command,
+            session_id=session.id,
+            db=db,
+            budget_limit_usd=request.budget_limit_usd
         )
-
-        # Update execution log
-        execution_log.status = "completed" if result.get("success") else "failed"
-        execution_log.result = result
-        execution_log.duration_ms = 150  # Mock duration
-        execution_log.total_cost = 0.01  # Mock cost
-        await db.commit()
 
         return ExecuteCommandResponse(
             session_id=session.id,
             status="completed" if result.get("success") else "failed",
             result=result,
-            total_cost_usd=0.01,
+            total_cost_usd=result.get("total_cost_usd", 0.0),
         )
     except Exception as e:
-        # Update execution log with error
-        execution_log.status = "failed"
-        execution_log.result = {"error": str(e)}
-        await db.commit()
-
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Agent execution failed: {str(e)}",
