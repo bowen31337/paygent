@@ -16,6 +16,13 @@ from pydantic import BaseModel
 
 from src.core.config import settings
 from src.core.security import sanitize
+from src.services.alerting_service import (
+    alerting_service,
+    AlertType,
+    AlertSeverity,
+    send_critical_alert,
+    send_error_alert,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +31,6 @@ class ErrorResponse(BaseModel):
     """Standardized error response model."""
     error: str
     detail: Optional[str] = None
-    status_code: int
 
 
 class SafeException(Exception):
@@ -179,6 +185,19 @@ async def general_exception_handler(
     # Log full exception for debugging
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
 
+    # Send critical alert for unhandled exceptions
+    if settings.alert_enabled:
+        send_critical_alert(
+            alert_type=AlertType.EXTERNAL_SERVICE_FAILURE,
+            message=f"Unhandled exception: {type(exc).__name__}",
+            details={
+                "error": str(exc),
+                "path": str(request.url.path),
+                "method": request.method,
+            },
+            correlation_id=getattr(exc, "correlation_id", None),
+        )
+
     # Return generic error in production
     if settings.debug:
         # In debug mode, show full traceback
@@ -207,7 +226,7 @@ def validate_command_input(command: str) -> str:
     Raises:
         ValueError: If command contains potentially dangerous content
     """
-    if not command:
+    if not command or not command.strip():
         raise ValueError("Command cannot be empty")
 
     # Check for shell injection patterns

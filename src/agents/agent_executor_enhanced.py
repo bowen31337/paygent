@@ -26,6 +26,8 @@ from src.services.x402_service import X402PaymentService
 from src.services.approval_service import ApprovalService, BudgetLimitService
 from src.services.metrics_service import metrics_collector
 from src.core.security import get_tool_allowlist, ToolAllowlistError
+from src.services.alerting_service import AlertType, send_error_alert
+from src.core.config import settings
 
 # Try to import the subagents, but fall back gracefully if langchain isn't available
 try:
@@ -252,6 +254,18 @@ class AgentExecutorEnhanced:
             try:
                 self._validate_intent_allowed(parsed.intent)
             except ToolAllowlistError as e:
+                # Send security alert for allowlist violation
+                if settings.alert_enabled:
+                    send_error_alert(
+                        alert_type=AlertType.ALLOWLIST_VIOLATION,
+                        message=f"Tool allowlist violation: {str(e)}",
+                        details={
+                            "session_id": str(self.session_id),
+                            "command": command,
+                            "intent": parsed.intent,
+                        },
+                    )
+
                 # Update execution log with error
                 duration_ms = int((time.time() - start_time) * 1000)
                 execution_log.result = {

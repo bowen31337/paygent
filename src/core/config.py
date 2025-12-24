@@ -116,6 +116,16 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     log_format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
+    # Alerting
+    alert_webhook_url: Optional[str] = Field(
+        default=None,
+        description="Webhook URL for critical alert notifications"
+    )
+    alert_enabled: bool = Field(
+        default=True,
+        description="Whether to enable alerting for critical failures"
+    )
+
     @property
     def effective_database_url(self) -> str:
         """Get the effective database URL (Vercel Postgres or local)."""

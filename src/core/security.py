@@ -10,6 +10,8 @@ import logging
 from typing import Any, Dict, Set, Optional, List
 from functools import lru_cache
 
+logger = logging.getLogger(__name__)
+
 # Patterns to detect and redact sensitive information
 SENSITIVE_PATTERNS = [
     # Private keys (0x followed by 64 hex characters)

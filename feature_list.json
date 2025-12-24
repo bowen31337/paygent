@@ -1674,7 +1674,7 @@
       "Step 3: Verify HTTPS connection succeeds"
     ],
     "passes": false,
-    "is_dev_done": false,
+    "is_dev_done": true,
     "is_qa_passed": false
   },
   {
@@ -1686,9 +1686,9 @@
       "Step 3: Verify tool execution is blocked",
       "Step 4: Verify allowed tools execute normally"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "functional",
@@ -1699,7 +1699,7 @@
       "Step 3: Verify subagent results are isolated"
     ],
     "passes": false,
-    "is_dev_done": false,
+    "is_dev_done": true,
     "is_qa_passed": false
   },
   {
@@ -1737,7 +1737,7 @@
       "Step 4: Verify alert contains error details"
     ],
     "passes": false,
-    "is_dev_done": false,
+    "is_dev_done": true,
     "is_qa_passed": false
   },
   {

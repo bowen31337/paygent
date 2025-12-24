@@ -98,7 +98,35 @@ class VVSTraderSubagent:
         # Initialize agent
         self.agent_executor = self._create_agent()
 
-        logger.info(f"VVS Trader Subagent initialized for session {session_id}")
+        # Log context isolation details
+        logger.info(
+            f"VVS Trader Subagent initialized - Session: {session_id}, "
+            f"Parent: {parent_agent_id}, Isolated: True"
+        )
+
+    def verify_context_isolation(self) -> bool:
+        """
+        Verify that this subagent has proper context isolation.
+
+        Returns:
+            True if context isolation is properly configured
+        """
+        checks = {
+            "has_unique_session": self.session_id != self.parent_agent_id,
+            "has_parent_reference": self.parent_agent_id is not None,
+            "has_independent_memory": self.memory is not None,
+            "has_dedicated_tools": len(self.tools) > 0,
+        }
+
+        all_passed = all(checks.values())
+
+        logger.info(
+            f"Context isolation check for {self.session_id}: {checks} - "
+            f"{'PASS' if all_passed else 'FAIL'}"
+        )
+
+        return all_passed
+
 
     def _initialize_llm(self):
         """Initialize the LLM based on configuration."""

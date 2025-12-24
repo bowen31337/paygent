@@ -22,6 +22,7 @@ from src.core.errors import (
 from src.api import router as api_router
 from src.middleware.metrics import metrics_middleware
 from src.middleware.rate_limiter import rate_limit_middleware
+from src.middleware.https_enforcement import https_enforcement_middleware
 
 # Configure logging
 logging.basicConfig(
@@ -111,6 +112,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add HTTPS enforcement middleware (first, to handle protocol checks)
+app.middleware("http")(https_enforcement_middleware)
 
 # Add metrics middleware
 app.middleware("http")(metrics_middleware)
