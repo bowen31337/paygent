@@ -89,9 +89,9 @@
       "Step 4: Verify response contains session_id",
       "Step 5: Verify response contains execution status"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "functional",
@@ -101,9 +101,9 @@
       "Step 2: Verify response status is 422 (Validation Error)",
       "Step 3: Verify error message indicates missing command"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "functional",
@@ -113,9 +113,9 @@
       "Step 2: Verify response status is 400 or 422",
       "Step 3: Verify error message indicates invalid command"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "functional",

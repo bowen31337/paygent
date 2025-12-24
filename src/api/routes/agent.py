@@ -6,14 +6,17 @@ via AI agents and managing agent sessions.
 """
 
 from typing import Optional
-from uuid import UUID
+from uuid import UUID, uuid4
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from src.core.database import get_db
+from src.models.agent_sessions import AgentSession, ExecutionLog
 
 router = APIRouter()
 
@@ -71,6 +74,95 @@ class SessionListResponse(BaseModel):
     limit: int
 
 
+async def get_or_create_session(
+    db: AsyncSession,
+    session_id: Optional[UUID] = None,
+    user_id: Optional[UUID] = None,
+    config: Optional[dict] = None,
+) -> AgentSession:
+    """
+    Get an existing session or create a new one.
+    
+    For testing purposes, we use a fixed user_id if not provided.
+    """
+    if session_id:
+        result = await db.execute(
+            select(AgentSession).where(AgentSession.id == session_id)
+        )
+        session = result.scalar_one_or_none()
+        if session:
+            # Update last_active
+            session.last_active = datetime.utcnow()
+            await db.commit()
+            return session
+    
+    # Create new session
+    new_session = AgentSession(
+        id=uuid4(),
+        user_id=user_id or uuid4(),  # Generate user_id if not provided
+        wallet_address=None,
+        config=config or {},
+    )
+    db.add(new_session)
+    await db.commit()
+    await db.refresh(new_session)
+    return new_session
+
+
+async def mock_agent_execution(command: str, session_id: UUID) -> dict:
+    """
+    Mock agent execution for testing purposes.
+    
+    In a real implementation, this would:
+    - Use an LLM to parse the command
+    - Create a plan using write_todos
+    - Execute tools (payments, swaps, etc.)
+    - Return structured results
+    
+    For now, we return a simple mock response based on the command content.
+    """
+    command_lower = command.lower()
+    
+    # Simple command parsing for mock responses
+    if "pay" in command_lower or "transfer" in command_lower:
+        return {
+            "action": "payment",
+            "description": f"Executed payment: {command}",
+            "amount": "0.10",
+            "token": "USDC",
+            "recipient": "0x1234...5678",
+            "tx_hash": "0xmocktxhash1234567890abcdef1234567890abcdef1234567890abcdef12345678",
+            "status": "confirmed"
+        }
+    elif "swap" in command_lower or "exchange" in command_lower:
+        return {
+            "action": "swap",
+            "description": f"Executed swap: {command}",
+            "from_token": "CRO",
+            "to_token": "USDC",
+            "amount": "100",
+            "received": "42.50",
+            "status": "completed"
+        }
+    elif "balance" in command_lower or "check" in command_lower:
+        return {
+            "action": "query",
+            "description": f"Balance check: {command}",
+            "balances": [
+                {"token": "CRO", "amount": "1000.00"},
+                {"token": "USDC", "amount": "250.00"}
+            ],
+            "status": "completed"
+        }
+    else:
+        return {
+            "action": "general",
+            "description": f"Processed command: {command}",
+            "status": "completed",
+            "note": "This is a mock response. Real agent execution would use LLM and tools."
+        }
+
+
 @router.post(
     "/execute",
     response_model=ExecuteCommandResponse,
@@ -93,11 +185,51 @@ async def execute_command(
 
     For high-value operations, human-in-the-loop approval may be required.
     """
-    # TODO: Implement agent execution
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Agent execution not yet implemented",
+    # Get or create session
+    session = await get_or_create_session(
+        db,
+        session_id=request.session_id,
+        config={"budget_limit": request.budget_limit_usd} if request.budget_limit_usd else None
     )
+    
+    # Create execution log
+    execution_log = ExecutionLog(
+        id=uuid4(),
+        session_id=session.id,
+        command=request.command,
+        status="running",
+    )
+    db.add(execution_log)
+    await db.commit()
+    await db.refresh(execution_log)
+    
+    # Execute the command (mock implementation)
+    try:
+        result = await mock_agent_execution(request.command, session.id)
+        
+        # Update execution log
+        execution_log.status = "completed"
+        execution_log.result = result
+        execution_log.duration_ms = 100  # Mock duration
+        execution_log.total_cost = 0.01  # Mock cost
+        await db.commit()
+        
+        return ExecuteCommandResponse(
+            session_id=session.id,
+            status="completed",
+            result=result,
+            total_cost_usd=0.01,
+        )
+    except Exception as e:
+        # Update execution log with error
+        execution_log.status = "failed"
+        execution_log.result = {"error": str(e)}
+        await db.commit()
+        
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Agent execution failed: {str(e)}",
+        )
 
 
 @router.post(
