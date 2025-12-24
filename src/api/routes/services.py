@@ -15,6 +15,7 @@ from sqlalchemy import select, func as sql_func
 
 from src.core.database import get_db
 from src.models.services import Service
+from src.services.service_registry import ServiceRegistryService
 
 router = APIRouter()
 

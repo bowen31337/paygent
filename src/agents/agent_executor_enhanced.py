@@ -22,6 +22,7 @@ from src.agents.command_parser import CommandParser, ParsedCommand
 from src.tools.simple_tools import get_all_tools
 from src.models.agent_sessions import ExecutionLog, AgentSession, AgentMemory
 from src.core.database import get_db
+from src.services.x402_service import X402PaymentService
 
 # Try to import the subagents, but fall back gracefully if langchain isn't available
 try:
@@ -464,7 +465,7 @@ class AgentExecutorEnhanced:
         parsed: ParsedCommand,
         budget_limit_usd: Optional[float]
     ) -> Dict[str, Any]:
-        """Execute a payment command with logging."""
+        """Execute a payment command with logging using X402PaymentService."""
         params = parsed.parameters
 
         # Step 1: Check budget limit
@@ -491,12 +492,13 @@ class AgentExecutorEnhanced:
             {"service_url": service_url, "status": "completed"}
         )
 
-        # Step 3: Execute x402 payment
-        tool = self.tools["x402_payment"]
-        payment_result = tool.run(
+        # Step 3: Execute x402 payment using X402PaymentService
+        x402_service = X402PaymentService()
+        payment_result = await x402_service.execute_payment(
             service_url=service_url,
             amount=params["amount"],
-            token=params.get("token", "USDC")
+            token=params.get("token", "USDC"),
+            description=f"Payment for {service_url}",
         )
 
         await self._log_tool_call(
@@ -509,11 +511,12 @@ class AgentExecutorEnhanced:
             payment_result
         )
 
+        # Return result with signature info if available
         return {
-            "success": True,
+            "success": payment_result.get("success", False),
             "action": "payment",
             "result": payment_result,
-            "total_cost_usd": params.get("amount", 0.0)
+            "total_cost_usd": params.get("amount", 0.0) if payment_result.get("success") else 0.0
         }
 
     async def _execute_swap_with_logging(

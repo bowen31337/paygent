@@ -29,7 +29,6 @@ class ApprovalRequest(BaseModel):
     tool_args: dict
     decision: str = Field(..., description="pending, approved, rejected, or edited")
     edited_args: Optional[dict] = None
-    estimated_cost_usd: Optional[float] = None
     created_at: str
     decision_made_at: Optional[str] = None
 
@@ -104,7 +103,6 @@ async def list_pending_approvals(
             tool_args=req.tool_args,
             decision=req.decision,
             edited_args=req.edited_args,
-            estimated_cost_usd=float(req.estimated_cost) if req.estimated_cost else None,
             created_at=req.created_at.isoformat(),
             decision_made_at=req.decision_made_at.isoformat() if req.decision_made_at else None,
         )
@@ -146,7 +144,6 @@ async def get_approval_request(
         tool_args=req.tool_args,
         decision=req.decision,
         edited_args=req.edited_args,
-        estimated_cost_usd=float(req.estimated_cost) if req.estimated_cost else None,
         created_at=req.created_at.isoformat(),
         decision_made_at=req.decision_made_at.isoformat() if req.decision_made_at else None,
     )

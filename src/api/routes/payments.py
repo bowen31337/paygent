@@ -8,16 +8,19 @@ x402 payments, and getting payment statistics.
 from typing import Optional
 from uuid import UUID
 from datetime import datetime
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
+from src.core.config import settings
 from src.services.payment_service import PaymentService
 from src.services.x402_service import X402PaymentService
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 class PaymentInfo(BaseModel):
@@ -187,27 +190,67 @@ async def execute_x402_payment(
     2. Generate EIP-712 signature
     3. Submit payment to facilitator
     4. Retry request with payment header
-    5. Return service response
+    5. Create payment record in database
+    6. Return service response
 
     NOTE: This is a mock implementation. In production, this would
     interact with the actual x402 facilitator.
     """
+    payment_service = PaymentService(db)
     x402_service = X402PaymentService()
-    result = await x402_service.execute_payment(
-        service_url=request.service_url,
-        amount=request.amount,
-        token=request.token,
-    )
 
-    if not result["success"]:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=result.get("message", "x402 payment execution failed"),
+    # Try to execute payment and ALWAYS create a payment record
+    payment_success = False
+    payment_status = "failed"
+    tx_hash = None
+    error_message = None
+
+    try:
+        result = await x402_service.execute_payment(
+            service_url=request.service_url,
+            amount=request.amount,
+            token=request.token,
         )
 
-    return ExecuteX402Response(
-        payment_id=result["payment_id"],
-        tx_hash=result.get("tx_hash"),
-        status=result["status"],
-        service_response=result.get("service_response"),
-    )
+        if result["success"]:
+            payment_success = True
+            payment_status = result.get("status", "confirmed")
+            tx_hash = result.get("tx_hash")
+        else:
+            error_message = result.get("message", "x402 payment execution failed")
+    except Exception as e:
+        error_message = str(e)
+        logger.error(f"x402 payment execution exception: {e}")
+
+    # Always create payment record
+    try:
+        payment = await payment_service.create_payment(
+            agent_wallet=settings.default_wallet_address,
+            recipient=request.service_url,
+            amount=request.amount,
+            token=request.token,
+            tx_hash=tx_hash,
+            status=payment_status,
+        )
+
+        if payment_success:
+            return ExecuteX402Response(
+                payment_id=payment.id,
+                tx_hash=tx_hash,
+                status=payment_status,
+                service_response=result.get("service_response") if payment_success else None,
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=error_message or "x402 payment execution failed",
+            )
+
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions as-is
+    except Exception as e:
+        logger.error(f"Failed to create payment record: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create payment record: {str(e)}",
+        )

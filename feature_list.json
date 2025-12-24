@@ -771,8 +771,9 @@
       "Step 3: Verify error indicates insufficient balance"
     ],
     "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "is_dev_done": true,
+    "is_qa_passed": false,
+    "notes": "Fully implemented in WalletService.transfer_tokens() (lines 217-223). Validates balance before transfer and returns proper error."
   },
   {
     "category": "functional",
@@ -784,8 +785,9 @@
       "Step 4: Verify transfer is not executed"
     ],
     "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "is_dev_done": true,
+    "is_qa_passed": false,
+    "notes": "Fully implemented in WalletService.transfer_tokens() (lines 226-235). Checks daily allowance and returns 403 if exceeded."
   },
   {
     "category": "functional",
@@ -810,8 +812,9 @@
       "Step 4: Verify tool_name and tool_args included"
     ],
     "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "is_dev_done": true,
+    "is_qa_passed": false,
+    "notes": "API endpoint fully implemented in src/api/routes/approvals.py. Pending list endpoint working (line 77-117). estimated_cost field removed from response schema to match model."
   },
   {
     "category": "functional",
@@ -823,9 +826,10 @@
       "Step 4: Verify agent resumes execution",
       "Step 5: Verify action is completed"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true,
+    "notes": "Fully implemented and tested. POST /api/v1/approvals/{{request_id}}/approve endpoint working correctly (line 152-200). Test passed: \u2705"
   },
   {
     "category": "functional",
@@ -837,9 +841,10 @@
       "Step 4: Verify action is not executed",
       "Step 5: Verify rejection is logged"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true,
+    "notes": "Fully implemented and tested. POST /api/v1/approvals/{{request_id}}/reject endpoint working correctly (line 203-248). Test passed: \u2705"
   },
   {
     "category": "functional",
@@ -850,9 +855,10 @@
       "Step 3: Verify agent uses edited arguments",
       "Step 4: Verify edited amount is used in payment"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true,
+    "notes": "Fully implemented and tested. POST /api/v1/approvals/{{request_id}}/edit endpoint working correctly (line 251-298). Test passed: \u2705"
   },
   {
     "category": "functional",

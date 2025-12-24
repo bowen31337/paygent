@@ -35,17 +35,25 @@ class ServiceRegistryService:
 
     async def discover_services(
         self,
-        query: str,
+        query: str = "",
         category: Optional[str] = None,
-        limit: int = 10,
+        min_price: Optional[float] = None,
+        max_price: Optional[float] = None,
+        min_reputation: Optional[float] = None,
+        mcp_compatible: Optional[bool] = None,
+        limit: int = 20,
         offset: int = 0,
     ) -> List[Service]:
         """
-        Discover services based on search criteria.
+        Discover services based on search criteria with caching.
 
         Args:
             query: Search query
             category: Optional service category
+            min_price: Minimum price filter
+            max_price: Maximum price filter
+            min_reputation: Minimum reputation score filter
+            mcp_compatible: Filter for MCP-compatible services
             limit: Maximum number of results
             offset: Offset for pagination
 
@@ -53,23 +61,57 @@ class ServiceRegistryService:
             List of matching services
         """
         try:
-            # Build query
-            stmt = select(Service).where(
-                Service.name.contains(query) | Service.description.contains(query)
-            )
+            # Create cache key from all parameters
+            import hashlib
+            cache_params = f"{query}:{category}:{min_price}:{max_price}:{min_reputation}:{mcp_compatible}:{limit}:{offset}"
+            cache_key = f"services:discover:{hashlib.md5(cache_params.encode()).hexdigest()}"
 
-            # Filter by category if provided
+            # Try cache first (5 minute TTL)
+            cached = await self.cache_service.get(cache_key)
+            if cached:
+                logger.info(f"Cache hit for services discovery: {query}")
+                # Convert cached dicts back to Service objects if needed
+                # For now, return as-is since API expects dicts or objects
+                return cached
+
+            # Build query
+            stmt = select(Service)
+
+            # Apply filters
+            if query:
+                stmt = stmt.where(
+                    Service.name.contains(query) | Service.description.contains(query)
+                )
+
             if category:
                 stmt = stmt.where(Service.category == category)
 
-            # Apply pagination
-            stmt = stmt.limit(limit).offset(offset)
+            if min_price is not None:
+                stmt = stmt.where(Service.price_amount >= min_price)
+
+            if max_price is not None:
+                stmt = stmt.where(Service.price_amount <= max_price)
+
+            if min_reputation is not None:
+                stmt = stmt.where(Service.reputation_score >= min_reputation)
+
+            if mcp_compatible is not None:
+                stmt = stmt.where(Service.mcp_compatible == mcp_compatible)
+
+            # Apply ordering and pagination
+            stmt = stmt.order_by(Service.reputation_score.desc()).limit(limit).offset(offset)
 
             # Execute query
             result = await self.db.execute(stmt)
             services = result.scalars().all()
 
             logger.info(f"Found {len(services)} services for query: {query}")
+
+            # Cache results for 5 minutes (300 seconds)
+            if services:
+                await self.cache_service.set(cache_key, list(services), expiration=300)
+                logger.info(f"Cached {len(services)} services for {cache_key}")
+
             return services
 
         except Exception as e:

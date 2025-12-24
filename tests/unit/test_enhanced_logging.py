@@ -10,6 +10,7 @@ Verifies that:
 import pytest
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy import select
+from uuid import UUID
 
 from src.main import app
 from src.core.database import get_db
@@ -40,7 +41,7 @@ class TestEnhancedExecutorLogging:
                 )
                 assert response.status_code == 200
                 data = response.json()
-                session_id = data["session_id"]
+                session_id = UUID(data["session_id"])
 
                 # Check the execution log
                 result = await db_session.execute(
@@ -74,7 +75,7 @@ class TestEnhancedExecutorLogging:
                 )
                 assert response.status_code == 200
                 data = response.json()
-                session_id = data["session_id"]
+                session_id = UUID(data["session_id"])
 
                 # Check the execution log
                 result = await db_session.execute(
@@ -146,7 +147,7 @@ class TestEnhancedExecutorLogging:
                 )
                 assert response.status_code == 200
                 data = response.json()
-                session_id = data["session_id"]
+                session_id = UUID(data["session_id"])
 
                 # Check the execution log
                 result = await db_session.execute(
@@ -180,7 +181,7 @@ class TestEnhancedExecutorLogging:
                 )
                 assert response.status_code == 200
                 data = response.json()
-                session_id = data["session_id"]
+                session_id = UUID(data["session_id"])
 
                 # Check the execution log
                 result = await db_session.execute(

@@ -21,8 +21,9 @@ from src.services.wallet_service import WalletService
 
 router = APIRouter()
 
-# Mock wallet address - in production this comes from authenticated user
-MOCK_WALLET_ADDRESS = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
+# Use the default wallet address from config
+# In production, this comes from the authenticated user
+DEFAULT_WALLET_ADDRESS = settings.default_wallet_address
 
 
 class TokenBalance(BaseModel):
@@ -153,7 +154,7 @@ async def get_wallet_balance(
     total_usd = sum(b.get("balance_usd", 0) for b in balances)
 
     return WalletBalanceResponse(
-        wallet_address=MOCK_WALLET_ADDRESS,
+        wallet_address=DEFAULT_WALLET_ADDRESS,
         balances=[TokenBalance(**b) for b in balances],
         total_balance_usd=total_usd,
     )
@@ -183,7 +184,7 @@ async def get_wallet_allowance(
 
     result = await db.execute(
         select(Payment)
-        .where(Payment.agent_wallet == MOCK_WALLET_ADDRESS)
+        .where(Payment.agent_wallet == DEFAULT_WALLET_ADDRESS)
         .where(Payment.created_at >= start_of_day)
         .where(Payment.status == "confirmed")
     )
@@ -200,7 +201,7 @@ async def get_wallet_allowance(
     resets_at = tomorrow.replace(hour=0, minute=0, second=0, microsecond=0)
 
     return WalletAllowanceResponse(
-        wallet_address=MOCK_WALLET_ADDRESS,
+        wallet_address=DEFAULT_WALLET_ADDRESS,
         daily_limit_usd=daily_limit_usd,
         spent_today_usd=spent_today_usd,
         remaining_allowance_usd=remaining_usd,
@@ -223,38 +224,55 @@ async def transfer_tokens(
     Execute a token transfer.
 
     This will:
-    1. Validate sufficient balance
-    2. Check daily spending limit
-    3. Execute the transfer via AgentWallet contract
-    4. Return the transaction hash
+    1. Validate recipient address
+    2. Validate sufficient balance
+    3. Check daily spending limit
+    4. Execute the transfer via AgentWallet contract
+    5. Return the transaction hash
 
     NOTE: This is a mock implementation. In production, this would interact
     with the AgentWallet smart contract.
     """
-    # Generate a mock transaction hash
-    tx_hash = "0x" + uuid4().hex + "0" * 24
-
-    # Create a payment record to track this transfer
-    payment = Payment(
-        id=uuid4(),
-        agent_wallet=MOCK_WALLET_ADDRESS,
-        service_id=None,  # Direct transfer, not to a service
+    # Use WalletService for transfer with validation
+    wallet_service = WalletService(db, wallet_address=DEFAULT_WALLET_ADDRESS)
+    result = await wallet_service.transfer_tokens(
         recipient=request.recipient,
         amount=request.amount,
         token=request.token,
-        tx_hash=tx_hash,
-        status="confirmed",  # Mock: always succeeds
     )
-    db.add(payment)
-    await db.commit()
+
+    if not result["success"]:
+        # Map error types to HTTP status codes
+        error_type = result.get("error", "unknown")
+
+        if error_type == "invalid_recipient":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=result.get("message", "Invalid recipient address"),
+            )
+        elif error_type == "insufficient_balance":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=result.get("message", "Insufficient balance"),
+            )
+        elif error_type == "daily_limit_exceeded":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=result.get("message", "Daily spending limit exceeded"),
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=result.get("message", "Transfer failed"),
+            )
 
     return TransferResponse(
-        tx_hash=tx_hash,
-        status="confirmed",
-        from_address=MOCK_WALLET_ADDRESS,
-        to_address=request.recipient,
-        amount=request.amount,
-        token=request.token,
+        tx_hash=result["tx_hash"],
+        status=result["status"],
+        from_address=result["from_address"],
+        to_address=result["to_address"],
+        amount=result["amount"],
+        token=result["token"],
     )
 
 
