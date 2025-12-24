@@ -1,0 +1,1127 @@
+<project_specification>
+  <project_name>Paygent - AI-Powered Multi-Agent Payment Orchestration Platform</project_name>
+
+  <overview>
+    Build an AI-powered payment orchestration platform that enables autonomous AI agents to discover,
+    negotiate, and execute payments seamlessly across the Cronos ecosystem using the x402 protocol.
+    Features include natural language payment commands, x402 payment orchestration, service discovery
+    registry, DeFi protocol integration (VVS Finance, Moonlander, Delphi), and human-in-the-loop
+    controls. Built on deepagents framework with LangGraph for production-ready agent orchestration.
+    Focus on non-custodial design, security, and seamless integration with Crypto.com ecosystem.
+  </overview>
+
+  <technology_stack>
+    <language_preference>
+      IMPORTANT: Use Python 3.11+ for ALL backend code. Use TypeScript for smart contracts and frontend.
+      All Python code must have proper type hints and follow PEP 8 standards.
+    </language_preference>
+    <package_managers>
+      IMPORTANT: Use uv for Python package management (faster, modern replacement for pip/venv).
+      Use pnpm for Node.js package management.
+    </package_managers>
+    <api_key>
+      You can use API keys located at /tmp/api-key for testing (Anthropic, OpenAI, Crypto.com).
+    </api_key>
+    <agent_framework>
+      <framework>deepagents 0.2.7 with LangGraph</framework>
+      <language>Python 3.11+ with type hints</language>
+      <llm>Claude Sonnet 4 (primary), OpenAI GPT-4 (fallback)</language>
+      <middleware>Custom middleware for x402 payments, wallet management, service registry</middleware>
+      <planning>write_todos for multi-step workflows</planning>
+      <subagents>VVS Trader, Moonlander Trader, Market Researcher</subagents>
+      <filesystem>Agent memory and transaction logs</filesystem>
+    </agent_framework>
+    <backend>
+      <runtime>Python 3.11+ with FastAPI and asyncio</runtime>
+      <language>Python with strict type checking (mypy)</language>
+      <database>
+        <primary>Vercel Postgres (serverless PostgreSQL) for production</primary>
+        <alternative>PostgreSQL 15 with SQLAlchemy ORM for local development</alternative>
+        <orm>SQLAlchemy with async support, Prisma for TypeScript components</orm>
+      </database>
+      <cache>
+        <primary>Vercel KV (Redis-compatible) for production</primary>
+        <alternative>Redis 7 for local development</alternative>
+        <usage>Service discovery cache, session state, rate limiting</usage>
+      </cache>
+      <storage>
+        <primary>Vercel Blob for agent logs and file storage</primary>
+        <alternative>AWS S3 or local filesystem for development</alternative>
+      </storage>
+      <authentication>JWT-based auth with typed middleware</authentication>
+      <payment>x402 protocol with @crypto.com/facilitator-client</payment>
+      <blockchain>ethers.js v6 for Cronos EVM interactions</blockchain>
+      <type_safety>Use TypedDict and Pydantic models for all API request/response types</type_safety>
+    </backend>
+    <blockchain>
+      <network>Cronos EVM (Chain ID: 25 mainnet, 338 testnet)</network>
+      <contracts>Solidity 0.8.x with OpenZeppelin contracts</contracts>
+      <deployment>Hardhat with TypeScript for contract deployment</deployment>
+      <wallet>Crypto.com AI Agent SDK for wallet management</wallet>
+      <signing>EIP-712 typed data signing for x402 payments</signing>
+    </blockchain>
+    <mcp_integration>
+      <client>langchain-mcp-adapters for MCP protocol compatibility</client>
+      <servers>Crypto.com Market Data MCP Server integration</servers>
+      <registry>MCP-compatible service discovery and catalog</registry>
+    </mcp_integration>
+    <infrastructure>
+      <deployment>
+        <primary>Vercel Platform for serverless deployment</primary>
+        <functions>Vercel Functions for API endpoints and agent workers</functions>
+        <workflow>Vercel Workflow for durable agent execution (pause/resume)</workflow>
+        <edge>Vercel Edge Functions for low-latency x402 payment verification</edge>
+      </deployment>
+      <local_development>
+        <containerization>Docker with docker-compose for local development</containerization>
+        <database>Local PostgreSQL and Redis via Docker</database>
+      </local_development>
+      <alternative_production>
+        <orchestration>Kubernetes for self-hosted deployment</orchestration>
+        <cloud>AWS/GCP for enterprise deployments</cloud>
+      </alternative_production>
+      <monitoring>
+        <vercel>Vercel Analytics and Workflow Observability</vercel>
+        <custom>Prometheus, Grafana, OpenTelemetry for advanced metrics</custom>
+      </monitoring>
+      <storage>Vercel Blob for production, AWS S3 for enterprise</storage>
+    </infrastructure>
+  </technology_stack>
+
+  <prerequisites>
+    <environment_setup>
+      - Repository includes .env with ANTHROPIC_API_KEY, CRONOS_RPC_URL, X402_FACILITATOR_URL
+      - uv installed for Python package management: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - Node.js 18+ for smart contract development and Vercel deployment
+      - pnpm installed for Node.js: npm install -g pnpm
+      - Cronos testnet wallet with devUSDC.e tokens for testing
+      - Crypto.com API keys for Market Data MCP access
+      - Vercel account with project created
+    </environment_setup>
+    <uv_setup>
+      - Initialize project: uv init paygent
+      - Create virtual environment: uv venv
+      - Activate environment: source .venv/bin/activate
+      - Install dependencies: uv sync
+      - Add packages: uv add fastapi deepagents langchain
+      - Run scripts: uv run python paygent/main.py
+      - Run with FastAPI: uv run uvicorn paygent.main:app --reload
+    </uv_setup>
+    <vercel_setup>
+      - Vercel CLI installed: pnpm add -g vercel
+      - Vercel Postgres database provisioned from Vercel Dashboard
+      - Vercel KV store provisioned from Vercel Dashboard
+      - Vercel Blob storage configured for agent logs
+      - Environment variables configured in Vercel project settings
+    </vercel_setup>
+    <local_development>
+      - PostgreSQL 15 and Redis 7 running locally via Docker (optional)
+      - Docker Compose for local services: docker-compose up -d
+      - Use Vercel CLI for local development: vercel dev
+      - Or run directly: uv run uvicorn paygent.main:app --reload --port 8000
+    </local_development>
+    <dependencies>
+      - Python packages (via uv): deepagents, langchain, fastapi, sqlalchemy, redis, httpx, eth-account
+      - Node.js packages (via pnpm): @crypto.com/facilitator-client, ethers, hardhat, @openzeppelin/contracts
+      - Vercel packages (via pnpm): @vercel/postgres, @vercel/kv, @vercel/blob
+      - System: Docker (optional for local), Vercel CLI, uv
+    </dependencies>
+  </prerequisites>
+
+  <core_features>
+    <ai_agent_runtime>
+      - Natural language payment commands: "Pay 0.10 USDC to access the market data API"
+      - Automatic wallet management via Crypto.com AI Agent SDK
+      - Budget controls and spending limits per agent session
+      - Transaction logging and audit trails
+      - Planning and task decomposition for complex workflows (write_todos)
+      - Subagent spawning for specialized DeFi operations
+      - Filesystem backend for agent memory and logs
+      - Human-in-the-loop approval workflows for high-value transactions
+    </ai_agent_runtime>
+
+    <x402_payment_orchestration>
+      - HTTP 402 Payment Required handling with automatic retry logic
+      - Integration with Cronos x402 Facilitator for verification and settlement
+      - EIP-712 signature generation for payment authorization
+      - Multi-step payment workflows (pay-per-call, metered, subscription)
+      - Real-time settlement (~200ms) on Cronos EVM
+      - Payment price discovery before execution
+      - Payment history and audit logging
+      - Error handling with exponential backoff
+    </x402_payment_orchestration>
+
+    <service_discovery_registry>
+      - MCP-compatible service catalog and marketplace
+      - Crypto.com Market Data MCP Server integration
+      - Dynamic pricing discovery and comparison
+      - Service reputation and quality metrics tracking
+      - Service filtering by category, price, reputation
+      - Subscription management for recurring services
+      - Service registration and metadata management
+      - Cache layer for fast service lookups
+    </service_discovery_registry>
+
+    <defi_integration>
+      <vvs_finance>
+        - Token swap execution with optimal routing
+        - Add/remove liquidity from pools
+        - Yield farming operations
+        - Price quotes and swap analysis
+        - Slippage protection and deadline management
+      </vvs_finance>
+      <moonlander>
+        - Open/close perpetual trading positions
+        - Stop-loss and take-profit automation
+        - Position management and monitoring
+        - Funding rate analysis
+        - Leverage management
+      </moonlander>
+      <delphi>
+        - Prediction market participation
+        - Market discovery and analysis
+        - Automated betting strategies
+        - Winnings claim automation
+        - Market outcome tracking
+      </delphi>
+    </defi_integration>
+
+    <wallet_management>
+      - Non-custodial AgentWallet smart contract deployment
+      - Daily spending limits per token
+      - Operator-based access control
+      - Multi-sig support for high-value operations
+      - Balance checking across multiple tokens
+      - Token transfer capabilities
+      - Transaction history tracking
+    </wallet_management>
+
+    <human_in_the_loop>
+      - Configurable approval workflows for sensitive operations
+      - Budget limits and spending caps enforcement
+      - Kill switches for runaway agents
+      - Transaction editing before approval
+      - Approval decision logging
+      - WebSocket-based real-time approval requests
+      - Email/SMS notifications for pending approvals
+    </human_in_the_loop>
+
+    <monitoring_observability>
+      - Agent execution logs with full traceability
+      - Payment transaction history
+      - Service usage analytics
+      - Performance metrics (latency, success rates)
+      - Error tracking and alerting
+      - Cost tracking per agent session
+      - Dashboard for agent activity monitoring
+      - Vercel Workflow observability for agent runs
+    </monitoring_observability>
+
+    <vercel_workflow_integration>
+      <!-- Durable agent execution using Vercel Workflow -->
+      - Resumable workflows: Pause for human approval, resume after decision
+      - Durable execution: Survive deployments and crashes with deterministic replays
+      - Step-based execution: Each tool call is a durable step with retries
+      - Sleep support: Wait for hours/days without consuming compute (e.g., subscription renewals)
+      - Hook system: Wait for external events (webhooks, user approvals, x402 settlements)
+      - Built-in observability: Track runs, trace failures, analyze performance
+      - Idiomatic code: Write async/await JavaScript with 'use workflow' and 'use step' directives
+    </vercel_workflow_integration>
+  </core_features>
+
+  <database_schema>
+    <tables>
+      <services>
+        - id (UUID PRIMARY KEY)
+        - name (VARCHAR(255) NOT NULL)
+        - description (TEXT)
+        - endpoint (VARCHAR(512) NOT NULL)
+        - pricing_model (VARCHAR(50)) -- 'pay-per-call', 'subscription', 'metered'
+        - price_amount (DECIMAL(20, 8) NOT NULL)
+        - price_token (VARCHAR(42) NOT NULL)
+        - mcp_compatible (BOOLEAN DEFAULT false)
+        - reputation_score (DECIMAL(3, 2) DEFAULT 0)
+        - total_calls (BIGINT DEFAULT 0)
+        - created_at (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+        - updated_at (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+      </services>
+
+      <payments>
+        - id (UUID PRIMARY KEY)
+        - agent_wallet (VARCHAR(42) NOT NULL)
+        - service_id (UUID REFERENCES services(id))
+        - recipient (VARCHAR(42) NOT NULL)
+        - amount (DECIMAL(20, 8) NOT NULL)
+        - token (VARCHAR(42) NOT NULL)
+        - tx_hash (VARCHAR(66))
+        - status (VARCHAR(20)) -- 'pending', 'confirmed', 'failed'
+        - created_at (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+      </payments>
+
+      <agent_sessions>
+        - id (UUID PRIMARY KEY)
+        - user_id (UUID NOT NULL)
+        - wallet_address (VARCHAR(42))
+        - config (JSONB) -- budget limits, approval thresholds, etc.
+        - created_at (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+        - last_active (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+      </agent_sessions>
+
+      <execution_logs>
+        - id (UUID PRIMARY KEY)
+        - session_id (UUID REFERENCES agent_sessions(id))
+        - command (TEXT NOT NULL)
+        - plan (JSONB) -- write_todos plan structure
+        - tool_calls (JSONB) -- array of tool invocations
+        - result (JSONB) -- final execution result
+        - total_cost (DECIMAL(20, 8))
+        - duration_ms (INTEGER)
+        - created_at (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+      </execution_logs>
+
+      <approval_requests>
+        - id (UUID PRIMARY KEY)
+        - session_id (UUID REFERENCES agent_sessions(id))
+        - tool_name (VARCHAR(100) NOT NULL)
+        - tool_args (JSONB NOT NULL)
+        - decision (VARCHAR(20)) -- 'pending', 'approved', 'rejected', 'edited'
+        - edited_args (JSONB)
+        - decision_made_at (TIMESTAMP)
+        - created_at (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+      </approval_requests>
+
+      <service_subscriptions>
+        - id (UUID PRIMARY KEY)
+        - session_id (UUID REFERENCES agent_sessions(id))
+        - service_id (UUID REFERENCES services(id))
+        - status (VARCHAR(20)) -- 'active', 'cancelled', 'expired'
+        - expires_at (TIMESTAMP)
+        - created_at (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+      </service_subscriptions>
+    </tables>
+
+    <indexes>
+      - idx_payments_wallet ON payments(agent_wallet)
+      - idx_payments_created ON payments(created_at DESC)
+      - idx_services_mcp ON services(mcp_compatible) WHERE mcp_compatible = true
+      - idx_execution_session ON execution_logs(session_id)
+      - idx_approval_session ON approval_requests(session_id) WHERE decision = 'pending'
+    </indexes>
+
+    <vercel_kv_schema>
+      <!-- Vercel KV (Redis-compatible) key patterns -->
+      - service:{service_id} -> JSON service object (TTL: 5 minutes)
+      - price:{service_id} -> JSON price info (TTL: 1 minute)
+      - session:{session_id} -> JSON session state (TTL: 1 hour)
+      - ratelimit:{wallet}:{endpoint} -> counter (TTL: 1 minute)
+      - agent:state:{session_id} -> JSON agent execution state (TTL: 24 hours)
+      - workflow:{workflow_id} -> JSON workflow state for Vercel Workflow integration
+    </vercel_kv_schema>
+
+    <vercel_blob_storage>
+      <!-- Vercel Blob storage paths -->
+      - logs/{session_id}/{timestamp}.json -> Execution logs
+      - reports/{session_id}/{report_id}.pdf -> Generated reports
+      - agent-memory/{session_id}/ -> Agent filesystem backend
+      - transactions/{wallet}/{tx_hash}.json -> Transaction receipts
+    </vercel_blob_storage>
+  </database_schema>
+
+  <smart_contracts>
+    <agent_wallet>
+      - Contract: AgentWallet.sol
+      - Features: Daily spending limits, operator access control, payment execution
+      - Events: OperatorAdded, OperatorRemoved, DailyLimitSet, PaymentExecuted
+      - Security: ReentrancyGuard, Ownable pattern, SafeERC20
+      - Functions: addOperator, removeOperator, setDailyLimit, executePayment, withdraw
+    </agent_wallet>
+
+    <payment_router>
+      - Contract: PaymentRouter.sol
+      - Features: Batch payments, split payments, subscription handling
+      - Events: BatchPaymentExecuted
+      - Security: ReentrancyGuard, SafeERC20
+      - Functions: batchPay
+    </payment_router>
+
+    <service_registry>
+      - Contract: ServiceRegistry.sol
+      - Features: Service registration, stake requirements, reputation tracking
+      - Events: ServiceRegistered, ServiceUpdated, ReputationUpdated
+      - Security: Access control, stake validation
+      - Functions: registerService, updateService, updateReputation
+    </service_registry>
+  </smart_contracts>
+
+  <api_endpoints_summary>
+    <agent_execution>
+      - POST /api/v1/agent/execute - Execute natural language command
+      - POST /api/v1/agent/stream - Execute command with Server-Sent Events streaming
+      - GET /api/v1/agent/sessions - List agent sessions
+      - GET /api/v1/agent/sessions/{session_id} - Get session details
+      - DELETE /api/v1/agent/sessions/{session_id} - Terminate session
+    </agent_execution>
+
+    <services>
+      - GET /api/v1/services/discover - Discover available services (with filters)
+      - GET /api/v1/services/{service_id} - Get service details
+      - POST /api/v1/services - Register new service (admin)
+      - PUT /api/v1/services/{service_id} - Update service (admin)
+      - GET /api/v1/services/{service_id}/pricing - Get current pricing
+    </services>
+
+    <payments>
+      - GET /api/v1/payments/history - Get payment history
+      - GET /api/v1/payments/{payment_id} - Get payment details
+      - POST /api/v1/payments/x402 - Execute x402 payment flow
+      - GET /api/v1/payments/stats - Get payment statistics
+    </payments>
+
+    <wallet>
+      - GET /api/v1/wallet/balance - Get token balances
+      - GET /api/v1/wallet/allowance - Get remaining daily allowance
+      - POST /api/v1/wallet/transfer - Transfer tokens
+      - GET /api/v1/wallet/transactions - Get transaction history
+    </wallet>
+
+    <approvals>
+      - GET /api/v1/approvals/pending - List pending approval requests
+      - POST /api/v1/approvals/{request_id}/approve - Approve request
+      - POST /api/v1/approvals/{request_id}/reject - Reject request
+      - POST /api/v1/approvals/{request_id}/edit - Edit and approve request
+    </approvals>
+
+    <execution_logs>
+      - GET /api/v1/logs - Get execution logs (with filters)
+      - GET /api/v1/logs/{log_id} - Get specific execution log
+      - GET /api/v1/logs/{session_id}/summary - Get session summary
+    </execution_logs>
+  </api_endpoints_summary>
+
+  <websocket_events>
+    <client_to_server>
+      - type: "execute" - Execute agent command
+      - type: "approve" - Approve pending request
+      - type: "reject" - Reject pending request
+      - type: "edit" - Edit and approve request
+      - type: "cancel" - Cancel execution
+    </client_to_server>
+
+    <server_to_client>
+      - type: "thinking" - Agent is processing
+      - type: "tool_call" - Agent called a tool
+      - type: "tool_result" - Tool returned result
+      - type: "approval_required" - HITL approval needed
+      - type: "subagent_start" - Subagent spawned
+      - type: "subagent_end" - Subagent completed
+      - type: "complete" - Execution finished
+      - type: "error" - Error occurred
+    </server_to_client>
+  </websocket_events>
+
+  <architecture_components>
+    <main_agent>
+      - Location: paygent/agents/main_agent.py
+      - Responsibilities: Natural language understanding, planning, tool selection, subagent coordination
+      - Configuration: Model selection, max iterations, timeout, token limits
+      - Middleware: X402PaymentMiddleware, CronosWalletMiddleware, ServiceRegistryMiddleware
+      - Tools: x402_payment, discover_services, check_balance, transfer_tokens
+    </main_agent>
+
+    <x402_payment_engine>
+      - Location: paygent/x402/
+      - Components: client.py, signature.py, facilitator.py
+      - Responsibilities: HTTP 402 handling, EIP-712 signing, facilitator integration, settlement verification
+      - Flow: Request → 402 Response → Sign → Retry → Verify → Settle → Return Data
+    </x402_payment_engine>
+
+    <service_registry>
+      - Location: paygent/middleware/service_registry.py
+      - Components: RegistryDB (PostgreSQL), CacheLayer (Redis), MCPAdapter, ReputationEngine
+      - Responsibilities: Service discovery, pricing lookup, reputation tracking, MCP compatibility
+    </service_registry>
+
+    <defi_connectors>
+      <vvs_connector>
+        - Location: paygent/connectors/vvs.py
+        - Functions: swap, add_liquidity, remove_liquidity, get_quote, farm
+        - Subagent: vvs_trader_config
+      </vvs_connector>
+      <moonlander_connector>
+        - Location: paygent/connectors/moonlander.py
+        - Functions: open_position, close_position, set_stop_loss, get_funding_rate
+        - Subagent: moonlander_trader_config
+      </moonlander_connector>
+      <delphi_connector>
+        - Location: paygent/connectors/delphi.py
+        - Functions: get_markets, place_prediction, claim_winnings, get_outcome
+        - Subagent: delphi_predictor_config
+      </delphi_connector>
+    </defi_connectors>
+
+    <wallet_middleware>
+      - Location: paygent/middleware/cronos_wallet.py
+      - Responsibilities: Balance checking, token transfers, spending limit enforcement
+      - Integration: Crypto.com AI Agent SDK, AgentWallet contract
+    </wallet_middleware>
+  </architecture_components>
+
+  <vercel_workflow_examples>
+    <agent_execution_workflow>
+      <!-- Example: Durable AI agent workflow with human approval -->
+      ```typescript
+      // app/workflows/agent-payment-workflow.ts
+      import { defineHook, sleep } from 'workflow';
+      
+      const approvalHook = defineHook<{
+        decision: 'approved' | 'rejected' | 'edited';
+        editedArgs?: Record<string, any>;
+      }>();
+      
+      export async function agentPaymentWorkflow(command: string, sessionId: string) {
+        'use workflow';
+        
+        // Step 1: Parse command and create plan
+        const plan = await parseCommandAndPlan(command);
+        
+        // Step 2: Execute each planned step
+        for (const step of plan.steps) {
+          if (step.requiresApproval) {
+            // Wait for human approval (can take minutes/hours)
+            const events = approvalHook.create({ token: `${sessionId}-${step.id}` });
+            
+            for await (const event of events) {
+              if (event.decision === 'approved') {
+                await executeStep(step);
+                break;
+              } else if (event.decision === 'edited') {
+                await executeStep({ ...step, args: event.editedArgs });
+                break;
+              } else {
+                throw new Error('Step rejected by user');
+              }
+            }
+          } else {
+            await executeStep(step);
+          }
+        }
+        
+        return { success: true, sessionId };
+      }
+      ```
+    </agent_execution_workflow>
+
+    <x402_payment_step>
+      <!-- Example: Durable x402 payment step with retries -->
+      ```typescript
+      // app/steps/x402-payment.ts
+      async function executeX402Payment(serviceUrl: string, amount: string, token: string) {
+        'use step';
+        
+        const client = new X402PaymentClient();
+        const result = await client.executePayment(serviceUrl, amount, token);
+        
+        if (!result.success) {
+          throw new Error(`Payment failed: ${result.error}`);
+        }
+        
+        return result;
+      }
+      ```
+    </x402_payment_step>
+
+    <approval_resume_endpoint>
+      <!-- Example: Resume workflow on approval -->
+      ```typescript
+      // app/api/approvals/[requestId]/approve/route.ts
+      export async function POST(req: Request, { params }: { params: { requestId: string } }) {
+        const { decision, editedArgs } = await req.json();
+        
+        await approvalHook.resume(params.requestId, {
+          decision,
+          editedArgs,
+        });
+        
+        return new Response(JSON.stringify({ success: true }));
+      }
+      ```
+    </approval_resume_endpoint>
+  </vercel_workflow_examples>
+
+  <project_structure>
+    <root>
+      - README.md
+      - pyproject.toml (uv project configuration with dependencies)
+      - uv.lock (uv lockfile for reproducible builds)
+      - vercel.json (Vercel deployment configuration)
+      - Dockerfile (optional, for local development)
+      - docker-compose.yml (optional, for local services)
+      - .env.example
+      - .env.local (local development overrides)
+      - .python-version (Python version for uv)
+    </root>
+
+    <pyproject_toml>
+      <!-- pyproject.toml example for uv -->
+      ```toml
+      [project]
+      name = "paygent"
+      version = "0.1.0"
+      description = "AI-Powered Multi-Agent Payment Orchestration Platform"
+      readme = "README.md"
+      requires-python = ">=3.11"
+      dependencies = [
+          "fastapi>=0.109.0",
+          "uvicorn[standard]>=0.27.0",
+          "deepagents>=0.2.7",
+          "langchain>=0.1.0",
+          "langchain-anthropic>=0.1.0",
+          "langchain-mcp-adapters>=0.1.0",
+          "sqlalchemy[asyncio]>=2.0.0",
+          "asyncpg>=0.29.0",
+          "redis>=5.0.0",
+          "httpx>=0.26.0",
+          "eth-account>=0.10.0",
+          "pydantic>=2.5.0",
+          "python-dotenv>=1.0.0",
+          "alembic>=1.13.0",
+      ]
+
+      [project.optional-dependencies]
+      dev = [
+          "pytest>=7.4.0",
+          "pytest-asyncio>=0.23.0",
+          "mypy>=1.8.0",
+          "ruff>=0.1.0",
+      ]
+
+      [build-system]
+      requires = ["hatchling"]
+      build-backend = "hatchling.build"
+
+      [tool.uv]
+      dev-dependencies = [
+          "pytest>=7.4.0",
+          "pytest-asyncio>=0.23.0",
+          "mypy>=1.8.0",
+          "ruff>=0.1.0",
+      ]
+
+      [tool.ruff]
+      line-length = 100
+      target-version = "py311"
+
+      [tool.mypy]
+      python_version = "3.11"
+      strict = true
+      ```
+    </pyproject_toml>
+
+    <vercel_config>
+      <!-- vercel.json example -->
+      ```json
+      {
+        "version": 2,
+        "builds": [
+          {
+            "src": "paygent/main.py",
+            "use": "@vercel/python"
+          }
+        ],
+        "routes": [
+          {
+            "src": "/api/(.*)",
+            "dest": "paygent/main.py"
+          }
+        ],
+        "env": {
+          "PYTHONPATH": "."
+        },
+        "functions": {
+          "paygent/main.py": {
+            "memory": 1024,
+            "maxDuration": 60
+          }
+        }
+      }
+      ```
+    </vercel_config>
+
+    <paygent_package>
+      - paygent/__init__.py
+      - paygent/main.py - FastAPI application entry
+      - paygent/config.py - Configuration management
+      - paygent/agents/ - Main agent and subagents
+      - paygent/middleware/ - Custom middleware (x402, wallet, registry)
+      - paygent/tools/ - Agent tools (payments, wallet, discovery)
+      - paygent/connectors/ - DeFi protocol connectors
+      - paygent/x402/ - x402 payment implementation
+      - paygent/api/ - API routes and WebSocket handlers
+      - paygent/db/ - Database models and migrations
+      - paygent/utils/ - Utility functions
+    </paygent_package>
+
+    <contracts>
+      - contracts/AgentWallet.sol
+      - contracts/PaymentRouter.sol
+      - contracts/ServiceRegistry.sol
+      - contracts/hardhat.config.ts
+      - contracts/scripts/deploy.ts
+    </contracts>
+
+    <tests>
+      - tests/unit/ - Unit tests for components
+      - tests/integration/ - Integration tests
+      - tests/e2e/ - End-to-end tests
+    </tests>
+
+    <docs>
+      - docs/PRD.md
+      - docs/ARCHITECTURE.md
+      - docs/API.md
+    </docs>
+  </project_structure>
+
+  <implementation_steps>
+    <step number="1">
+      <title>Foundation Setup</title>
+      <tasks>
+        - Install uv: curl -LsSf https://astral.sh/uv/install.sh | sh
+        - Initialize Python project: uv init paygent
+        - Create virtual environment: uv venv
+        - Add core dependencies: uv add fastapi uvicorn deepagents langchain sqlalchemy httpx
+        - Initialize FastAPI project structure with Vercel deployment support
+        - Install Vercel CLI: pnpm add -g vercel
+        - Create Vercel project: vercel link
+        - Provision Vercel Postgres database from Dashboard
+        - Provision Vercel KV store from Dashboard
+        - Configure Vercel Blob storage
+        - Set up Alembic for database migrations: uv add alembic
+        - Create base database schema (services, payments, sessions, logs)
+        - Configure environment variables in Vercel project settings
+        - Set up Docker Compose for local development (optional fallback)
+        - Initialize Git repository with .gitignore
+        - Configure vercel.json for Python runtime
+      </tasks>
+    </step>
+
+    <step number="2">
+      <title>deepagents Integration</title>
+      <tasks>
+        - Install and configure deepagents 0.2.7
+        - Create main agent setup with Claude Sonnet 4
+        - Implement system prompts for Paygent
+        - Set up LangGraph state management
+        - Configure planning middleware (write_todos)
+        - Configure filesystem middleware for agent memory
+        - Test basic agent execution with natural language commands
+      </tasks>
+    </step>
+
+    <step number="3">
+      <title>x402 Payment Engine</title>
+      <tasks>
+        - Implement X402PaymentClient with HTTP 402 handling
+        - Create EIP-712 signature generation module
+        - Integrate @crypto.com/facilitator-client
+        - Build payment retry logic with exponential backoff
+        - Implement payment verification and settlement tracking
+        - Create X402PaymentMiddleware for agent integration
+        - Test end-to-end x402 payment flow on testnet
+      </tasks>
+    </step>
+
+    <step number="4">
+      <title>Crypto.com Integration</title>
+      <tasks>
+        - Integrate Crypto.com AI Agent SDK for wallet management
+        - Set up Crypto.com Market Data MCP Server connection
+        - Create MCP client using langchain-mcp-adapters
+        - Implement wallet balance checking tools
+        - Implement token transfer capabilities
+        - Test MCP query tools for market data
+      </tasks>
+    </step>
+
+    <step number="5">
+      <title>Service Registry</title>
+      <tasks>
+        - Build ServiceRegistry database models and API
+        - Implement service discovery endpoints
+        - Create MCP-compatible service catalog
+        - Build reputation tracking system
+        - Implement Redis caching layer for service lookups
+        - Create service registration and management UI/API
+        - Test service discovery and pricing lookup
+      </tasks>
+    </step>
+
+    <step number="6">
+      <title>Smart Contracts</title>
+      <tasks>
+        - Write AgentWallet.sol with spending limits
+        - Write PaymentRouter.sol for batch payments
+        - Write ServiceRegistry.sol for on-chain registry
+        - Set up Hardhat project with TypeScript
+        - Write deployment scripts
+        - Deploy contracts to Cronos testnet
+        - Verify contracts on Cronos explorer
+        - Test contract interactions from backend
+      </tasks>
+    </step>
+
+    <step number="7">
+      <title>DeFi Connectors</title>
+      <tasks>
+        - Build VVS Finance connector (swap, liquidity)
+        - Create VVS trader subagent configuration
+        - Build Moonlander connector (perpetual trading)
+        - Create Moonlander trader subagent configuration
+        - Build Delphi connector (prediction markets)
+        - Create Delphi predictor subagent configuration
+        - Test each connector on Cronos testnet
+      </tasks>
+    </step>
+
+    <step number="8">
+      <title>Human-in-the-Loop</title>
+      <tasks>
+        - Implement approval request system
+        - Create WebSocket handlers for real-time approvals
+        - Build approval decision endpoints
+        - Implement budget limit enforcement
+        - Create kill switch functionality
+        - Build approval UI/notification system
+        - Test HITL workflows end-to-end
+      </tasks>
+    </step>
+
+    <step number="9">
+      <title>API & WebSocket</title>
+      <tasks>
+        - Build REST API endpoints (agent, services, payments, wallet)
+        - Implement WebSocket server for streaming execution
+        - Create API authentication and authorization
+        - Build rate limiting middleware
+        - Implement request validation with Pydantic
+        - Create API documentation with OpenAPI/Swagger
+        - Test all API endpoints
+      </tasks>
+    </step>
+
+    <step number="10">
+      <title>Monitoring & Logging</title>
+      <tasks>
+        - Set up execution logging system
+        - Implement payment transaction tracking
+        - Create performance metrics collection
+        - Build error tracking and alerting
+        - Set up Prometheus metrics
+        - Create Grafana dashboards
+        - Implement cost tracking per session
+      </tasks>
+    </step>
+
+    <step number="11">
+      <title>Testing & Security</title>
+      <tasks>
+        - Install test dependencies: uv add --dev pytest pytest-asyncio pytest-cov
+        - Write unit tests for all components: uv run pytest tests/unit -v
+        - Create integration tests for payment flows: uv run pytest tests/integration -v
+        - Build E2E tests for complete workflows: uv run pytest tests/e2e -v
+        - Run test coverage: uv run pytest --cov=paygent --cov-report=html
+        - Run type checking: uv run mypy paygent/
+        - Run linting: uv run ruff check paygent/
+        - Perform security audit of smart contracts
+        - Implement input validation and sanitization
+        - Set up rate limiting and DDoS protection
+        - Test HITL approval workflows
+      </tasks>
+    </step>
+
+    <step number="12">
+      <title>Deployment & Documentation</title>
+      <tasks>
+        - Configure vercel.json for production settings
+        - Set up Vercel Workflow for durable agent execution
+        - Configure Vercel environment variables for production
+        - Set up GitHub Actions for CI/CD with Vercel deployment
+        - Deploy smart contracts to Cronos testnet
+        - Deploy backend to Vercel (vercel --prod)
+        - Test end-to-end on Vercel with Cronos testnet
+        - Deploy smart contracts to Cronos mainnet (after audit)
+        - Configure custom domain on Vercel
+        - Write comprehensive documentation
+        - Create demo video showcasing features
+        - Prepare presentation for Demo Day
+      </tasks>
+    </step>
+  </implementation_steps>
+
+  <security_architecture>
+    <application_layer>
+      - Input validation and sanitization for all user inputs
+      - Rate limiting per wallet/session
+      - Command injection prevention
+      - SQL injection prevention via parameterized queries
+      - CORS properly configured
+      - HTTPS enforced
+    </application_layer>
+
+    <agent_layer>
+      - Budget limits per session enforced
+      - Human-in-the-loop for sensitive operations
+      - Tool allowlisting (only approved tools can be called)
+      - Subagent isolation (context separation)
+      - Spending limit validation before execution
+    </agent_layer>
+
+    <wallet_layer>
+      - Non-custodial design (users control their wallets)
+      - Daily spending limits enforced at contract level
+      - Operator-based access control
+      - Multi-sig support for high-value operations
+      - Private keys stored in HSM or secure enclaves (production)
+    </wallet_layer>
+
+    <blockchain_layer>
+      - Audited smart contracts before mainnet deployment
+      - Reentrancy protection (ReentrancyGuard)
+      - Access control modifiers (onlyOperator, onlyOwner)
+      - SafeERC20 for token transfers
+      - Comprehensive event logging for audit trails
+    </blockchain_layer>
+  </security_architecture>
+
+  <quick_start>
+    <!-- Quick start guide using uv -->
+    <installation>
+      ```bash
+      # 1. Install uv (if not already installed)
+      curl -LsSf https://astral.sh/uv/install.sh | sh
+      
+      # 2. Clone the repository
+      git clone https://github.com/your-org/paygent.git
+      cd paygent
+      
+      # 3. Create virtual environment and install dependencies
+      uv venv
+      source .venv/bin/activate  # or `.venv\Scripts\activate` on Windows
+      uv sync
+      
+      # 4. Install dev dependencies
+      uv sync --dev
+      
+      # 5. Copy environment variables
+      cp .env.example .env.local
+      # Edit .env.local with your API keys
+      
+      # 6. Set up local database (optional, uses Docker)
+      docker-compose up -d db redis
+      
+      # 7. Run database migrations
+      uv run alembic upgrade head
+      
+      # 8. Start the development server
+      uv run uvicorn paygent.main:app --reload --port 8000
+      ```
+    </installation>
+
+    <common_commands>
+      ```bash
+      # Add a new dependency
+      uv add package-name
+      
+      # Add a dev dependency
+      uv add --dev pytest
+      
+      # Run the application
+      uv run uvicorn paygent.main:app --reload
+      
+      # Run tests
+      uv run pytest
+      
+      # Run type checking
+      uv run mypy paygent/
+      
+      # Run linting
+      uv run ruff check paygent/
+      
+      # Format code
+      uv run ruff format paygent/
+      
+      # Update all dependencies
+      uv lock --upgrade
+      uv sync
+      
+      # Deploy to Vercel
+      vercel --prod
+      ```
+    </common_commands>
+
+    <contracts_setup>
+      ```bash
+      # Navigate to contracts directory
+      cd contracts
+      
+      # Install Node.js dependencies with pnpm
+      pnpm install
+      
+      # Compile contracts
+      pnpm exec hardhat compile
+      
+      # Deploy to Cronos testnet
+      pnpm exec hardhat run scripts/deploy.ts --network cronos-testnet
+      
+      # Verify contracts
+      pnpm exec hardhat verify --network cronos-testnet DEPLOYED_ADDRESS
+      ```
+    </contracts_setup>
+  </quick_start>
+
+  <success_criteria>
+    <functionality>
+      - Natural language payment commands execute successfully
+      - x402 payment flows work end-to-end with ~200ms settlement
+      - Service discovery returns relevant services with pricing
+      - DeFi operations (VVS swap, Moonlander trade) execute correctly
+      - Human-in-the-loop approvals work for high-value transactions
+      - Agent planning (write_todos) creates valid multi-step plans
+      - Subagents spawn and execute specialized tasks correctly
+      - Payment history and execution logs are accurate and complete
+    </functionality>
+
+    <performance>
+      - Agent command execution completes within 30 seconds for simple operations
+      - Complex multi-step workflows complete within 5 minutes
+      - x402 payment settlement completes within 200ms
+      - Service discovery queries return results within 100ms (cached)
+      - API endpoints respond within 200ms (p95)
+      - WebSocket streaming has <100ms latency
+    </performance>
+
+    <security>
+      - All smart contracts pass security audit
+      - Spending limits enforced at contract level
+      - Private keys never exposed in logs or errors
+      - Rate limiting prevents abuse
+      - Input validation prevents injection attacks
+      - HITL approvals required for transactions > $10
+    </security>
+
+    <integration>
+      - Crypto.com AI Agent SDK integration working
+      - Crypto.com Market Data MCP Server queries successful
+      - x402 Facilitator integration verified
+      - VVS Finance swaps execute on Cronos testnet/mainnet
+      - Moonlander positions open/close successfully
+      - Delphi predictions place correctly
+      - AgentWallet contract deployed and functional
+    </integration>
+
+    <documentation>
+      - Comprehensive README with setup instructions
+      - API documentation with OpenAPI spec
+      - Architecture documentation explaining design decisions
+      - Code comments and docstrings for all major functions
+      - Demo video showcasing all features
+      - Deployment guide for production
+    </documentation>
+  </success_criteria>
+
+  <hackathon_tracks>
+    <main_track>
+      - Core platform: AI agents using x402 for automated payments
+      - Dynamic asset management via DeFi integrations
+      - Consumer apps with embedded payment flows
+      - Prize Target: $24,000 Cronos Ignition Builder Residency
+    </main_track>
+
+    <ai_agentic_finance>
+      - Advanced multi-step x402 automation
+      - Automated settlement pipelines
+      - Risk-managed portfolios
+      - Multi-leg transactions via deepagents planning
+      - Prize Target: $5,000
+    </ai_agentic_finance>
+
+    <crypto_com_integration>
+      - Deep integration: AI Agent SDK
+      - Market Data MCP Server integration
+      - VVS Finance, Moonlander, Delphi protocol support
+      - Prize Target: $3,000
+    </crypto_com_integration>
+
+    <dev_tooling>
+      - MCP-compatible service registry
+      - Agent runtime with middleware architecture
+      - Monitoring and observability tools
+      - Comprehensive SDK and documentation
+      - Prize Target: $3,000
+    </dev_tooling>
+  </hackathon_tracks>
+
+  <environment_variables>
+    <llm_configuration>
+      - ANTHROPIC_API_KEY=sk-ant-... (required)
+      - OPENAI_API_KEY=sk-... (fallback)
+    </llm_configuration>
+
+    <cronos_configuration>
+      - CRONOS_RPC_URL=https://evm.cronos.org
+      - CRONOS_CHAIN_ID=25
+      - CRONOS_TESTNET_RPC_URL=https://evm-t3.cronos.org
+      - CRONOS_TESTNET_CHAIN_ID=338
+    </cronos_configuration>
+
+    <x402_configuration>
+      - X402_FACILITATOR_URL=https://x402-facilitator.cronos.org
+    </x402_configuration>
+
+    <wallet_configuration>
+      - AGENT_WALLET_PRIVATE_KEY=0x... (development only, use HSM in production)
+    </wallet_configuration>
+
+    <vercel_database_configuration>
+      <!-- Vercel Postgres - auto-configured when provisioned -->
+      - POSTGRES_URL=postgres://... (connection pooling, auto-set by Vercel)
+      - POSTGRES_PRISMA_URL=postgres://... (for Prisma, auto-set by Vercel)
+      - POSTGRES_URL_NON_POOLING=postgres://... (direct connection, auto-set by Vercel)
+      - POSTGRES_USER=... (auto-set by Vercel)
+      - POSTGRES_HOST=... (auto-set by Vercel)
+      - POSTGRES_PASSWORD=... (auto-set by Vercel)
+      - POSTGRES_DATABASE=... (auto-set by Vercel)
+    </vercel_database_configuration>
+
+    <vercel_kv_configuration>
+      <!-- Vercel KV (Redis) - auto-configured when provisioned -->
+      - KV_URL=redis://... (auto-set by Vercel)
+      - KV_REST_API_URL=https://... (auto-set by Vercel)
+      - KV_REST_API_TOKEN=... (auto-set by Vercel)
+      - KV_REST_API_READ_ONLY_TOKEN=... (auto-set by Vercel)
+    </vercel_kv_configuration>
+
+    <vercel_blob_configuration>
+      <!-- Vercel Blob - auto-configured when provisioned -->
+      - BLOB_READ_WRITE_TOKEN=... (auto-set by Vercel)
+    </vercel_blob_configuration>
+
+    <local_database_configuration>
+      <!-- For local development with Docker -->
+      - DATABASE_URL=postgresql://postgres:postgres@localhost:5432/paygent
+      - REDIS_URL=redis://localhost:6379
+    </local_database_configuration>
+
+    <crypto_com_configuration>
+      - CRYPTO_COM_API_KEY=...
+      - CRYPTO_COM_MCP_URL=https://mcp.crypto.com
+    </crypto_com_configuration>
+
+    <security_configuration>
+      - JWT_SECRET=your-secret-key
+      - CORS_ORIGINS=http://localhost:3000,https://paygent.vercel.app
+    </security_configuration>
+  </environment_variables>
+</project_specification>
+
+

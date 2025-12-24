@@ -1,0 +1,2678 @@
+[
+  {
+    "category": "functional",
+    "description": "FastAPI server starts successfully and responds to health check endpoint",
+    "steps": [
+      "Step 1: Start the FastAPI server using uvicorn",
+      "Step 2: Send GET request to /health endpoint",
+      "Step 3: Verify response status code is 200",
+      "Step 4: Verify response body contains status: healthy"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "OpenAPI/Swagger documentation is accessible at /docs endpoint",
+    "steps": [
+      "Step 1: Start the FastAPI server",
+      "Step 2: Navigate to /docs endpoint in browser",
+      "Step 3: Verify Swagger UI loads correctly",
+      "Step 4: Verify all API endpoints are listed",
+      "Step 5: Verify endpoint schemas are displayed"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "ReDoc documentation is accessible at /redoc endpoint",
+    "steps": [
+      "Step 1: Start the FastAPI server",
+      "Step 2: Navigate to /redoc endpoint",
+      "Step 3: Verify ReDoc UI renders correctly",
+      "Step 4: Verify API documentation is complete"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "OpenAPI JSON schema is accessible at /openapi.json",
+    "steps": [
+      "Step 1: Start the FastAPI server",
+      "Step 2: Send GET request to /openapi.json",
+      "Step 3: Verify response is valid JSON",
+      "Step 4: Verify schema contains all endpoint definitions"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Database connection is established successfully on startup",
+    "steps": [
+      "Step 1: Configure DATABASE_URL environment variable",
+      "Step 2: Start the FastAPI server",
+      "Step 3: Verify database connection is established",
+      "Step 4: Verify connection pool is initialized",
+      "Step 5: Check logs for successful connection message"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Redis/KV cache connection is established on startup",
+    "steps": [
+      "Step 1: Configure REDIS_URL or KV_URL environment variable",
+      "Step 2: Start the FastAPI server",
+      "Step 3: Verify Redis connection is established",
+      "Step 4: Test cache read/write operations"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "POST /api/v1/agent/execute accepts natural language payment commands",
+    "steps": [
+      "Step 1: Start the server with valid configuration",
+      "Step 2: Send POST request with JSON body containing command field",
+      "Step 3: Verify response status is 200 or 202",
+      "Step 4: Verify response contains session_id",
+      "Step 5: Verify response contains execution status"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Agent execution endpoint validates required command field",
+    "steps": [
+      "Step 1: Send POST request without command field",
+      "Step 2: Verify response status is 422 (Validation Error)",
+      "Step 3: Verify error message indicates missing command"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Agent execution endpoint rejects empty command strings",
+    "steps": [
+      "Step 1: Send POST request with empty command string",
+      "Step 2: Verify response status is 400 or 422",
+      "Step 3: Verify error message indicates invalid command"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "POST /api/v1/agent/stream returns Server-Sent Events for command execution",
+    "steps": [
+      "Step 1: Send POST request to streaming endpoint",
+      "Step 2: Verify Content-Type is text/event-stream",
+      "Step 3: Verify events are received in SSE format",
+      "Step 4: Verify 'thinking' events are emitted",
+      "Step 5: Verify 'tool_call' events include tool name and arguments",
+      "Step 6: Verify 'complete' event is sent when execution finishes"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "GET /api/v1/agent/sessions returns list of agent sessions",
+    "steps": [
+      "Step 1: Create multiple agent sessions",
+      "Step 2: Send GET request to sessions endpoint",
+      "Step 3: Verify response contains array of sessions",
+      "Step 4: Verify each session has id, created_at, and status fields"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "GET /api/v1/agent/sessions supports pagination",
+    "steps": [
+      "Step 1: Create 50 agent sessions",
+      "Step 2: Send GET request with limit=10",
+      "Step 3: Verify only 10 sessions returned",
+      "Step 4: Send GET request with offset=10",
+      "Step 5: Verify next 10 sessions returned",
+      "Step 6: Verify pagination metadata is included"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "GET /api/v1/agent/sessions/{session_id} returns session details",
+    "steps": [
+      "Step 1: Create an agent session",
+      "Step 2: Send GET request with session ID",
+      "Step 3: Verify response contains session details",
+      "Step 4: Verify config, wallet_address, and created_at are present"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "GET /api/v1/agent/sessions/{session_id} returns 404 for non-existent session",
+    "steps": [
+      "Step 1: Send GET request with random UUID",
+      "Step 2: Verify response status is 404",
+      "Step 3: Verify error message indicates session not found"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "DELETE /api/v1/agent/sessions/{session_id} terminates session",
+    "steps": [
+      "Step 1: Create an active agent session",
+      "Step 2: Send DELETE request to terminate",
+      "Step 3: Verify response status is 200",
+      "Step 4: Verify session status is terminated",
+      "Step 5: Attempt to execute commands on terminated session fails"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Natural language command 'Pay 0.10 USDC to API service' is parsed correctly",
+    "steps": [
+      "Step 1: Send command to agent execution endpoint",
+      "Step 2: Verify agent identifies payment intent",
+      "Step 3: Verify amount is extracted as 0.10",
+      "Step 4: Verify token is identified as USDC",
+      "Step 5: Verify recipient context is understood"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Natural language command 'Check my wallet balance' executes balance check",
+    "steps": [
+      "Step 1: Send command to agent execution endpoint",
+      "Step 2: Verify agent calls balance checking tool",
+      "Step 3: Verify response contains token balances",
+      "Step 4: Verify CRO and USDC balances are included"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Natural language command 'Swap 10 CRO for USDC' initiates swap workflow",
+    "steps": [
+      "Step 1: Send swap command to agent",
+      "Step 2: Verify agent creates multi-step plan",
+      "Step 3: Verify price quote is obtained",
+      "Step 4: Verify slippage protection is applied",
+      "Step 5: Verify swap execution is attempted"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Agent creates write_todos plan for complex multi-step operations",
+    "steps": [
+      "Step 1: Send complex command requiring multiple steps",
+      "Step 2: Verify agent generates execution plan",
+      "Step 3: Verify plan contains ordered steps",
+      "Step 4: Verify each step has description and expected outcome",
+      "Step 5: Verify plan is logged to execution_logs"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Agent spawns VVS trader subagent for DeFi swap operations",
+    "steps": [
+      "Step 1: Send VVS swap command",
+      "Step 2: Verify main agent identifies DeFi operation",
+      "Step 3: Verify VVS trader subagent is spawned",
+      "Step 4: Verify subagent_start event is emitted",
+      "Step 5: Verify subagent executes swap steps",
+      "Step 6: Verify subagent_end event with results"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Agent spawns Moonlander trader subagent for perpetual trading",
+    "steps": [
+      "Step 1: Send perpetual trading command",
+      "Step 2: Verify Moonlander subagent is spawned",
+      "Step 3: Verify position opening workflow executes",
+      "Step 4: Verify leverage and stop-loss parameters are set"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Agent respects budget limits configured in session",
+    "steps": [
+      "Step 1: Create session with $5 budget limit",
+      "Step 2: Attempt to execute $10 payment command",
+      "Step 3: Verify agent rejects payment exceeding budget",
+      "Step 4: Verify error message indicates budget exceeded"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Agent logs all tool calls to execution_logs table",
+    "steps": [
+      "Step 1: Execute command with multiple tool calls",
+      "Step 2: Query execution_logs table",
+      "Step 3: Verify tool_calls array contains all invocations",
+      "Step 4: Verify each tool call has name, args, and result"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Agent memory persists across commands in same session",
+    "steps": [
+      "Step 1: Execute first command mentioning a specific service",
+      "Step 2: Execute follow-up command referring to 'that service'",
+      "Step 3: Verify agent remembers context from first command",
+      "Step 4: Verify correct service is identified"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "HTTP 402 Payment Required response triggers automatic x402 flow",
+    "steps": [
+      "Step 1: Configure mock service that returns 402",
+      "Step 2: Agent attempts to access paid service",
+      "Step 3: Verify 402 response is intercepted",
+      "Step 4: Verify payment header is parsed",
+      "Step 5: Verify automatic payment retry logic initiates"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "x402 payment includes correct EIP-712 signature",
+    "steps": [
+      "Step 1: Trigger x402 payment flow",
+      "Step 2: Capture outgoing payment request",
+      "Step 3: Verify X-PAYMENT header is present",
+      "Step 4: Decode the payment payload",
+      "Step 5: Verify EIP-712 signature is valid",
+      "Step 6: Verify signature matches wallet address",
+      "Step 7: Verify typed data structure is correct"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "x402 payment successfully integrates with Cronos Facilitator",
+    "steps": [
+      "Step 1: Configure x402 facilitator URL",
+      "Step 2: Execute payment that requires x402",
+      "Step 3: Verify facilitator receives payment verification request",
+      "Step 4: Verify settlement is processed",
+      "Step 5: Verify payment status is updated to confirmed",
+      "Step 6: Verify tx_hash is recorded"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "x402 payment implements exponential backoff on failure",
+    "steps": [
+      "Step 1: Configure mock service that fails first 2 attempts",
+      "Step 2: Trigger x402 payment",
+      "Step 3: Verify first retry after 1 second",
+      "Step 4: Verify second retry after 2 seconds",
+      "Step 5: Verify third attempt succeeds",
+      "Step 6: Verify total attempts logged"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "x402 payment discovers price before execution",
+    "steps": [
+      "Step 1: Query service for pricing",
+      "Step 2: Verify price amount is retrieved",
+      "Step 3: Verify price token is identified",
+      "Step 4: Verify pricing model (pay-per-call) is returned"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "x402 payment handles metered pricing model",
+    "steps": [
+      "Step 1: Access service with metered pricing",
+      "Step 2: Make 10 API calls",
+      "Step 3: Verify usage is tracked",
+      "Step 4: Verify correct total amount is charged",
+      "Step 5: Verify metered billing record created"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "x402 payment handles subscription pricing model",
+    "steps": [
+      "Step 1: Subscribe to service with monthly pricing",
+      "Step 2: Verify subscription payment processed",
+      "Step 3: Access service multiple times",
+      "Step 4: Verify no additional charges within subscription period"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "x402 payment completes within 200ms settlement target",
+    "steps": [
+      "Step 1: Record timestamp before payment",
+      "Step 2: Execute x402 payment",
+      "Step 3: Record timestamp after settlement confirmation",
+      "Step 4: Verify total time is under 200ms",
+      "Step 5: Log performance metrics"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "GET /api/v1/services/discover returns available services",
+    "steps": [
+      "Step 1: Seed database with multiple services",
+      "Step 2: Send GET request to discover endpoint",
+      "Step 3: Verify response contains services array",
+      "Step 4: Verify each service has required fields"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Service discovery supports filtering by category",
+    "steps": [
+      "Step 1: Create services with different categories",
+      "Step 2: Send GET request with category filter",
+      "Step 3: Verify only matching services returned",
+      "Step 4: Verify filter parameter is validated"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Service discovery supports filtering by price range",
+    "steps": [
+      "Step 1: Create services with varying prices",
+      "Step 2: Send GET request with min_price and max_price",
+      "Step 3: Verify only services within price range returned"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Service discovery supports filtering by reputation score",
+    "steps": [
+      "Step 1: Create services with different reputation scores",
+      "Step 2: Send GET request with min_reputation filter",
+      "Step 3: Verify only services meeting threshold returned"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Service discovery supports MCP-compatible filter",
+    "steps": [
+      "Step 1: Create mix of MCP and non-MCP services",
+      "Step 2: Send GET request with mcp_compatible=true",
+      "Step 3: Verify only MCP-compatible services returned"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "GET /api/v1/services/{service_id} returns service details",
+    "steps": [
+      "Step 1: Create a service in database",
+      "Step 2: Send GET request with service ID",
+      "Step 3: Verify all service fields are returned",
+      "Step 4: Verify pricing information is included"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "GET /api/v1/services/{service_id}/pricing returns current pricing",
+    "steps": [
+      "Step 1: Send GET request to pricing endpoint",
+      "Step 2: Verify price_amount is returned",
+      "Step 3: Verify price_token is returned",
+      "Step 4: Verify pricing_model is returned"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "POST /api/v1/services registers new service (admin only)",
+    "steps": [
+      "Step 1: Send POST request with service data",
+      "Step 2: Verify response status is 201",
+      "Step 3: Verify service is created in database",
+      "Step 4: Verify service ID is returned"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Service registration validates required fields",
+    "steps": [
+      "Step 1: Send POST request missing name field",
+      "Step 2: Verify 422 validation error returned",
+      "Step 3: Send POST request missing endpoint field",
+      "Step 4: Verify 422 validation error returned"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "PUT /api/v1/services/{service_id} updates service details",
+    "steps": [
+      "Step 1: Create a service",
+      "Step 2: Send PUT request with updated data",
+      "Step 3: Verify response status is 200",
+      "Step 4: Verify service is updated in database"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Service cache layer returns results within 100ms",
+    "steps": [
+      "Step 1: Make initial service discovery request",
+      "Step 2: Record timestamp for second request",
+      "Step 3: Make same discovery request",
+      "Step 4: Verify response time is under 100ms",
+      "Step 5: Verify cache hit header is present"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Service cache expires after 5 minutes TTL",
+    "steps": [
+      "Step 1: Query service to populate cache",
+      "Step 2: Update service directly in database",
+      "Step 3: Query service immediately (should return cached)",
+      "Step 4: Wait 5 minutes",
+      "Step 5: Query service (should return updated data)"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Service reputation is updated after successful payment",
+    "steps": [
+      "Step 1: Note initial reputation score",
+      "Step 2: Execute successful payment to service",
+      "Step 3: Query service reputation",
+      "Step 4: Verify reputation increased",
+      "Step 5: Verify total_calls incremented"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Crypto.com Market Data MCP Server integration works",
+    "steps": [
+      "Step 1: Configure MCP client with Crypto.com server URL",
+      "Step 2: Send query for BTC price",
+      "Step 3: Verify response contains price data",
+      "Step 4: Verify data format matches MCP schema",
+      "Step 5: Verify response time is acceptable"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "GET /api/v1/payments/history returns payment history",
+    "steps": [
+      "Step 1: Execute multiple payments",
+      "Step 2: Send GET request to history endpoint",
+      "Step 3: Verify all payments are listed",
+      "Step 4: Verify chronological order (newest first)"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Payment history supports filtering by status",
+    "steps": [
+      "Step 1: Create payments with different statuses",
+      "Step 2: Filter by status=confirmed",
+      "Step 3: Verify only confirmed payments returned",
+      "Step 4: Filter by status=pending",
+      "Step 5: Verify only pending payments returned"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Payment history supports date range filtering",
+    "steps": [
+      "Step 1: Create payments across different dates",
+      "Step 2: Filter by start_date and end_date",
+      "Step 3: Verify only payments within range returned"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "GET /api/v1/payments/{payment_id} returns payment details",
+    "steps": [
+      "Step 1: Create a payment",
+      "Step 2: Send GET request with payment ID",
+      "Step 3: Verify all payment fields returned",
+      "Step 4: Verify tx_hash is included for confirmed payments"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "POST /api/v1/payments/x402 executes x402 payment flow",
+    "steps": [
+      "Step 1: Send POST request with service_url and amount",
+      "Step 2: Verify payment is initiated",
+      "Step 3: Verify x402 signature is generated",
+      "Step 4: Verify facilitator is contacted",
+      "Step 5: Verify payment record is created"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "GET /api/v1/payments/stats returns payment statistics",
+    "steps": [
+      "Step 1: Execute multiple payments",
+      "Step 2: Send GET request to stats endpoint",
+      "Step 3: Verify total_payments count",
+      "Step 4: Verify total_amount_usd",
+      "Step 5: Verify success_rate percentage"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "GET /api/v1/wallet/balance returns token balances",
+    "steps": [
+      "Step 1: Configure wallet address",
+      "Step 2: Send GET request to balance endpoint",
+      "Step 3: Verify CRO balance is returned",
+      "Step 4: Verify USDC balance is returned",
+      "Step 5: Verify balances match on-chain data"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Wallet balance supports multiple token queries",
+    "steps": [
+      "Step 1: Send GET request with tokens[] parameter",
+      "Step 2: Verify all requested token balances returned",
+      "Step 3: Verify unknown tokens return zero or error"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "GET /api/v1/wallet/allowance returns daily spending allowance",
+    "steps": [
+      "Step 1: Configure AgentWallet with daily limit",
+      "Step 2: Send GET request to allowance endpoint",
+      "Step 3: Verify daily_limit is returned",
+      "Step 4: Verify spent_today is returned",
+      "Step 5: Verify remaining allowance is calculated correctly"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "POST /api/v1/wallet/transfer executes token transfer",
+    "steps": [
+      "Step 1: Send POST request with recipient, amount, token",
+      "Step 2: Verify transfer is initiated",
+      "Step 3: Verify transaction hash is returned",
+      "Step 4: Verify on-chain transfer is successful",
+      "Step 5: Verify sender balance decreased",
+      "Step 6: Verify recipient balance increased"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Wallet transfer validates sufficient balance",
+    "steps": [
+      "Step 1: Attempt transfer exceeding balance",
+      "Step 2: Verify error response returned",
+      "Step 3: Verify error indicates insufficient balance"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Wallet transfer validates daily spending limit",
+    "steps": [
+      "Step 1: Set daily limit to 10 USDC",
+      "Step 2: Attempt transfer of 15 USDC",
+      "Step 3: Verify error indicates daily limit exceeded",
+      "Step 4: Verify transfer is not executed"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "GET /api/v1/wallet/transactions returns transaction history",
+    "steps": [
+      "Step 1: Execute multiple wallet operations",
+      "Step 2: Send GET request to transactions endpoint",
+      "Step 3: Verify all transactions listed",
+      "Step 4: Verify tx_hash, amount, timestamp included"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "GET /api/v1/approvals/pending lists pending approval requests",
+    "steps": [
+      "Step 1: Trigger actions requiring approval",
+      "Step 2: Send GET request to pending endpoint",
+      "Step 3: Verify pending requests are listed",
+      "Step 4: Verify tool_name and tool_args included"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "POST /api/v1/approvals/{request_id}/approve resumes agent execution",
+    "steps": [
+      "Step 1: Trigger action requiring approval",
+      "Step 2: Verify agent pauses for approval",
+      "Step 3: Send POST to approve endpoint",
+      "Step 4: Verify agent resumes execution",
+      "Step 5: Verify action is completed"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "POST /api/v1/approvals/{request_id}/reject stops agent execution",
+    "steps": [
+      "Step 1: Trigger action requiring approval",
+      "Step 2: Send POST to reject endpoint",
+      "Step 3: Verify agent receives rejection",
+      "Step 4: Verify action is not executed",
+      "Step 5: Verify rejection is logged"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "POST /api/v1/approvals/{request_id}/edit allows modifying args before approval",
+    "steps": [
+      "Step 1: Trigger payment requiring approval",
+      "Step 2: Send POST with edited_args",
+      "Step 3: Verify agent uses edited arguments",
+      "Step 4: Verify edited amount is used in payment"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "High-value transactions over $10 require HITL approval",
+    "steps": [
+      "Step 1: Configure approval threshold at $10",
+      "Step 2: Execute $15 payment command",
+      "Step 3: Verify approval_required event is emitted",
+      "Step 4: Verify agent pauses execution",
+      "Step 5: Approve the request",
+      "Step 6: Verify payment completes"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Transactions under approval threshold execute automatically",
+    "steps": [
+      "Step 1: Configure approval threshold at $10",
+      "Step 2: Execute $5 payment command",
+      "Step 3: Verify no approval required",
+      "Step 4: Verify payment executes immediately"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Kill switch immediately terminates agent execution",
+    "steps": [
+      "Step 1: Start long-running agent execution",
+      "Step 2: Trigger kill switch via API or WebSocket",
+      "Step 3: Verify agent stops within 1 second",
+      "Step 4: Verify in-progress operations are cancelled",
+      "Step 5: Verify session is marked as terminated"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Approval requests timeout after configurable period",
+    "steps": [
+      "Step 1: Configure approval timeout at 5 minutes",
+      "Step 2: Trigger action requiring approval",
+      "Step 3: Wait 5 minutes without responding",
+      "Step 4: Verify request is auto-rejected",
+      "Step 5: Verify timeout is logged"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "GET /api/v1/logs returns execution logs",
+    "steps": [
+      "Step 1: Execute multiple agent commands",
+      "Step 2: Send GET request to logs endpoint",
+      "Step 3: Verify logs are returned",
+      "Step 4: Verify command, result, duration_ms included"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Execution logs support filtering by session_id",
+    "steps": [
+      "Step 1: Create logs across multiple sessions",
+      "Step 2: Filter by specific session_id",
+      "Step 3: Verify only matching session logs returned"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "GET /api/v1/logs/{log_id} returns specific execution log",
+    "steps": [
+      "Step 1: Execute command and note log ID",
+      "Step 2: Send GET request with log ID",
+      "Step 3: Verify full log details returned",
+      "Step 4: Verify plan and tool_calls arrays included"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "GET /api/v1/logs/{session_id}/summary returns session summary",
+    "steps": [
+      "Step 1: Execute multiple commands in session",
+      "Step 2: Send GET request for summary",
+      "Step 3: Verify total commands count",
+      "Step 4: Verify total cost calculated",
+      "Step 5: Verify success rate percentage"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "VVS Finance swap executes token exchange",
+    "steps": [
+      "Step 1: Send swap command for CRO to USDC",
+      "Step 2: Verify VVS connector is invoked",
+      "Step 3: Verify price quote is obtained",
+      "Step 4: Verify swap transaction is submitted",
+      "Step 5: Verify token balances updated",
+      "Step 6: Verify tx_hash is returned"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "VVS swap respects slippage tolerance setting",
+    "steps": [
+      "Step 1: Configure 1% slippage tolerance",
+      "Step 2: Execute swap with significant price impact",
+      "Step 3: Verify minimum output amount is enforced",
+      "Step 4: Verify transaction fails if slippage exceeded"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "VVS swap respects deadline parameter",
+    "steps": [
+      "Step 1: Set swap deadline to 60 seconds",
+      "Step 2: Execute swap",
+      "Step 3: Verify deadline is included in transaction",
+      "Step 4: Verify swap fails if deadline exceeded"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "VVS add liquidity creates LP position",
+    "steps": [
+      "Step 1: Send add liquidity command",
+      "Step 2: Verify both tokens are deposited",
+      "Step 3: Verify LP tokens are received",
+      "Step 4: Verify position is recorded"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "VVS remove liquidity withdraws LP position",
+    "steps": [
+      "Step 1: Add liquidity to create position",
+      "Step 2: Send remove liquidity command",
+      "Step 3: Verify LP tokens are burned",
+      "Step 4: Verify underlying tokens are received"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "VVS yield farming stakes LP tokens",
+    "steps": [
+      "Step 1: Create LP position",
+      "Step 2: Send farm command to stake LP",
+      "Step 3: Verify LP tokens are staked",
+      "Step 4: Verify farming rewards accrue"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Moonlander opens perpetual long position",
+    "steps": [
+      "Step 1: Send command to open long BTC",
+      "Step 2: Verify position is opened",
+      "Step 3: Verify leverage is set correctly",
+      "Step 4: Verify collateral is deposited",
+      "Step 5: Verify position appears in portfolio"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Moonlander opens perpetual short position",
+    "steps": [
+      "Step 1: Send command to open short ETH",
+      "Step 2: Verify position is opened with short direction",
+      "Step 3: Verify position details are correct"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Moonlander closes perpetual position",
+    "steps": [
+      "Step 1: Open a perpetual position",
+      "Step 2: Send close position command",
+      "Step 3: Verify position is closed",
+      "Step 4: Verify PnL is calculated",
+      "Step 5: Verify funds are returned"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Moonlander sets stop-loss on position",
+    "steps": [
+      "Step 1: Open a perpetual position",
+      "Step 2: Send set stop-loss command",
+      "Step 3: Verify stop-loss price is recorded",
+      "Step 4: Simulate price hitting stop-loss",
+      "Step 5: Verify position is closed automatically"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Moonlander sets take-profit on position",
+    "steps": [
+      "Step 1: Open a perpetual position",
+      "Step 2: Send set take-profit command",
+      "Step 3: Verify take-profit price is recorded",
+      "Step 4: Simulate price hitting take-profit",
+      "Step 5: Verify position is closed with profit"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Moonlander retrieves funding rate information",
+    "steps": [
+      "Step 1: Send get funding rate command",
+      "Step 2: Verify current funding rate returned",
+      "Step 3: Verify next funding time included",
+      "Step 4: Verify historical rates available"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Delphi connector lists available prediction markets",
+    "steps": [
+      "Step 1: Send get markets command",
+      "Step 2: Verify list of markets returned",
+      "Step 3: Verify market details include question, outcomes, odds"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Delphi places prediction bet",
+    "steps": [
+      "Step 1: Identify prediction market",
+      "Step 2: Send place prediction command",
+      "Step 3: Verify bet is recorded",
+      "Step 4: Verify tokens are locked",
+      "Step 5: Verify position appears in user predictions"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Delphi claims winnings from resolved market",
+    "steps": [
+      "Step 1: Place prediction that wins",
+      "Step 2: Wait for market resolution",
+      "Step 3: Send claim winnings command",
+      "Step 4: Verify winnings are transferred",
+      "Step 5: Verify position is closed"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "AgentWallet contract deploys successfully",
+    "steps": [
+      "Step 1: Deploy AgentWallet contract",
+      "Step 2: Verify contract is deployed on Cronos",
+      "Step 3: Verify owner is set correctly",
+      "Step 4: Verify contract responds to calls"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "AgentWallet adds operator successfully",
+    "steps": [
+      "Step 1: Call addOperator with agent address",
+      "Step 2: Verify OperatorAdded event emitted",
+      "Step 3: Verify operator can execute payments"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "AgentWallet removes operator successfully",
+    "steps": [
+      "Step 1: Add an operator",
+      "Step 2: Call removeOperator",
+      "Step 3: Verify OperatorRemoved event emitted",
+      "Step 4: Verify operator can no longer execute payments"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "AgentWallet enforces daily spending limit",
+    "steps": [
+      "Step 1: Set daily limit to 100 USDC",
+      "Step 2: Execute 60 USDC payment",
+      "Step 3: Attempt 50 USDC payment (exceeds remaining)",
+      "Step 4: Verify second payment is rejected",
+      "Step 5: Wait for daily reset",
+      "Step 6: Verify limit is reset"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "AgentWallet owner can update daily limit",
+    "steps": [
+      "Step 1: Call setDailyLimit as owner",
+      "Step 2: Verify DailyLimitSet event emitted",
+      "Step 3: Verify new limit is enforced"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "AgentWallet non-owner cannot update daily limit",
+    "steps": [
+      "Step 1: Call setDailyLimit as non-owner",
+      "Step 2: Verify transaction reverts",
+      "Step 3: Verify limit unchanged"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "AgentWallet executePayment transfers tokens",
+    "steps": [
+      "Step 1: Fund wallet with tokens",
+      "Step 2: Call executePayment as operator",
+      "Step 3: Verify PaymentExecuted event emitted",
+      "Step 4: Verify recipient receives tokens"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "AgentWallet withdraw allows owner to withdraw",
+    "steps": [
+      "Step 1: Fund wallet with tokens",
+      "Step 2: Call withdraw as owner",
+      "Step 3: Verify tokens are withdrawn",
+      "Step 4: Verify only owner can withdraw"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "PaymentRouter batch payment executes multiple transfers",
+    "steps": [
+      "Step 1: Prepare batch of 5 payments",
+      "Step 2: Call batchPay function",
+      "Step 3: Verify all transfers complete",
+      "Step 4: Verify BatchPaymentExecuted event with all recipients"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "ServiceRegistry contract registers new service",
+    "steps": [
+      "Step 1: Call registerService with metadata",
+      "Step 2: Verify ServiceRegistered event emitted",
+      "Step 3: Verify service is queryable"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "ServiceRegistry updates service reputation on-chain",
+    "steps": [
+      "Step 1: Register a service",
+      "Step 2: Call updateReputation",
+      "Step 3: Verify ReputationUpdated event emitted",
+      "Step 4: Verify updated score is stored"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "WebSocket connection establishes successfully",
+    "steps": [
+      "Step 1: Connect to WebSocket endpoint",
+      "Step 2: Verify connection is established",
+      "Step 3: Verify ping/pong heartbeat works"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "WebSocket execute message triggers agent execution",
+    "steps": [
+      "Step 1: Connect to WebSocket",
+      "Step 2: Send execute message with command",
+      "Step 3: Verify thinking events are received",
+      "Step 4: Verify tool_call events are received",
+      "Step 5: Verify complete event is received"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "WebSocket streams approval_required events",
+    "steps": [
+      "Step 1: Connect to WebSocket",
+      "Step 2: Execute command requiring approval",
+      "Step 3: Verify approval_required event received",
+      "Step 4: Verify event contains request details"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "WebSocket approve message resumes execution",
+    "steps": [
+      "Step 1: Trigger approval request",
+      "Step 2: Send approve message via WebSocket",
+      "Step 3: Verify execution continues",
+      "Step 4: Verify complete event received"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "WebSocket cancel message stops execution",
+    "steps": [
+      "Step 1: Start long-running execution",
+      "Step 2: Send cancel message",
+      "Step 3: Verify execution stops",
+      "Step 4: Verify error event received"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "WebSocket latency is under 100ms",
+    "steps": [
+      "Step 1: Connect to WebSocket",
+      "Step 2: Send timestamped message",
+      "Step 3: Measure response time",
+      "Step 4: Verify latency under 100ms"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "API authentication validates JWT tokens",
+    "steps": [
+      "Step 1: Send request without token",
+      "Step 2: Verify 401 Unauthorized response",
+      "Step 3: Send request with valid token",
+      "Step 4: Verify request succeeds"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "API rejects expired JWT tokens",
+    "steps": [
+      "Step 1: Create expired JWT token",
+      "Step 2: Send request with expired token",
+      "Step 3: Verify 401 response with expiration error"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "API rate limiting prevents abuse",
+    "steps": [
+      "Step 1: Configure rate limit at 100 requests/minute",
+      "Step 2: Send 100 rapid requests",
+      "Step 3: Verify 101st request returns 429",
+      "Step 4: Verify Retry-After header is present"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "CORS allows configured origins",
+    "steps": [
+      "Step 1: Configure CORS for localhost:3000",
+      "Step 2: Send OPTIONS preflight request",
+      "Step 3: Verify Access-Control-Allow-Origin header",
+      "Step 4: Send request from allowed origin",
+      "Step 5: Verify request succeeds"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "CORS blocks unconfigured origins",
+    "steps": [
+      "Step 1: Send request from unauthorized origin",
+      "Step 2: Verify CORS headers are not present",
+      "Step 3: Verify request is blocked"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Pydantic validates request body schemas",
+    "steps": [
+      "Step 1: Send request with invalid field types",
+      "Step 2: Verify 422 validation error",
+      "Step 3: Verify error details indicate invalid fields"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Database migrations run successfully with Alembic",
+    "steps": [
+      "Step 1: Run alembic upgrade head",
+      "Step 2: Verify all tables are created",
+      "Step 3: Verify indexes are created",
+      "Step 4: Run alembic downgrade -1",
+      "Step 5: Verify migration is reversible"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Environment variables are loaded from .env file",
+    "steps": [
+      "Step 1: Create .env file with test variables",
+      "Step 2: Start application",
+      "Step 3: Verify variables are loaded",
+      "Step 4: Verify sensitive vars are not logged"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Vercel Postgres connection works in serverless environment",
+    "steps": [
+      "Step 1: Deploy to Vercel",
+      "Step 2: Execute database query via API",
+      "Step 3: Verify query succeeds",
+      "Step 4: Verify connection pooling works"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Vercel KV cache operations work correctly",
+    "steps": [
+      "Step 1: Set value in KV store",
+      "Step 2: Get value from KV store",
+      "Step 3: Verify value matches",
+      "Step 4: Verify TTL expiration works"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Vercel Blob storage stores agent logs",
+    "steps": [
+      "Step 1: Upload log file to Blob storage",
+      "Step 2: Retrieve log file",
+      "Step 3: Verify content matches",
+      "Step 4: Verify URL is accessible"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Agent command execution completes within 30 seconds for simple operations",
+    "steps": [
+      "Step 1: Send simple payment command",
+      "Step 2: Measure execution time",
+      "Step 3: Verify completion under 30 seconds"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Complex multi-step workflows complete within 5 minutes",
+    "steps": [
+      "Step 1: Send complex workflow command",
+      "Step 2: Measure total execution time",
+      "Step 3: Verify completion under 5 minutes",
+      "Step 4: Verify all steps executed"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "API endpoints respond within 200ms (p95)",
+    "steps": [
+      "Step 1: Send 100 API requests",
+      "Step 2: Record response times",
+      "Step 3: Calculate p95 latency",
+      "Step 4: Verify p95 under 200ms"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Private keys are never exposed in logs or errors",
+    "steps": [
+      "Step 1: Execute operations using private key",
+      "Step 2: Search all logs for private key pattern",
+      "Step 3: Trigger error conditions",
+      "Step 4: Verify private key not in error messages"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "SQL injection is prevented via parameterized queries",
+    "steps": [
+      "Step 1: Send request with SQL injection payload",
+      "Step 2: Verify query is sanitized",
+      "Step 3: Verify no SQL execution",
+      "Step 4: Verify error is returned safely"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Command injection is prevented in agent commands",
+    "steps": [
+      "Step 1: Send command with shell injection payload",
+      "Step 2: Verify command is sanitized",
+      "Step 3: Verify no shell execution occurs"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Error responses don't leak sensitive information",
+    "steps": [
+      "Step 1: Trigger various error conditions",
+      "Step 2: Verify no stack traces in production",
+      "Step 3: Verify no database details exposed",
+      "Step 4: Verify generic error messages"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "HTTPS is enforced for all endpoints",
+    "steps": [
+      "Step 1: Attempt HTTP connection",
+      "Step 2: Verify redirect to HTTPS or rejection",
+      "Step 3: Verify HTTPS connection succeeds"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Agent tool allowlist prevents unauthorized tool execution",
+    "steps": [
+      "Step 1: Configure allowlist of permitted tools",
+      "Step 2: Attempt to invoke non-allowed tool",
+      "Step 3: Verify tool execution is blocked",
+      "Step 4: Verify allowed tools execute normally"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Subagent context isolation prevents data leakage",
+    "steps": [
+      "Step 1: Spawn subagent for session A",
+      "Step 2: Verify subagent cannot access session B data",
+      "Step 3: Verify subagent results are isolated"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Prometheus metrics endpoint is accessible",
+    "steps": [
+      "Step 1: Send GET request to /metrics",
+      "Step 2: Verify Prometheus format response",
+      "Step 3: Verify key metrics are present"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Execution cost tracking is accurate",
+    "steps": [
+      "Step 1: Execute command with known cost",
+      "Step 2: Query total_cost in execution_logs",
+      "Step 3: Verify cost matches expected amount"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Error alerting triggers on critical failures",
+    "steps": [
+      "Step 1: Configure alert webhook",
+      "Step 2: Trigger critical error condition",
+      "Step 3: Verify alert webhook is called",
+      "Step 4: Verify alert contains error details"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Docker compose starts all local services",
+    "steps": [
+      "Step 1: Run docker-compose up",
+      "Step 2: Verify PostgreSQL container starts",
+      "Step 3: Verify Redis container starts",
+      "Step 4: Verify API container starts",
+      "Step 5: Verify all services are healthy"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Vercel deployment succeeds with vercel.json config",
+    "steps": [
+      "Step 1: Run vercel --prod",
+      "Step 2: Verify build succeeds",
+      "Step 3: Verify deployment completes",
+      "Step 4: Verify API is accessible"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Vercel Workflow durable execution survives redeployment",
+    "steps": [
+      "Step 1: Start long-running workflow",
+      "Step 2: Trigger new deployment",
+      "Step 3: Verify workflow continues after deployment",
+      "Step 4: Verify workflow completes successfully"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Vercel Workflow hook resumes on external event",
+    "steps": [
+      "Step 1: Start workflow that waits for approval",
+      "Step 2: Call webhook to resume workflow",
+      "Step 3: Verify workflow continues from hook point",
+      "Step 4: Verify workflow completes"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Vercel Workflow sleep support pauses without consuming compute",
+    "steps": [
+      "Step 1: Start workflow with sleep step",
+      "Step 2: Verify workflow enters sleep state",
+      "Step 3: Verify no compute used during sleep",
+      "Step 4: Verify workflow resumes after sleep duration"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Hardhat compiles all smart contracts successfully",
+    "steps": [
+      "Step 1: Navigate to contracts directory",
+      "Step 2: Run pnpm exec hardhat compile",
+      "Step 3: Verify compilation succeeds",
+      "Step 4: Verify artifacts are generated"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Smart contract unit tests pass",
+    "steps": [
+      "Step 1: Run hardhat test",
+      "Step 2: Verify all tests pass",
+      "Step 3: Verify code coverage is above 80%"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Contracts deploy to Cronos testnet successfully",
+    "steps": [
+      "Step 1: Configure testnet RPC and wallet",
+      "Step 2: Run deployment script",
+      "Step 3: Verify contracts are deployed",
+      "Step 4: Record deployed addresses"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Contracts verify on Cronos explorer",
+    "steps": [
+      "Step 1: Deploy contracts",
+      "Step 2: Run hardhat verify",
+      "Step 3: Verify source code is visible on explorer"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "ReentrancyGuard prevents reentrancy attacks",
+    "steps": [
+      "Step 1: Deploy malicious contract attempting reentrancy",
+      "Step 2: Attempt reentrancy attack on AgentWallet",
+      "Step 3: Verify attack is blocked",
+      "Step 4: Verify transaction reverts"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "SafeERC20 handles non-compliant tokens",
+    "steps": [
+      "Step 1: Deploy token without return value",
+      "Step 2: Transfer token via AgentWallet",
+      "Step 3: Verify transfer succeeds",
+      "Step 4: Verify SafeERC20 handles properly"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Unit tests for all agent tools pass",
+    "steps": [
+      "Step 1: Run pytest tests/unit/tools/",
+      "Step 2: Verify all tool tests pass",
+      "Step 3: Verify edge cases covered"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Unit tests for middleware pass",
+    "steps": [
+      "Step 1: Run pytest tests/unit/middleware/",
+      "Step 2: Verify all middleware tests pass"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Integration tests for payment flows pass",
+    "steps": [
+      "Step 1: Run pytest tests/integration/payments/",
+      "Step 2: Verify payment flow tests pass",
+      "Step 3: Verify testnet transactions succeed"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Integration tests for DeFi connectors pass",
+    "steps": [
+      "Step 1: Run pytest tests/integration/connectors/",
+      "Step 2: Verify VVS connector tests pass",
+      "Step 3: Verify Moonlander connector tests pass",
+      "Step 4: Verify Delphi connector tests pass"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "E2E test: Complete payment flow from command to settlement",
+    "steps": [
+      "Step 1: Start server",
+      "Step 2: Send natural language payment command",
+      "Step 3: Verify agent execution",
+      "Step 4: Verify x402 payment flow",
+      "Step 5: Verify on-chain settlement",
+      "Step 6: Verify payment recorded in database",
+      "Step 7: Verify response returned to user"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "E2E test: Service discovery and payment",
+    "steps": [
+      "Step 1: Query available services",
+      "Step 2: Select service by criteria",
+      "Step 3: Execute payment to service",
+      "Step 4: Verify service responds after payment",
+      "Step 5: Verify payment logged"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "E2E test: Multi-step DeFi workflow",
+    "steps": [
+      "Step 1: Check initial wallet balance",
+      "Step 2: Swap CRO for USDC",
+      "Step 3: Use USDC to pay for service",
+      "Step 4: Verify service access",
+      "Step 5: Verify all transactions logged",
+      "Step 6: Verify final balances correct"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "E2E test: Human-in-the-loop approval workflow",
+    "steps": [
+      "Step 1: Configure approval threshold",
+      "Step 2: Execute command exceeding threshold",
+      "Step 3: Verify approval request created",
+      "Step 4: Approve via API",
+      "Step 5: Verify execution continues",
+      "Step 6: Verify operation completes",
+      "Step 7: Verify approval decision logged"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "E2E test: WebSocket streaming execution",
+    "steps": [
+      "Step 1: Connect WebSocket client",
+      "Step 2: Send execute message",
+      "Step 3: Receive thinking events",
+      "Step 4: Receive tool_call events",
+      "Step 5: Receive tool_result events",
+      "Step 6: Receive complete event",
+      "Step 7: Verify final result matches expected"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "E2E test: Session persistence across commands",
+    "steps": [
+      "Step 1: Create new session",
+      "Step 2: Execute first command",
+      "Step 3: Execute follow-up command referencing first",
+      "Step 4: Verify context is maintained",
+      "Step 5: Verify session data persisted"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Mypy type checking passes with strict mode",
+    "steps": [
+      "Step 1: Run uv run mypy paygent/ --strict",
+      "Step 2: Verify no type errors",
+      "Step 3: Verify no missing type annotations"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Ruff linting passes with no errors",
+    "steps": [
+      "Step 1: Run uv run ruff check paygent/",
+      "Step 2: Verify no linting errors",
+      "Step 3: Run uv run ruff format --check",
+      "Step 4: Verify code is formatted"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Test coverage is above 80%",
+    "steps": [
+      "Step 1: Run pytest --cov=paygent",
+      "Step 2: Verify coverage above 80%",
+      "Step 3: Generate coverage report"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "All Python docstrings follow Google style",
+    "steps": [
+      "Step 1: Run docstring linter",
+      "Step 2: Verify all public functions documented",
+      "Step 3: Verify Google style format used"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Crypto.com AI Agent SDK wallet integration works",
+    "steps": [
+      "Step 1: Configure SDK with API keys",
+      "Step 2: Initialize wallet connection",
+      "Step 3: Query wallet balance",
+      "Step 4: Verify balance matches on-chain"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "LangChain MCP adapter connects to MCP server",
+    "steps": [
+      "Step 1: Configure MCP adapter",
+      "Step 2: Connect to Crypto.com MCP server",
+      "Step 3: Query available tools",
+      "Step 4: Invoke MCP tool",
+      "Step 5: Verify response"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "deepagents framework properly initializes with Claude Sonnet 4",
+    "steps": [
+      "Step 1: Configure deepagents with Anthropic key",
+      "Step 2: Initialize agent with Claude Sonnet 4",
+      "Step 3: Execute simple command",
+      "Step 4: Verify Claude Sonnet 4 is used"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Agent fallback to OpenAI GPT-4 works when Claude unavailable",
+    "steps": [
+      "Step 1: Configure both Anthropic and OpenAI keys",
+      "Step 2: Simulate Claude API failure",
+      "Step 3: Execute command",
+      "Step 4: Verify fallback to GPT-4",
+      "Step 5: Verify command succeeds"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Agent filesystem backend persists memory between restarts",
+    "steps": [
+      "Step 1: Execute command storing memory",
+      "Step 2: Restart server",
+      "Step 3: Query agent memory",
+      "Step 4: Verify memory persisted"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "ethers.js v6 connects to Cronos EVM",
+    "steps": [
+      "Step 1: Configure Cronos RPC URL",
+      "Step 2: Create provider connection",
+      "Step 3: Query chain ID",
+      "Step 4: Verify chain ID is 25 (mainnet) or 338 (testnet)"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "eth-account generates valid EIP-712 signatures",
+    "steps": [
+      "Step 1: Create typed data structure",
+      "Step 2: Sign with eth-account",
+      "Step 3: Recover signer address",
+      "Step 4: Verify address matches"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "SQLAlchemy async operations work correctly",
+    "steps": [
+      "Step 1: Create async session",
+      "Step 2: Execute async query",
+      "Step 3: Verify result returned",
+      "Step 4: Test concurrent operations"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Redis async operations work correctly",
+    "steps": [
+      "Step 1: Create async Redis client",
+      "Step 2: Set value asynchronously",
+      "Step 3: Get value asynchronously",
+      "Step 4: Verify value matches"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "API responses follow consistent JSON structure",
+    "steps": [
+      "Step 1: Query multiple API endpoints",
+      "Step 2: Verify all responses use consistent envelope",
+      "Step 3: Verify error responses follow same structure",
+      "Step 4: Verify pagination format is consistent"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "Error messages are user-friendly and informative",
+    "steps": [
+      "Step 1: Trigger various error conditions",
+      "Step 2: Verify error messages are clear",
+      "Step 3: Verify technical jargon is avoided",
+      "Step 4: Verify actionable guidance is provided"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "API endpoint naming follows REST conventions",
+    "steps": [
+      "Step 1: Review all API endpoints",
+      "Step 2: Verify resource naming (plural nouns)",
+      "Step 3: Verify HTTP methods match operations",
+      "Step 4: Verify URL structure is hierarchical"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "Python code follows PEP 8 style guide",
+    "steps": [
+      "Step 1: Run ruff check with PEP 8 rules",
+      "Step 2: Verify line length under 100 chars",
+      "Step 3: Verify naming conventions followed",
+      "Step 4: Verify import ordering correct"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "All Python functions have type hints",
+    "steps": [
+      "Step 1: Run mypy in strict mode",
+      "Step 2: Verify all function parameters typed",
+      "Step 3: Verify all return types specified",
+      "Step 4: Verify no Any types where specific types possible"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "Database table names follow naming conventions",
+    "steps": [
+      "Step 1: Review all table definitions",
+      "Step 2: Verify snake_case naming",
+      "Step 3: Verify plural table names",
+      "Step 4: Verify consistent column naming"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "Configuration variables are centralized in config module",
+    "steps": [
+      "Step 1: Review config.py module",
+      "Step 2: Verify all env vars loaded here",
+      "Step 3: Verify validation of required vars",
+      "Step 4: Verify sensible defaults provided"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "Logging uses consistent format across modules",
+    "steps": [
+      "Step 1: Review logging configuration",
+      "Step 2: Verify log format includes timestamp, level, module",
+      "Step 3: Verify consistent log levels used",
+      "Step 4: Verify structured logging format"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "WebSocket event types follow consistent naming",
+    "steps": [
+      "Step 1: Review all WebSocket event definitions",
+      "Step 2: Verify snake_case event names",
+      "Step 3: Verify event payload structure consistency",
+      "Step 4: Verify client and server events are distinct"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "Pydantic models have descriptive field descriptions",
+    "steps": [
+      "Step 1: Review all Pydantic models",
+      "Step 2: Verify Field descriptions present",
+      "Step 3: Verify examples provided where helpful",
+      "Step 4: Verify constraints are documented"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "Smart contract code follows Solidity style guide",
+    "steps": [
+      "Step 1: Review all .sol files",
+      "Step 2: Verify NatSpec comments present",
+      "Step 3: Verify function ordering (external, public, internal, private)",
+      "Step 4: Verify consistent naming conventions"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "README.md contains complete setup instructions",
+    "steps": [
+      "Step 1: Review README.md content",
+      "Step 2: Verify prerequisites listed",
+      "Step 3: Verify installation steps are clear",
+      "Step 4: Verify example commands provided",
+      "Step 5: Verify configuration section present"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "API documentation includes request/response examples",
+    "steps": [
+      "Step 1: Review OpenAPI specification",
+      "Step 2: Verify examples for each endpoint",
+      "Step 3: Verify error response examples",
+      "Step 4: Verify schema descriptions are clear"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "Git commit messages follow conventional format",
+    "steps": [
+      "Step 1: Review git log",
+      "Step 2: Verify commit message format (type: description)",
+      "Step 3: Verify consistent types (feat, fix, docs, etc.)",
+      "Step 4: Verify messages are descriptive"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "Project directory structure follows specification",
+    "steps": [
+      "Step 1: Review directory tree",
+      "Step 2: Verify paygent package structure",
+      "Step 3: Verify tests directory structure",
+      "Step 4: Verify contracts directory structure",
+      "Step 5: Verify docs directory exists"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "Environment variable names follow SCREAMING_SNAKE_CASE",
+    "steps": [
+      "Step 1: Review .env.example file",
+      "Step 2: Verify all variable names use SCREAMING_SNAKE_CASE",
+      "Step 3: Verify descriptive names",
+      "Step 4: Verify consistent prefixing (e.g., CRONOS_, X402_)"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "Module docstrings describe purpose and contents",
+    "steps": [
+      "Step 1: Review all __init__.py files",
+      "Step 2: Verify module docstrings present",
+      "Step 3: Verify purpose is clear",
+      "Step 4: Verify key exports documented"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "Test files follow consistent naming pattern",
+    "steps": [
+      "Step 1: Review tests directory",
+      "Step 2: Verify test_*.py naming pattern",
+      "Step 3: Verify test function names are descriptive",
+      "Step 4: Verify test class naming if used"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "Constants are defined in dedicated constants module",
+    "steps": [
+      "Step 1: Review constants definitions",
+      "Step 2: Verify SCREAMING_SNAKE_CASE naming",
+      "Step 3: Verify constants are immutable",
+      "Step 4: Verify magic numbers are avoided"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "FastAPI dependencies are properly typed and documented",
+    "steps": [
+      "Step 1: Review dependency injection usage",
+      "Step 2: Verify return types specified",
+      "Step 3: Verify dependency descriptions in docs",
+      "Step 4: Verify proper async handling"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "Exception classes follow naming convention",
+    "steps": [
+      "Step 1: Review custom exception definitions",
+      "Step 2: Verify names end with Error or Exception",
+      "Step 3: Verify inheritance from appropriate base",
+      "Step 4: Verify docstrings explain conditions"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "HTTP status codes are used correctly",
+    "steps": [
+      "Step 1: Review API endpoint responses",
+      "Step 2: Verify 200 for successful GET",
+      "Step 3: Verify 201 for successful POST creating resource",
+      "Step 4: Verify 204 for successful DELETE",
+      "Step 5: Verify 4xx for client errors",
+      "Step 6: Verify 5xx for server errors"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "Database indexes are appropriately named",
+    "steps": [
+      "Step 1: Review index definitions",
+      "Step 2: Verify idx_ prefix used",
+      "Step 3: Verify table and column in name",
+      "Step 4: Verify consistent naming pattern"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "API versioning is properly implemented",
+    "steps": [
+      "Step 1: Verify /api/v1/ prefix on all endpoints",
+      "Step 2: Verify version is documented",
+      "Step 3: Verify breaking changes would increment version"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "Async functions are properly named with async prefix or suffix",
+    "steps": [
+      "Step 1: Review async function definitions",
+      "Step 2: Verify naming indicates async behavior",
+      "Step 3: Verify consistent pattern across codebase"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "Redis key names follow consistent pattern",
+    "steps": [
+      "Step 1: Review Redis key definitions",
+      "Step 2: Verify namespace:resource:id pattern",
+      "Step 3: Verify consistent TTL management",
+      "Step 4: Verify key documentation"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "Solidity events are properly indexed",
+    "steps": [
+      "Step 1: Review event definitions",
+      "Step 2: Verify key fields are indexed",
+      "Step 3: Verify max 3 indexed fields per event",
+      "Step 4: Verify event naming follows conventions"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "Docker images use appropriate base images",
+    "steps": [
+      "Step 1: Review Dockerfile",
+      "Step 2: Verify Python image version matches .python-version",
+      "Step 3: Verify slim or alpine base used",
+      "Step 4: Verify multi-stage build for smaller image"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "pyproject.toml follows modern Python packaging standards",
+    "steps": [
+      "Step 1: Review pyproject.toml structure",
+      "Step 2: Verify [project] section is complete",
+      "Step 3: Verify dependencies properly specified",
+      "Step 4: Verify tool configurations present"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "vercel.json follows Vercel best practices",
+    "steps": [
+      "Step 1: Review vercel.json configuration",
+      "Step 2: Verify routes are properly configured",
+      "Step 3: Verify function settings appropriate",
+      "Step 4: Verify environment handling correct"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "style",
+    "description": "Git .gitignore includes all generated files",
+    "steps": [
+      "Step 1: Review .gitignore file",
+      "Step 2: Verify .venv/ included",
+      "Step 3: Verify __pycache__/ included",
+      "Step 4: Verify .env included",
+      "Step 5: Verify node_modules/ included",
+      "Step 6: Verify build artifacts included"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Agent handles network timeout gracefully",
+    "steps": [
+      "Step 1: Configure short timeout",
+      "Step 2: Execute command to slow service",
+      "Step 3: Verify timeout error is caught",
+      "Step 4: Verify user-friendly error returned",
+      "Step 5: Verify retry logic triggers"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Agent handles invalid API responses gracefully",
+    "steps": [
+      "Step 1: Mock service to return malformed JSON",
+      "Step 2: Execute command calling service",
+      "Step 3: Verify parse error is caught",
+      "Step 4: Verify agent recovers gracefully"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Agent handles blockchain revert gracefully",
+    "steps": [
+      "Step 1: Execute transaction that will revert",
+      "Step 2: Verify revert reason is extracted",
+      "Step 3: Verify user-friendly error returned",
+      "Step 4: Verify no funds are lost"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Agent handles insufficient gas gracefully",
+    "steps": [
+      "Step 1: Configure very low gas limit",
+      "Step 2: Execute blockchain transaction",
+      "Step 3: Verify out-of-gas error caught",
+      "Step 4: Verify helpful error message returned"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Service subscription renewal works automatically",
+    "steps": [
+      "Step 1: Create subscription with short period",
+      "Step 2: Use service during subscription period",
+      "Step 3: Wait for expiration approach",
+      "Step 4: Verify renewal is triggered",
+      "Step 5: Verify service access continues"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Expired subscription blocks service access",
+    "steps": [
+      "Step 1: Create subscription",
+      "Step 2: Wait for expiration",
+      "Step 3: Attempt to access service",
+      "Step 4: Verify access is denied",
+      "Step 5: Verify renewal prompt is shown"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Agent transaction audit trail is complete",
+    "steps": [
+      "Step 1: Execute multiple transactions",
+      "Step 2: Query audit logs",
+      "Step 3: Verify all transactions logged",
+      "Step 4: Verify timestamps accurate",
+      "Step 5: Verify tx hashes recorded",
+      "Step 6: Verify amounts and recipients correct",
+      "Step 7: Verify gas costs recorded"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Multi-sig approval works for high-value operations",
+    "steps": [
+      "Step 1: Configure multi-sig requirement",
+      "Step 2: Execute high-value operation",
+      "Step 3: Verify first approval request created",
+      "Step 4: First approver approves",
+      "Step 5: Verify second approval required",
+      "Step 6: Second approver approves",
+      "Step 7: Verify operation executes"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Agent handles concurrent requests correctly",
+    "steps": [
+      "Step 1: Send 10 concurrent commands",
+      "Step 2: Verify all commands processed",
+      "Step 3: Verify no race conditions",
+      "Step 4: Verify database consistency",
+      "Step 5: Verify no duplicate transactions"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  },
+  {
+    "category": "functional",
+    "description": "Database connection pool handles high load",
+    "steps": [
+      "Step 1: Configure connection pool limits",
+      "Step 2: Send burst of 100 requests",
+      "Step 3: Verify pool manages connections",
+      "Step 4: Verify no connection exhaustion",
+      "Step 5: Verify graceful degradation"
+    ],
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false
+  }
+]
