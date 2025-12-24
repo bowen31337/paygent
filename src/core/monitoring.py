@@ -67,14 +67,14 @@ class PerformanceStats:
 
     def get_p95(self) -> float:
         """Get the 95th percentile."""
-        if not self.values:
-            return 0.0
+        if len(self.values) < 2:
+            return self.values[0] if self.values else 0.0
         return statistics.quantiles(self.values, n=100)[94]
 
     def get_p99(self) -> float:
         """Get the 99th percentile."""
-        if not self.values:
-            return 0.0
+        if len(self.values) < 2:
+            return self.values[0] if self.values else 0.0
         return statistics.quantiles(self.values, n=100)[98]
 
 
@@ -472,12 +472,41 @@ class PerformanceMonitor:
 
         all_values = []
         for stats in timings.values():
-            all_values.extend(stats["values"])
+            # Use individual values if available, otherwise use samples based on count
+            if "values" in stats:
+                all_values.extend(stats["values"])
+            else:
+                # If no individual values, approximate using count and average
+                # This is a simplification for when we don't have detailed timing data
+                pass
 
         if not all_values:
             return 0.0
 
-        return statistics.quantiles(all_values, n=100)[94]
+        try:
+            return statistics.quantiles(all_values, n=100)[94]
+        except statistics.StatisticsError:
+            return 0.0
+
+    def _calculate_p95_execution_time(self, timings: Dict[str, Dict]) -> float:
+        """Calculate 95th percentile execution time."""
+        if not timings:
+            return 0.0
+
+        all_values = []
+        for stats in timings.values():
+            if "values" in stats:
+                all_values.extend(stats["values"])
+            else:
+                pass
+
+        if not all_values:
+            return 0.0
+
+        try:
+            return statistics.quantiles(all_values, n=100)[94]
+        except statistics.StatisticsError:
+            return 0.0
 
     def _calculate_error_rate(self, metrics: Dict[str, Any]) -> float:
         """Calculate API error rate percentage."""

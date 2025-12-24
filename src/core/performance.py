@@ -10,6 +10,7 @@ from functools import wraps
 from typing import Any, Callable, Optional, Dict, List, Union
 from concurrent.futures import ThreadPoolExecutor
 import asyncio
+from sqlalchemy import select
 
 from src.core.cache import cache_result
 from src.services.cache import CacheService
@@ -41,7 +42,7 @@ class PerformanceOptimizer:
             # Log slow requests
             logger.warning(f"Slow request detected: {endpoint} took {duration_ms:.2f}ms")
 
-    async def get_performance_stats(self) -> Dict[str, float]:
+    def get_performance_stats(self) -> Dict[str, float]:
         """Get performance statistics."""
         if not self.response_times:
             return {
@@ -71,7 +72,7 @@ class PerformanceOptimizer:
             "slow_requests_count": len(self.slow_requests)
         }
 
-    async def get_slow_requests_report(self) -> List[Dict[str, Any]]:
+    def get_slow_requests_report(self) -> List[Dict[str, Any]]:
         """Get report of slow requests."""
         return self.slow_requests[-10:]  # Last 10 slow requests
 
@@ -94,7 +95,7 @@ def performance_monitor(func: Callable) -> Callable:
             return result
         finally:
             duration_ms = (time.time() - start_time) * 1000
-            await performance_optimizer.track_response_time(endpoint, duration_ms)
+            performance_optimizer.track_response_time(endpoint, duration_ms)
 
     return wrapper
 
@@ -224,7 +225,7 @@ async def performance_middleware(request, call_next):
 
         # Track in performance optimizer
         endpoint = request.url.path
-        await performance_optimizer.track_response_time(endpoint, duration_ms)
+        performance_optimizer.track_response_time(endpoint, duration_ms)
 
         # Log slow requests
         if duration_ms > 200:

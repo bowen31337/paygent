@@ -62,10 +62,7 @@ class VercelKVCache(CacheInterface):
                 socket_connect_timeout=5,  # 5 second connection timeout
                 socket_timeout=5,  # 5 second operation timeout
                 retry_on_timeout=True,
-                retry_on_error=[redis.ConnectionError, redis.TimeoutError],
                 max_connections=50,  # Max connections for Vercel
-                retry_attempts=3,  # Retry failed operations
-                retry_interval=0.1,  # 100ms between retries
             )
 
             # Test connection
