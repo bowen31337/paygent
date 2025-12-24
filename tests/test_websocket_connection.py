@@ -30,6 +30,8 @@ class TestWebSocketConnection:
                 wallet_address="0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
                 config={"debug": True}
             )
+            # Commit the session so it's visible to the server
+            await db.commit()
             yield str(session.id)
             break  # Only create one session
 
