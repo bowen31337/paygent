@@ -5,7 +5,8 @@ This module provides SQLAlchemy async database connections and session
 management for the Paygent application.
 """
 
-from typing import AsyncGenerator
+import logging
+from typing import AsyncGenerator, Optional
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
@@ -16,6 +17,8 @@ from sqlalchemy.pool import NullPool
 
 from src.core.config import settings
 
+logger = logging.getLogger(__name__)
+
 
 class Base(DeclarativeBase):
     """Base class for all SQLAlchemy models."""
@@ -23,12 +26,19 @@ class Base(DeclarativeBase):
 
 
 # Create async engine
-# Use NullPool for serverless environments (Vercel)
+# Handle different database URLs (PostgreSQL, SQLite)
+db_url = settings.effective_database_url
+if db_url.startswith("postgresql://"):
+    db_url = db_url.replace("postgresql://", "postgresql+asyncpg://")
+elif db_url.startswith("sqlite://"):
+    db_url = db_url.replace("sqlite://", "sqlite+aiosqlite://")
+
 engine = create_async_engine(
-    settings.effective_database_url.replace("postgresql://", "postgresql+asyncpg://"),
+    db_url,
     echo=settings.debug,
     poolclass=NullPool if settings.is_production else None,
     pool_pre_ping=True,
+    connect_args={"check_same_thread": False} if "sqlite" in db_url else {},
 )
 
 # Create async session factory
@@ -74,10 +84,16 @@ async def init_db() -> None:
     This should only be used for development. In production,
     use Alembic migrations.
     """
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        logger.info("Database tables created successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {e}")
+        raise
 
 
 async def close_db() -> None:
     """Close the database engine and cleanup connections."""
     await engine.dispose()
+    logger.info("Database connections closed")

@@ -28,12 +28,14 @@ class Settings(BaseSettings):
     jwt_secret: str = Field(default="development-secret-change-in-production")
     jwt_algorithm: str = "HS256"
     jwt_expiration_hours: int = 24
-    cors_origins: List[str] = Field(default=["http://localhost:3000", "http://localhost:8000"])
+    cors_origins: List[str] = Field(default_factory=lambda: ["http://localhost:3000", "http://localhost:8000"])
 
     @field_validator("cors_origins", mode="before")
     @classmethod
     def parse_cors_origins(cls, v: str | List[str]) -> List[str]:
         if isinstance(v, str):
+            if not v.strip():
+                return ["http://localhost:3000", "http://localhost:8000"]
             return [origin.strip() for origin in v.split(",")]
         return v
 
@@ -69,10 +71,10 @@ class Settings(BaseSettings):
     # Database Configuration
     # Vercel Postgres (production)
     postgres_url: Optional[str] = Field(default=None, description="Vercel Postgres connection URL")
-    # Local development
+    # Local development - uses SQLite in-memory by default for easy testing
     database_url: str = Field(
-        default="postgresql://postgres:postgres@localhost:5432/paygent",
-        description="PostgreSQL connection URL"
+        default="sqlite:///:memory:",
+        description="Database connection URL (PostgreSQL or SQLite)"
     )
 
     # Redis/KV Configuration
@@ -80,10 +82,10 @@ class Settings(BaseSettings):
     kv_url: Optional[str] = Field(default=None, description="Vercel KV connection URL")
     kv_rest_api_url: Optional[str] = None
     kv_rest_api_token: Optional[str] = None
-    # Local development
+    # Local development - optional, will gracefully disable cache if not available
     redis_url: str = Field(
         default="redis://localhost:6379",
-        description="Redis connection URL"
+        description="Redis connection URL (optional, cache disabled if not reachable)"
     )
 
     # Vercel Blob (production)

@@ -14,6 +14,7 @@ from fastapi.responses import JSONResponse
 
 from src.core.config import settings
 from src.core.database import init_db, close_db
+from src.core.cache import init_cache, close_cache
 from src.api import router as api_router
 
 # Configure logging
@@ -34,17 +35,29 @@ async def lifespan(app: FastAPI):
     logger.info(f"Environment: {settings.environment}")
     logger.info(f"Debug mode: {settings.debug}")
 
-    if settings.debug:
-        logger.info("Initializing database...")
+    # Initialize database
+    logger.info("Initializing database...")
+    try:
         await init_db()
-        logger.info("Database initialized")
+        logger.info("✓ Database initialized successfully")
+    except Exception as e:
+        logger.warning(f"⚠ Database initialization failed: {e}")
+
+    # Initialize Redis cache
+    logger.info("Initializing Redis cache...")
+    try:
+        await init_cache()
+        logger.info("✓ Redis cache initialized successfully")
+    except Exception as e:
+        logger.warning(f"⚠ Redis cache initialization failed: {e}")
 
     yield
 
     # Shutdown
     logger.info("Shutting down...")
     await close_db()
-    logger.info("Database connections closed")
+    await close_cache()
+    logger.info("All connections closed")
 
 
 # Create FastAPI application

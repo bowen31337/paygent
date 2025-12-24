@@ -1,0 +1,306 @@
+{
+  "generated_at": "2025-12-24T07:21:27.712885Z",
+  "project_dir": "paygent",
+  "structure": {
+    "directories": [
+      {
+        "name": "contracts",
+        "path": "contracts",
+        "depth": 2,
+        "subdirectories": [
+          {
+            "name": "scripts",
+            "path": "contracts/scripts",
+            "depth": 2,
+            "subdirectories": [],
+            "file_count": 0,
+            "key_files": []
+          },
+          {
+            "name": "test",
+            "path": "contracts/test",
+            "depth": 2,
+            "subdirectories": [],
+            "file_count": 0,
+            "key_files": []
+          }
+        ],
+        "file_count": 0,
+        "key_files": []
+      },
+      {
+        "name": "docs",
+        "path": "docs",
+        "depth": 2,
+        "subdirectories": [
+          {
+            "name": "api",
+            "path": "docs/api",
+            "depth": 2,
+            "subdirectories": [],
+            "file_count": 0,
+            "key_files": []
+          }
+        ],
+        "file_count": 0,
+        "key_files": []
+      },
+      {
+        "name": "scripts",
+        "path": "scripts",
+        "depth": 1,
+        "subdirectories": [],
+        "file_count": 0,
+        "key_files": []
+      },
+      {
+        "name": "src",
+        "path": "src",
+        "depth": 3,
+        "subdirectories": [
+          {
+            "name": "agents",
+            "path": "src/agents",
+            "depth": 2,
+            "subdirectories": [],
+            "file_count": 1,
+            "key_files": []
+          },
+          {
+            "name": "api",
+            "path": "src/api",
+            "depth": 3,
+            "subdirectories": [
+              {
+                "name": "routes",
+                "path": "src/api/routes",
+                "depth": 3,
+                "subdirectories": [],
+                "file_count": 7,
+                "key_files": [
+                  "approvals.py"
+                ]
+              }
+            ],
+            "file_count": 1,
+            "key_files": []
+          },
+          {
+            "name": "connectors",
+            "path": "src/connectors",
+            "depth": 2,
+            "subdirectories": [],
+            "file_count": 1,
+            "key_files": []
+          },
+          {
+            "name": "core",
+            "path": "src/core",
+            "depth": 2,
+            "subdirectories": [],
+            "file_count": 3,
+            "key_files": [
+              "config.py"
+            ]
+          },
+          {
+            "name": "db",
+            "path": "src/db",
+            "depth": 2,
+            "subdirectories": [],
+            "file_count": 1,
+            "key_files": []
+          },
+          {
+            "name": "middleware",
+            "path": "src/middleware",
+            "depth": 2,
+            "subdirectories": [],
+            "file_count": 1,
+            "key_files": []
+          },
+          {
+            "name": "models",
+            "path": "src/models",
+            "depth": 2,
+            "subdirectories": [],
+            "file_count": 1,
+            "key_files": []
+          },
+          {
+            "name": "schemas",
+            "path": "src/schemas",
+            "depth": 2,
+            "subdirectories": [],
+            "file_count": 1,
+            "key_files": []
+          },
+          {
+            "name": "services",
+            "path": "src/services",
+            "depth": 2,
+            "subdirectories": [],
+            "file_count": 1,
+            "key_files": []
+          },
+          {
+            "name": "static",
+            "path": "src/static",
+            "depth": 2,
+            "subdirectories": [],
+            "file_count": 0,
+            "key_files": []
+          },
+          {
+            "name": "templates",
+            "path": "src/templates",
+            "depth": 2,
+            "subdirectories": [],
+            "file_count": 0,
+            "key_files": []
+          },
+          {
+            "name": "tools",
+            "path": "src/tools",
+            "depth": 2,
+            "subdirectories": [],
+            "file_count": 1,
+            "key_files": []
+          },
+          {
+            "name": "utils",
+            "path": "src/utils",
+            "depth": 2,
+            "subdirectories": [],
+            "file_count": 1,
+            "key_files": []
+          },
+          {
+            "name": "x402",
+            "path": "src/x402",
+            "depth": 2,
+            "subdirectories": [],
+            "file_count": 1,
+            "key_files": []
+          }
+        ],
+        "file_count": 2,
+        "key_files": [
+          "main.py"
+        ]
+      },
+      {
+        "name": "tests",
+        "path": "tests",
+        "depth": 2,
+        "subdirectories": [
+          {
+            "name": "e2e",
+            "path": "tests/e2e",
+            "depth": 2,
+            "subdirectories": [],
+            "file_count": 1,
+            "key_files": []
+          },
+          {
+            "name": "fixtures",
+            "path": "tests/fixtures",
+            "depth": 2,
+            "subdirectories": [],
+            "file_count": 1,
+            "key_files": []
+          },
+          {
+            "name": "integration",
+            "path": "tests/integration",
+            "depth": 2,
+            "subdirectories": [],
+            "file_count": 1,
+            "key_files": []
+          },
+          {
+            "name": "unit",
+            "path": "tests/unit",
+            "depth": 2,
+            "subdirectories": [],
+            "file_count": 1,
+            "key_files": []
+          }
+        ],
+        "file_count": 2,
+        "key_files": []
+      }
+    ],
+    "root_files": [
+      {
+        "name": ".gitignore",
+        "size": 2553,
+        "type": "other"
+      },
+      {
+        "name": "app_spec.txt",
+        "size": 43013,
+        "type": "text"
+      },
+      {
+        "name": "feature_list.json",
+        "size": 83831,
+        "type": "config"
+      },
+      {
+        "name": "init.sh",
+        "size": 7056,
+        "type": "shell"
+      },
+      {
+        "name": "pyproject.toml",
+        "size": 3750,
+        "type": "other"
+      },
+      {
+        "name": "token-consumption-report.json",
+        "size": 1366,
+        "type": "config"
+      }
+    ],
+    "depth": 3
+  },
+  "components": {
+    "components": [],
+    "services": [],
+    "utilities": [],
+    "routes": [],
+    "models": [
+      {
+        "name": "__init__",
+        "path": "src/models/__init__.py"
+      }
+    ],
+    "hooks": []
+  },
+  "file_stats": {
+    "python": {
+      "count": 28,
+      "total_size": 42577
+    },
+    "config": {
+      "count": 4,
+      "total_size": 89939
+    }
+  },
+  "recent_changes": {
+    "available": true,
+    "recent_commits": [
+      {
+        "hash": "bff8efd",
+        "message": "init"
+      }
+    ],
+    "files_changed_recently": []
+  },
+  "dependencies": {
+    "npm": [],
+    "python": []
+  },
+  "estimated_tokens": 1731
+}

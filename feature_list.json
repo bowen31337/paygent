@@ -8,9 +8,9 @@
       "Step 3: Verify response status code is 200",
       "Step 4: Verify response body contains status: healthy"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "functional",
@@ -22,9 +22,9 @@
       "Step 4: Verify all API endpoints are listed",
       "Step 5: Verify endpoint schemas are displayed"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "functional",
@@ -35,9 +35,9 @@
       "Step 3: Verify ReDoc UI renders correctly",
       "Step 4: Verify API documentation is complete"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "functional",
@@ -48,9 +48,9 @@
       "Step 3: Verify response is valid JSON",
       "Step 4: Verify schema contains all endpoint definitions"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "functional",
@@ -62,9 +62,9 @@
       "Step 4: Verify connection pool is initialized",
       "Step 5: Check logs for successful connection message"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "functional",
@@ -75,9 +75,9 @@
       "Step 3: Verify Redis connection is established",
       "Step 4: Test cache read/write operations"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "functional",

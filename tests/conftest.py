@@ -10,7 +10,7 @@ from typing import AsyncGenerator, Generator
 from unittest.mock import MagicMock
 
 import pytest
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -70,7 +70,7 @@ async def db_session(async_engine) -> AsyncGenerator[AsyncSession, None]:
 @pytest.fixture(scope="function")
 async def client() -> AsyncGenerator[AsyncClient, None]:
     """Create an async HTTP test client."""
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
 
 
