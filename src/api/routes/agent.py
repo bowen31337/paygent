@@ -311,7 +311,7 @@ def dict_to_json(data: dict) -> str:
 )
 async def list_sessions(
     offset: int = 0,
-    limit: int = 20,
+    limit: int = Query(default=20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
 ) -> SessionListResponse:
     """List all agent sessions with pagination."""
