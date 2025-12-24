@@ -18,6 +18,7 @@ from src.core.database import get_db
 from src.core.config import settings
 from src.services.payment_service import PaymentService
 from src.services.x402_service import X402PaymentService
+from src.services.service_registry import ServiceRegistryService
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -63,6 +64,7 @@ class ExecuteX402Request(BaseModel):
     service_url: str = Field(..., description="URL of the service to pay")
     amount: float = Field(..., gt=0, description="Amount to pay")
     token: str = Field(..., description="Token address for payment")
+    service_id: Optional[UUID] = Field(default=None, description="Service ID for reputation tracking")
 
 
 class ExecuteX402Response(BaseModel):
@@ -191,13 +193,15 @@ async def execute_x402_payment(
     3. Submit payment to facilitator
     4. Retry request with payment header
     5. Create payment record in database
-    6. Return service response
+    6. Update service reputation if successful
+    7. Return service response
 
     NOTE: This is a mock implementation. In production, this would
     interact with the actual x402 facilitator.
     """
     payment_service = PaymentService(db)
     x402_service = X402PaymentService()
+    registry_service = ServiceRegistryService(db)
 
     # Try to execute payment and ALWAYS create a payment record
     payment_success = False
@@ -229,11 +233,24 @@ async def execute_x402_payment(
             recipient=request.service_url,
             amount=request.amount,
             token=request.token,
+            service_id=request.service_id,
             tx_hash=tx_hash,
             status=payment_status,
         )
 
         if payment_success:
+            # Update service reputation if service_id is provided
+            if request.service_id:
+                try:
+                    # Use a default rating of 4.5 for successful payments
+                    # In production, this could be based on actual service quality
+                    await registry_service.update_service_reputation(
+                        str(request.service_id), 4.5
+                    )
+                    logger.info(f"Updated reputation for service {request.service_id}")
+                except Exception as e:
+                    logger.warning(f"Failed to update service reputation: {e}")
+
             return ExecuteX402Response(
                 payment_id=payment.id,
                 tx_hash=tx_hash,

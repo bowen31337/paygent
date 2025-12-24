@@ -5,6 +5,7 @@ This module provides Redis connection and cache operations for the Paygent appli
 """
 
 import logging
+import os
 from typing import Optional, Any
 from functools import wraps
 
@@ -16,6 +17,13 @@ except ImportError:
     REDIS_AVAILABLE = False
     aioredis = None
 
+try:
+    from fakeredis import FakeAsyncRedis
+    FAKEREDIS_AVAILABLE = True
+except ImportError:
+    FAKEREDIS_AVAILABLE = False
+    FakeAsyncRedis = None
+
 from src.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -25,7 +33,7 @@ class CacheClient:
     """Redis cache client wrapper for Paygent."""
 
     def __init__(self):
-        self._client: Optional[aioredis.Redis] = None
+        self._client: Optional[Any] = None
         self._available = False
 
     async def connect(self) -> bool:
@@ -35,6 +43,15 @@ class CacheClient:
         Returns:
             bool: True if connection successful, False otherwise.
         """
+        # Check for test mode - use fakeredis
+        use_mock = os.environ.get("USE_MOCK_REDIS", "false").lower() == "true"
+
+        if use_mock and FAKEREDIS_AVAILABLE:
+            logger.info("Using FakeAsyncRedis for testing")
+            self._client = FakeAsyncRedis()
+            self._available = True
+            return True
+
         if not REDIS_AVAILABLE:
             logger.warning("Redis library not available. Cache functionality disabled.")
             return False

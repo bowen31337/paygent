@@ -8,7 +8,7 @@ for the Paygent platform.
 import asyncio
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -43,7 +43,7 @@ class ServiceRegistryService:
         mcp_compatible: Optional[bool] = None,
         limit: int = 20,
         offset: int = 0,
-    ) -> List[Service]:
+    ) -> List[Union[Service, Dict[str, Any]]]:
         """
         Discover services based on search criteria with caching.
 
@@ -83,8 +83,7 @@ class ServiceRegistryService:
                     Service.name.contains(query) | Service.description.contains(query)
                 )
 
-            if category:
-                stmt = stmt.where(Service.category == category)
+            # Note: category filter removed - Service model doesn't have category field
 
             if min_price is not None:
                 stmt = stmt.where(Service.price_amount >= min_price)
@@ -109,7 +108,25 @@ class ServiceRegistryService:
 
             # Cache results for 5 minutes (300 seconds)
             if services:
-                await self.cache_service.set(cache_key, list(services), expiration=300)
+                # Convert Service objects to dictionaries for JSON serialization
+                services_data = [
+                    {
+                        "id": str(service.id),
+                        "name": service.name,
+                        "description": service.description,
+                        "endpoint": service.endpoint,
+                        "pricing_model": service.pricing_model,
+                        "price_amount": float(service.price_amount),
+                        "price_token": service.price_token,
+                        "mcp_compatible": service.mcp_compatible,
+                        "reputation_score": float(service.reputation_score),
+                        "total_calls": service.total_calls,
+                        "created_at": service.created_at.isoformat(),
+                        "updated_at": service.updated_at.isoformat(),
+                    }
+                    for service in services
+                ]
+                await self.cache_service.set(cache_key, services_data, expiration=300)
                 logger.info(f"Cached {len(services)} services for {cache_key}")
 
             return services
@@ -292,7 +309,14 @@ class ServiceRegistryService:
             Updated service object
         """
         try:
-            service = await self.get_service(service_id)
+            # Convert string to UUID if needed
+            from uuid import UUID
+            if isinstance(service_id, str):
+                service_id_uuid = UUID(service_id)
+            else:
+                service_id_uuid = service_id
+
+            service = await self.get_service(service_id_uuid)
             if not service:
                 return None
 

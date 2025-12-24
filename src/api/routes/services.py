@@ -88,7 +88,7 @@ class UpdateServiceRequest(BaseModel):
     "/discover",
     response_model=ServiceListResponse,
     summary="Discover services",
-    description="Discover available services with optional filtering.",
+    description="Discover available services with optional filtering. Results are cached for 5 minutes.",
 )
 async def discover_services(
     category: Optional[str] = Query(default=None, description="Filter by category"),
@@ -112,48 +112,65 @@ async def discover_services(
     - min_price/max_price: Price range
     - min_reputation: Minimum reputation score
     - mcp_compatible: MCP protocol compatibility
+
+    Results are cached for 5 minutes for performance.
     """
-    # Build query with filters
-    query = select(Service)
+    # Use ServiceRegistryService which includes caching
+    registry = ServiceRegistryService(db)
+    services = await registry.discover_services(
+        query="",  # No text query, just filters
+        category=category,
+        min_price=min_price,
+        max_price=max_price,
+        min_reputation=min_reputation,
+        mcp_compatible=mcp_compatible,
+        limit=limit,
+        offset=offset,
+    )
 
-    # Apply filters
+    # Get total count (uncached for accuracy)
+    count_query = select(sql_func.count()).select_from(Service)
+    # Apply same filters for count
     if min_price is not None:
-        query = query.where(Service.price_amount >= min_price)
+        count_query = count_query.where(Service.price_amount >= min_price)
     if max_price is not None:
-        query = query.where(Service.price_amount <= max_price)
+        count_query = count_query.where(Service.price_amount <= max_price)
     if min_reputation is not None:
-        query = query.where(Service.reputation_score >= min_reputation)
+        count_query = count_query.where(Service.reputation_score >= min_reputation)
     if mcp_compatible is not None:
-        query = query.where(Service.mcp_compatible == mcp_compatible)
+        count_query = count_query.where(Service.mcp_compatible == mcp_compatible)
+    # Note: category filter removed - Service model doesn't have category field
 
-    # Get total count
-    count_query = select(sql_func.count()).select_from(query.subquery())
     count_result = await db.execute(count_query)
     total = count_result.scalar_one()
 
-    # Apply pagination and ordering
-    query = query.order_by(Service.reputation_score.desc()).offset(offset).limit(limit)
-    result = await db.execute(query)
-    services = result.scalars().all()
+    # Handle both Service objects (from DB) and dicts (from cache)
+    service_list = []
+    for service in services:
+        if isinstance(service, dict):
+            # Cached data is already in dict format
+            service_list.append(ServiceInfo(**service))
+        else:
+            # Service object from database
+            service_list.append(
+                ServiceInfo(
+                    id=service.id,
+                    name=service.name,
+                    description=service.description,
+                    endpoint=service.endpoint,
+                    pricing_model=service.pricing_model,
+                    price_amount=service.price_amount,
+                    price_token=service.price_token,
+                    mcp_compatible=service.mcp_compatible,
+                    reputation_score=service.reputation_score,
+                    total_calls=service.total_calls,
+                    created_at=service.created_at.isoformat(),
+                    updated_at=service.updated_at.isoformat(),
+                )
+            )
 
     return ServiceListResponse(
-        services=[
-            ServiceInfo(
-                id=service.id,
-                name=service.name,
-                description=service.description,
-                endpoint=service.endpoint,
-                pricing_model=service.pricing_model,
-                price_amount=service.price_amount,
-                price_token=service.price_token,
-                mcp_compatible=service.mcp_compatible,
-                reputation_score=service.reputation_score,
-                total_calls=service.total_calls,
-                created_at=service.created_at.isoformat(),
-                updated_at=service.updated_at.isoformat(),
-            )
-            for service in services
-        ],
+        services=service_list,
         total=total,
         offset=offset,
         limit=limit,
@@ -200,31 +217,28 @@ async def get_service(
     "/{service_id}/pricing",
     response_model=ServicePricing,
     summary="Get service pricing",
-    description="Get current pricing information for a service.",
+    description="Get current pricing information for a service. Cached for 1 minute.",
 )
 async def get_service_pricing(
     service_id: UUID,
     db: AsyncSession = Depends(get_db),
 ) -> ServicePricing:
-    """Get current pricing for a service."""
-    result = await db.execute(select(Service).where(Service.id == service_id))
-    service = result.scalar_one_or_none()
+    """Get current pricing for a service (with caching)."""
+    registry = ServiceRegistryService(db)
+    pricing = await registry.get_service_pricing(str(service_id))
 
-    if not service:
+    if not pricing:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Service {service_id} not found",
         )
 
-    # Map token address to symbol (simplified - in production, use a registry)
-    token_symbol = "USDC" if "usdc" in service.price_token.lower() else service.price_token[:6]
-
     return ServicePricing(
-        service_id=service.id,
-        pricing_model=service.pricing_model,
-        price_amount=service.price_amount,
-        price_token=service.price_token,
-        token_symbol=token_symbol,
+        service_id=UUID(pricing["service_id"]),
+        pricing_model=pricing["pricing_model"],
+        price_amount=pricing["price_amount"],
+        price_token=pricing["price_token"],
+        token_symbol=pricing["currency"],
     )
 
 

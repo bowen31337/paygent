@@ -236,7 +236,8 @@ class WalletService:
 
             # Step 4: Execute transfer (mock for now)
             # TODO: Integrate with AgentWallet contract
-            mock_tx_hash = f"0x{UUID(bytes=b'mock_tx').hex}"
+            import os
+            mock_tx_hash = f"0x{os.urandom(32).hex()}"
 
             # Create payment record
             payment = Payment(

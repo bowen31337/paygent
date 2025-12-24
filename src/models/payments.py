@@ -8,7 +8,7 @@ from sqlalchemy import Column, String, Float, ForeignKey, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column
 from typing import Optional
 from datetime import datetime
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from src.core.database import Base
 
@@ -18,7 +18,7 @@ class Payment(Base):
 
     __tablename__ = "payments"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True)
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=lambda: uuid4())
     agent_wallet: Mapped[str] = mapped_column(String(42), nullable=False)
     service_id: Mapped[Optional[UUID]] = mapped_column(ForeignKey("services.id"))
     recipient: Mapped[str] = mapped_column(String(42), nullable=False)
