@@ -19,8 +19,9 @@ from sqlalchemy import select
 
 from src.core.database import get_db
 from src.models.agent_sessions import AgentSession, ExecutionLog
-from src.agents.agent_executor import execute_agent_command
-from src.agents.agent_executor_enhanced import execute_agent_command_enhanced
+from src.agents.agent_executor_enhanced import execute_agent_command_enhanced, AgentExecutorEnhanced
+from src.agents.command_parser import CommandParser
+from src.tools.simple_tools import X402PaymentTool, SwapTokensTool, CheckBalanceTool, DiscoverServicesTool
 
 router = APIRouter()
 
@@ -196,17 +197,6 @@ async def execute_command_stream(
         config={"budget_limit": request.budget_limit_usd} if request.budget_limit_usd else None
     )
 
-    # Create execution log
-    execution_log = ExecutionLog(
-        id=uuid4(),
-        session_id=session.id,
-        command=request.command,
-        status="running",
-    )
-    db.add(execution_log)
-    await db.commit()
-    await db.refresh(execution_log)
-
     async def event_generator():
         """
         Generator function that yields Server-Sent Events.
@@ -216,50 +206,71 @@ async def execute_command_stream(
             yield f"event: thinking\ndata: {dict_to_json({'message': 'Analyzing your command...', 'timestamp': datetime.utcnow().isoformat()})}\n\n"
             await asyncio.sleep(0.1)
 
-            # Event 2: Tool call (simulated based on command)
-            command_lower = request.command.lower()
-            if "pay" in command_lower or "transfer" in command_lower:
-                yield f"event: tool_call\ndata: {dict_to_json({'tool': 'x402_payment', 'arguments': {'amount': 0.10, 'token': 'USDC', 'recipient': 'service'}, 'timestamp': datetime.utcnow().isoformat()})}\n\n"
+            # Event 2: Parse command
+            parser = CommandParser()
+            parsed = parser.parse(request.command)
+
+            # Event 3: Tool call based on intent
+            if parsed.intent == "payment":
+                yield f"event: tool_call\ndata: {dict_to_json({'tool': 'x402_payment', 'arguments': parsed.parameters, 'timestamp': datetime.utcnow().isoformat()})}\n\n"
                 await asyncio.sleep(0.2)
 
-                # Event 3: Tool result
-                yield f"event: tool_result\ndata: {dict_to_json({'tool': 'x402_payment', 'result': {'status': 'confirmed', 'tx_hash': '0xmocktxhash1234567890abcdef1234567890abcdef1234567890abcdef12345678'}, 'timestamp': datetime.utcnow().isoformat()})}\n\n"
+                # Tool result
+                tool = X402PaymentTool()
+                temp_executor = AgentExecutorEnhanced(session.id, db)
+                service_url = temp_executor._resolve_service_endpoint(parsed.parameters.get('recipient', 'api'))
+                result = tool.run(
+                    service_url=service_url,
+                    amount=parsed.parameters['amount'],
+                    token=parsed.parameters.get('token', 'USDC')
+                )
+                yield f"event: tool_result\ndata: {dict_to_json({'tool': 'x402_payment', 'result': result, 'timestamp': datetime.utcnow().isoformat()})}\n\n"
                 await asyncio.sleep(0.1)
 
-            elif "swap" in command_lower or "exchange" in command_lower:
-                yield f"event: tool_call\ndata: {dict_to_json({'tool': 'vvs_swap', 'arguments': {'from': 'CRO', 'to': 'USDC', 'amount': 100}, 'timestamp': datetime.utcnow().isoformat()})}\n\n"
+            elif parsed.intent == "swap":
+                yield f"event: tool_call\ndata: {dict_to_json({'tool': 'swap_tokens', 'arguments': parsed.parameters, 'timestamp': datetime.utcnow().isoformat()})}\n\n"
                 await asyncio.sleep(0.2)
 
-                yield f"event: tool_result\ndata: {dict_to_json({'tool': 'vvs_swap', 'result': {'received': 42.50, 'status': 'completed'}, 'timestamp': datetime.utcnow().isoformat()})}\n\n"
+                tool = SwapTokensTool()
+                result = tool.run(
+                    from_token=parsed.parameters['from_token'],
+                    to_token=parsed.parameters['to_token'],
+                    amount=parsed.parameters['amount']
+                )
+                yield f"event: tool_result\ndata: {dict_to_json({'tool': 'swap_tokens', 'result': result, 'timestamp': datetime.utcnow().isoformat()})}\n\n"
                 await asyncio.sleep(0.1)
 
-            elif "balance" in command_lower or "check" in command_lower:
-                yield f"event: tool_call\ndata: {dict_to_json({'tool': 'check_balance', 'arguments': {}, 'timestamp': datetime.utcnow().isoformat()})}\n\n"
+            elif parsed.intent == "balance_check":
+                yield f"event: tool_call\ndata: {dict_to_json({'tool': 'check_balance', 'arguments': parsed.parameters, 'timestamp': datetime.utcnow().isoformat()})}\n\n"
                 await asyncio.sleep(0.15)
 
-                yield f"event: tool_result\ndata: {dict_to_json({'tool': 'check_balance', 'result': {'balances': {'CRO': 1000.0, 'USDC': 250.0}}, 'timestamp': datetime.utcnow().isoformat()})}\n\n"
+                tool = CheckBalanceTool()
+                result = tool.run(tokens=parsed.parameters.get('tokens', ['CRO', 'USDC']))
+                yield f"event: tool_result\ndata: {dict_to_json({'tool': 'check_balance', 'result': result, 'timestamp': datetime.utcnow().isoformat()})}\n\n"
+                await asyncio.sleep(0.1)
+
+            elif parsed.intent == "service_discovery":
+                yield f"event: tool_call\ndata: {dict_to_json({'tool': 'discover_services', 'arguments': parsed.parameters, 'timestamp': datetime.utcnow().isoformat()})}\n\n"
+                await asyncio.sleep(0.15)
+
+                tool = DiscoverServicesTool()
+                result = tool.run(category=parsed.parameters.get('category'), mcp_compatible=True)
+                yield f"event: tool_result\ndata: {dict_to_json({'tool': 'discover_services', 'result': result, 'timestamp': datetime.utcnow().isoformat()})}\n\n"
                 await asyncio.sleep(0.1)
             else:
                 # General command - just thinking
                 await asyncio.sleep(0.3)
 
-            # Event 4: Complete
-            result = await enhanced_agent_execution(request.command, session.id, db)
+            # Event 4: Complete - use enhanced executor for final result with logging
+            result = await execute_agent_command_enhanced(
+                command=request.command,
+                session_id=session.id,
+                db=db,
+                budget_limit_usd=request.budget_limit_usd
+            )
             yield f"event: complete\ndata: {dict_to_json({'result': result, 'session_id': str(session.id), 'timestamp': datetime.utcnow().isoformat()})}\n\n"
 
-            # Update execution log
-            execution_log.status = "completed" if result.get("success") else "failed"
-            execution_log.result = result
-            execution_log.duration_ms = 150
-            execution_log.total_cost = 0.01
-            await db.commit()
-
         except Exception as e:
-            # Update execution log with error
-            execution_log.status = "failed"
-            execution_log.result = {"error": str(e)}
-            await db.commit()
-
             # Error event
             yield f"event: error\ndata: {dict_to_json({'error': str(e), 'timestamp': datetime.utcnow().isoformat()})}\n\n"
 

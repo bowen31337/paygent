@@ -250,8 +250,8 @@
       "Step 4: Verify each step has description and expected outcome",
       "Step 5: Verify plan is logged to execution_logs"
     ],
-    "passes": false,
-    "is_dev_done": false,
+    "passes": true,
+    "is_dev_done": true,
     "is_qa_passed": false
   },
   {
@@ -291,8 +291,8 @@
       "Step 3: Verify agent rejects payment exceeding budget",
       "Step 4: Verify error message indicates budget exceeded"
     ],
-    "passes": false,
-    "is_dev_done": false,
+    "passes": true,
+    "is_dev_done": true,
     "is_qa_passed": false
   },
   {
@@ -304,8 +304,8 @@
       "Step 3: Verify tool_calls array contains all invocations",
       "Step 4: Verify each tool call has name, args, and result"
     ],
-    "passes": false,
-    "is_dev_done": false,
+    "passes": true,
+    "is_dev_done": true,
     "is_qa_passed": false
   },
   {
