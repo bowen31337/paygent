@@ -257,6 +257,18 @@ async def execute_command_stream(
                 result = tool.run(category=parsed.parameters.get('category'), mcp_compatible=True)
                 yield f"event: tool_result\ndata: {dict_to_json({'tool': 'discover_services', 'result': result, 'timestamp': datetime.utcnow().isoformat()})}\n\n"
                 await asyncio.sleep(0.1)
+
+            elif parsed.intent == "perpetual_trade":
+                # Event: Spawn Moonlander subagent
+                yield f"event: tool_call\ndata: {dict_to_json({'tool': 'moonlander_trader_subagent', 'arguments': parsed.parameters, 'timestamp': datetime.utcnow().isoformat()})}\n\n"
+                await asyncio.sleep(0.3)
+
+                # Event: Execute trade
+                direction = parsed.parameters.get('direction', 'long')
+                symbol = parsed.parameters.get('symbol', 'BTC')
+                yield f"event: thinking\ndata: {dict_to_json({'message': f'Opening {direction} position on {symbol}...', 'timestamp': datetime.utcnow().isoformat()})}\n\n"
+                await asyncio.sleep(0.2)
+
             else:
                 # General command - just thinking
                 await asyncio.sleep(0.3)

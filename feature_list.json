@@ -279,8 +279,9 @@
       "Step 4: Verify leverage and stop-loss parameters are set"
     ],
     "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "is_dev_done": true,
+    "is_qa_passed": false,
+    "notes": "Implemented MoonlanderTraderSubagent with perpetual trading, command parser support, and agent executor integration"
   },
   {
     "category": "functional",

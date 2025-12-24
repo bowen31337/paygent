@@ -147,24 +147,44 @@ class CommandParser:
 
         elif intent == "perpetual_trade":
             # Pattern: open 100 USDC long position on BTC with 10x leverage
-            # Groups: [0]=amount, [1]=token, [2]=direction (optional), [3]=symbol, [4]=leverage (optional)
+            # Groups vary by pattern:
+            # - Pattern 1: [0]=amount, [1]=token, [2]=direction, [3]=symbol, [4]=leverage
+            # - Pattern 2: [0]=amount, [1]=token, [2]=symbol
+            # - Pattern 3: [0]=amount, [1]=token, [2]=symbol, [3]=leverage
             amount = float(groups[0])
             token = groups[1].upper()
 
-            # Handle different pattern variations
-            if len(groups) >= 4 and groups[3]:
-                # Pattern with direction and symbol
-                direction = groups[2] if groups[2] else "long"
-                symbol = groups[3]
+            # Determine direction from raw command (since it's in non-capturing group)
+            raw_lower = raw_command.lower()
+            if "short" in raw_lower:
+                direction = "short"
+            elif "long" in raw_lower:
+                direction = "long"
             else:
-                # Pattern without explicit direction
-                direction = "long"  # Default to long
-                symbol = groups[2] if len(groups) > 2 else "BTC"
+                direction = "long"  # Default
 
-            # Check for leverage in groups
-            leverage = 10.0  # Default leverage
-            if len(groups) > 4 and groups[4]:
-                leverage = float(groups[4])
+            # Determine symbol and leverage based on pattern
+            if len(groups) >= 4 and groups[3]:
+                # Pattern 1 or 3: has symbol at index 2 or 3
+                if groups[2] and groups[2].upper() in ["BTC", "ETH", "CRO"]:
+                    symbol = groups[2].upper()
+                    leverage = float(groups[3]) if groups[3] else 10.0
+                else:
+                    symbol = groups[3].upper()
+                    leverage = 10.0
+            elif len(groups) >= 3:
+                # Pattern 2: symbol at index 2
+                symbol = groups[2].upper()
+                leverage = 10.0
+            else:
+                symbol = "BTC"
+                leverage = 10.0
+
+            # Check for leverage in raw command
+            import re
+            leverage_match = re.search(r"([\d.]+)x\s+leverage", raw_lower)
+            if leverage_match:
+                leverage = float(leverage_match.group(1))
 
             return ParsedCommand(
                 intent="perpetual_trade",
@@ -172,8 +192,8 @@ class CommandParser:
                 parameters={
                     "amount": amount,
                     "token": token,
-                    "direction": direction.lower(),
-                    "symbol": symbol.upper(),
+                    "direction": direction,
+                    "symbol": symbol,
                     "leverage": leverage,
                 },
                 confidence=0.95,

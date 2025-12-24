@@ -296,6 +296,8 @@ class X402PaymentService:
                 if "=" in part:
                     key, value = part.split("=", 1)
                     result[key.strip()] = value.strip()
+                elif part:  # Handle keys without values (e.g., "x402")
+                    result[part] = ""
 
             return result
 

@@ -23,7 +23,7 @@ class PaymentSignatureData(BaseModel):
     """Data model for payment signature."""
 
     service_url: str = Field(..., description="URL of the service being paid")
-    amount: float = Field(..., description="Payment amount")
+    amount: int = Field(..., description="Payment amount in smallest unit")
     token: str = Field(..., description="Token symbol (e.g., USDC)")
     description: Optional[str] = Field(None, description="Optional payment description")
     timestamp: int = Field(default_factory=lambda: int(time.time()), description="Payment timestamp")
@@ -80,8 +80,8 @@ class EIP712SignatureGenerator:
         # Update domain with chain ID
         self.domain = self.DOMAIN.copy()
         self.domain["chainId"] = self.chain_id
-        if self.verifying_contract:
-            self.domain["verifyingContract"] = self.verifying_contract
+        # For development, use zero address if no contract deployed
+        self.domain["verifyingContract"] = self.verifying_contract or "0x0000000000000000000000000000000000000000"
 
         # Initialize account with private key (development only)
         self.account = None
@@ -167,7 +167,7 @@ class EIP712SignatureGenerator:
                 "description": payment_data.description or "",
                 "timestamp": payment_data.timestamp,
                 "nonce": payment_data.nonce,
-                "walletAddress": payment_data.wallet_address,
+                "walletAddress": payment_data.wallet_address.lower() if payment_data.wallet_address.startswith('0x') else payment_data.wallet_address,
             }
 
             # Encode typed data
