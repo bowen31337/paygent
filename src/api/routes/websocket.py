@@ -12,7 +12,7 @@ import json
 import logging
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
 from starlette.status import WS_1008_POLICY_VIOLATION
 
@@ -39,6 +39,10 @@ from src.services.agent_service import AgentService
 from src.services.approval_service import ApprovalService
 from src.services.session_service import SessionService
 from src.services.execution_log_service import ExecutionLogService
+from src.agents.agent_executor_enhanced import AgentExecutorEnhanced
+from src.core.database import get_db
+from uuid import UUID, uuid4
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +55,7 @@ class ConnectionManager:
     def __init__(self):
         self.active_connections: Dict[str, WebSocket] = {}
         self.user_sessions: Dict[str, str] = {}  # user_id -> session_id
+        self.execution_tasks: Dict[str, asyncio.Task] = {}  # session_id -> task
 
     async def connect(self, websocket: WebSocket, session_id: str, user_id: str):
         """Connect a new WebSocket client."""
@@ -65,6 +70,12 @@ class ConnectionManager:
             del self.active_connections[session_id]
         if user_id in self.user_sessions:
             del self.user_sessions[user_id]
+        # Cancel any active execution task
+        if session_id in self.execution_tasks:
+            task = self.execution_tasks[session_id]
+            if not task.done():
+                task.cancel()
+            del self.execution_tasks[session_id]
         logger.info(f"WebSocket disconnected for session {session_id}, user {user_id}")
 
     async def send_personal_message(self, message: Dict[str, Any], session_id: str):
@@ -100,6 +111,14 @@ class ConnectionManager:
                 return user_id
         return None
 
+    def register_execution_task(self, session_id: str, task: asyncio.Task):
+        """Register an active execution task for a session."""
+        self.execution_tasks[session_id] = task
+
+    def get_execution_task(self, session_id: str) -> Optional[asyncio.Task]:
+        """Get the active execution task for a session."""
+        return self.execution_tasks.get(session_id)
+
 
 manager = ConnectionManager()
 
@@ -107,7 +126,7 @@ manager = ConnectionManager()
 @router.websocket("/ws")
 async def websocket_endpoint(
     websocket: WebSocket,
-    session_id: str,
+    session_id: UUID,
     user_id: Optional[str] = Depends(get_current_user_optional)
 ):
     """
@@ -127,24 +146,29 @@ async def websocket_endpoint(
     if not user_id:
         user_id = "test-user-123"
 
-    # Validate session exists
-    session_service = SessionService()
-    session = await session_service.get_session(session_id)
+    # Convert UUID to string for manager operations
+    session_id_str = str(session_id)
+
+    # Validate session exists - get db session for validation
+    async for db in get_db():
+        session_service = SessionService(db)
+        session = await session_service.get_session(session_id)
+        break
     if not session:
         await websocket.close(code=WS_1008_POLICY_VIOLATION, reason="Invalid session")
         return
 
     # Connect to manager
-    await manager.connect(websocket, session_id, user_id)
+    await manager.connect(websocket, session_id_str, user_id)
 
     try:
         # Send connection established event
         await manager.send_personal_message(
             WebSocketEvent(
                 type="connected",
-                data={"session_id": session_id, "user_id": user_id}
+                data={"session_id": session_id_str, "user_id": user_id}
             ).dict(),
-            session_id
+            session_id_str
         )
 
         # Handle incoming messages
@@ -152,17 +176,20 @@ async def websocket_endpoint(
             try:
                 data = await websocket.receive_text()
                 message = WebSocketMessage.parse_raw(data)
-                await handle_websocket_message(websocket, message, session_id, user_id)
+                # Get database session for message handling
+                async for db in get_db():
+                    await handle_websocket_message(websocket, message, session_id_str, user_id, db)
+                    break
             except WebSocketDisconnect:
                 break
             except json.JSONDecodeError:
-                logger.warning(f"Invalid JSON received from session {session_id}")
+                logger.warning(f"Invalid JSON received from session {session_id_str}")
                 await manager.send_personal_message(
                     ErrorEvent(
                         type="error",
                         data={"message": "Invalid JSON format"}
                     ).dict(),
-                    session_id
+                    session_id_str
                 )
             except Exception as e:
                 logger.error(f"Error handling WebSocket message: {e}")
@@ -171,32 +198,33 @@ async def websocket_endpoint(
                         type="error",
                         data={"message": str(e)}
                     ).dict(),
-                    session_id
+                    session_id_str
                 )
 
     finally:
-        manager.disconnect(session_id, user_id)
+        manager.disconnect(session_id_str, user_id)
 
 
 async def handle_websocket_message(
     websocket: WebSocket,
     message: WebSocketMessage,
     session_id: str,
-    user_id: str
+    user_id: str,
+    db: AsyncSession
 ):
     """Handle incoming WebSocket messages based on type."""
     message_type = message.type
 
     if message_type == "execute":
-        await handle_execute_message(message, session_id, user_id)
+        await handle_execute_message(message, session_id, user_id, db)
     elif message_type == "approve":
-        await handle_approve_message(message, session_id, user_id)
+        await handle_approve_message(message, session_id, user_id, db)
     elif message_type == "reject":
-        await handle_reject_message(message, session_id, user_id)
+        await handle_reject_message(message, session_id, user_id, db)
     elif message_type == "edit":
-        await handle_edit_message(message, session_id, user_id)
+        await handle_edit_message(message, session_id, user_id, db)
     elif message_type == "cancel":
-        await handle_cancel_message(message, session_id, user_id)
+        await handle_cancel_message(message, session_id, user_id, db)
     else:
         logger.warning(f"Unknown WebSocket message type: {message_type}")
         await manager.send_personal_message(
@@ -211,60 +239,122 @@ async def handle_websocket_message(
 async def handle_execute_message(
     message: WebSocketMessage,
     session_id: str,
-    user_id: str
+    user_id: str,
+    db: AsyncSession
 ):
-    """Handle execute command message."""
+    """Handle execute command message with streaming events."""
     execute_msg = ExecuteMessage.parse_obj(message.data)
 
-    agent_service = AgentService()
-    execution_log_service = ExecutionLogService()
+    # Create execution log entry
+    execution_log_service = ExecutionLogService(db)
+    execution_log = await execution_log_service.create_execution_log(
+        session_id=session_id,
+        command=execute_msg.command,
+        plan=execute_msg.plan
+    )
+    execution_id = execution_log.id if execution_log else uuid4()
 
+    # Send thinking event
+    await manager.send_personal_message(
+        ThinkingEvent(
+            type="thinking",
+            data={
+                "session_id": session_id,
+                "command": execute_msg.command,
+                "timestamp": execution_log.created_at.isoformat() if execution_log else None
+            }
+        ).dict(),
+        session_id
+    )
+
+    # Execute the agent command using enhanced executor
     try:
-        # Create execution log entry
-        execution_log = await execution_log_service.create_execution_log(
-            session_id=session_id,
+        executor = AgentExecutorEnhanced(UUID(session_id), db)
+        result = await executor.execute_command(
             command=execute_msg.command,
-            plan=execute_msg.plan
+            budget_limit_usd=None  # Could be added to ExecuteMessage if needed
         )
 
-        # Send thinking event
-        await manager.send_personal_message(
-            ThinkingEvent(
-                type="thinking",
-                data={
-                    "session_id": session_id,
-                    "command": execute_msg.command,
-                    "timestamp": execution_log.created_at.isoformat() if execution_log else None
-                }
-            ).dict(),
-            session_id
-        )
+        # Check if approval is required
+        if result.get("requires_approval") and result.get("approval_id"):
+            # Send approval required event
+            await manager.send_personal_message(
+                ApprovalRequiredEvent(
+                    type="approval_required",
+                    data={
+                        "session_id": session_id,
+                        "execution_id": str(execution_id),
+                        "request_id": result.get("approval_id"),
+                        "tool_name": result.get("tool_name", "x402_payment"),
+                        "tool_args": result.get("tool_args", {}),
+                        "reason": result.get("message", "High-value transaction requires approval"),
+                        "amount": str(result.get("amount", 0)),
+                        "currency": result.get("token", "USDC"),
+                        "estimated_cost": f"{result.get('amount', 0)} {result.get('token', 'USDC')}"
+                    }
+                ).dict(),
+                session_id
+            )
+            return
 
-        # Execute agent command
-        # Note: For now, we'll just send a placeholder response
-        # TODO: Integrate with actual agent execution
-        result_data = {
-            "success": True,
-            "message": f"Command '{execute_msg.command}' executed successfully",
-            "execution_id": str(execution_log.id) if execution_log else None
-        }
+        # If successful, send tool events and complete
+        if result.get("tool_calls"):
+            for tool_call in result["tool_calls"]:
+                # Send tool call event
+                await manager.send_personal_message(
+                    ToolCallEvent(
+                        type="tool_call",
+                        data={
+                            "session_id": session_id,
+                            "tool_name": tool_call.get("tool_name", "unknown"),
+                            "tool_args": tool_call.get("tool_args", {}),
+                            "timestamp": tool_call.get("timestamp")
+                        }
+                    ).dict(),
+                    session_id
+                )
+
+                # Send tool result event
+                await manager.send_personal_message(
+                    ToolResultEvent(
+                        type="tool_result",
+                        data={
+                            "session_id": session_id,
+                            "tool_id": str(uuid4()),
+                            "result": tool_call.get("result", {}),
+                            "success": True
+                        }
+                    ).dict(),
+                    session_id
+                )
+
+                await asyncio.sleep(0.05)  # Small delay for streaming effect
 
         # Send complete event
         await manager.send_personal_message(
             CompleteEvent(
                 type="complete",
-                data=result_data
+                data={
+                    "session_id": session_id,
+                    "execution_id": str(execution_id),
+                    "result": result,
+                    "success": result.get("success", False),
+                    "total_cost": f"{result.get('total_cost_usd', 0.0)} USD",
+                    "duration_ms": result.get("duration_ms"),
+                    "tool_calls": result.get("tool_calls", [])
+                }
             ).dict(),
             session_id
         )
 
     except Exception as e:
-        logger.error(f"Error executing command for session {session_id}: {e}")
+        logger.error(f"Error executing command for session {session_id}: {e}", exc_info=True)
         await manager.send_personal_message(
             ErrorEvent(
                 type="error",
                 data={
                     "session_id": session_id,
+                    "execution_id": str(execution_id),
                     "message": str(e),
                     "timestamp": asyncio.get_event_loop().time()
                 }
@@ -276,31 +366,34 @@ async def handle_execute_message(
 async def handle_approve_message(
     message: WebSocketMessage,
     session_id: str,
-    user_id: str
+    user_id: str,
+    db: AsyncSession
 ):
     """Handle approval message for pending requests."""
     approve_msg = ApproveMessage.parse_obj(message.data)
 
-    approval_service = ApprovalService()
+    approval_service = ApprovalService(db)
 
     try:
         # Approve the request
-        await approval_service.approve_request(
-            request_id=approve_msg.request_id,
-            decision="approved"
+        approval = await approval_service.approve_request(
+            approval_id=approve_msg.request_id
         )
 
-        # Send success event
-        await manager.send_personal_message(
-            WebSocketEvent(
-                type="approved",
-                data={
-                    "request_id": approve_msg.request_id,
-                    "decision": "approved"
-                }
-            ).dict(),
-            session_id
-        )
+        if approval:
+            # Send success event
+            await manager.send_personal_message(
+                WebSocketEvent(
+                    type="approved",
+                    data={
+                        "request_id": str(approve_msg.request_id),
+                        "decision": "approved"
+                    }
+                ).dict(),
+                session_id
+            )
+        else:
+            raise HTTPException(status_code=404, detail="Approval request not found or already processed")
 
     except Exception as e:
         logger.error(f"Error approving request {approve_msg.request_id}: {e}")
@@ -308,7 +401,7 @@ async def handle_approve_message(
             ErrorEvent(
                 type="error",
                 data={
-                    "request_id": approve_msg.request_id,
+                    "request_id": str(approve_msg.request_id),
                     "message": str(e)
                 }
             ).dict(),
@@ -319,31 +412,34 @@ async def handle_approve_message(
 async def handle_reject_message(
     message: WebSocketMessage,
     session_id: str,
-    user_id: str
+    user_id: str,
+    db: AsyncSession
 ):
     """Handle rejection message for pending requests."""
     reject_msg = RejectMessage.parse_obj(message.data)
 
-    approval_service = ApprovalService()
+    approval_service = ApprovalService(db)
 
     try:
         # Reject the request
-        await approval_service.approve_request(
-            request_id=reject_msg.request_id,
-            decision="rejected"
+        approval = await approval_service.reject_request(
+            approval_id=reject_msg.request_id
         )
 
-        # Send rejection event
-        await manager.send_personal_message(
-            WebSocketEvent(
-                type="rejected",
-                data={
-                    "request_id": reject_msg.request_id,
-                    "decision": "rejected"
-                }
-            ).dict(),
-            session_id
-        )
+        if approval:
+            # Send rejection event
+            await manager.send_personal_message(
+                WebSocketEvent(
+                    type="rejected",
+                    data={
+                        "request_id": str(reject_msg.request_id),
+                        "decision": "rejected"
+                    }
+                ).dict(),
+                session_id
+            )
+        else:
+            raise HTTPException(status_code=404, detail="Approval request not found or already processed")
 
     except Exception as e:
         logger.error(f"Error rejecting request {reject_msg.request_id}: {e}")
@@ -351,7 +447,7 @@ async def handle_reject_message(
             ErrorEvent(
                 type="error",
                 data={
-                    "request_id": reject_msg.request_id,
+                    "request_id": str(reject_msg.request_id),
                     "message": str(e)
                 }
             ).dict(),
@@ -362,33 +458,41 @@ async def handle_reject_message(
 async def handle_edit_message(
     message: WebSocketMessage,
     session_id: str,
-    user_id: str
+    user_id: str,
+    db: AsyncSession
 ):
     """Handle edit and approve message for pending requests."""
     edit_msg = EditMessage.parse_obj(message.data)
 
-    approval_service = ApprovalService()
+    approval_service = ApprovalService(db)
 
     try:
-        # Edit and approve the request
-        await approval_service.approve_request(
-            request_id=edit_msg.request_id,
-            decision="edited",
+        # Get the approval request first
+        approval = await approval_service.get_approval_request(edit_msg.request_id)
+        if not approval:
+            raise HTTPException(status_code=404, detail="Approval request not found")
+
+        # Update with edited args and approve
+        approval = await approval_service.approve_request(
+            approval_id=edit_msg.request_id,
             edited_args=edit_msg.edited_args
         )
 
-        # Send edit approved event
-        await manager.send_personal_message(
-            WebSocketEvent(
-                type="edit_approved",
-                data={
-                    "request_id": edit_msg.request_id,
-                    "decision": "edited",
-                    "edited_args": edit_msg.edited_args
-                }
-            ).dict(),
-            session_id
-        )
+        if approval:
+            # Send edit approved event
+            await manager.send_personal_message(
+                WebSocketEvent(
+                    type="edit_approved",
+                    data={
+                        "request_id": str(edit_msg.request_id),
+                        "decision": "edited",
+                        "edited_args": edit_msg.edited_args
+                    }
+                ).dict(),
+                session_id
+            )
+        else:
+            raise HTTPException(status_code=400, detail="Could not edit and approve request")
 
     except Exception as e:
         logger.error(f"Error editing request {edit_msg.request_id}: {e}")
@@ -396,7 +500,7 @@ async def handle_edit_message(
             ErrorEvent(
                 type="error",
                 data={
-                    "request_id": edit_msg.request_id,
+                    "request_id": str(edit_msg.request_id),
                     "message": str(e)
                 }
             ).dict(),
@@ -407,22 +511,29 @@ async def handle_edit_message(
 async def handle_cancel_message(
     message: WebSocketMessage,
     session_id: str,
-    user_id: str
+    user_id: str,
+    db: AsyncSession
 ):
     """Handle cancellation message for ongoing execution."""
     cancel_msg = CancelMessage.parse_obj(message.data)
 
     try:
-        # For now, just log the cancellation request
-        # TODO: Integrate with actual agent execution cancellation
-        logger.info(f"Cancellation requested for execution {cancel_msg.execution_id}")
+        # Get the active execution task
+        task = manager.get_execution_task(session_id)
+
+        if task and not task.done():
+            # Cancel the task
+            task.cancel()
+            logger.info(f"Cancelled execution {cancel_msg.execution_id} for session {session_id}")
+        else:
+            logger.info(f"No active execution to cancel for session {session_id}")
 
         # Send cancellation event
         await manager.send_personal_message(
             WebSocketEvent(
                 type="cancelled",
                 data={
-                    "execution_id": cancel_msg.execution_id,
+                    "execution_id": str(cancel_msg.execution_id),
                     "session_id": session_id,
                     "message": "Cancellation request received"
                 }
@@ -436,7 +547,7 @@ async def handle_cancel_message(
             ErrorEvent(
                 type="error",
                 data={
-                    "execution_id": cancel_msg.execution_id,
+                    "execution_id": str(cancel_msg.execution_id),
                     "message": str(e)
                 }
             ).dict(),

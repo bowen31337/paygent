@@ -13,7 +13,7 @@ from datetime import datetime
 
 from src.main import app
 from src.services.session_service import SessionService
-from src.db.database import get_db
+from src.core.database import get_db
 
 
 class TestWebSocketConnection:
@@ -22,20 +22,21 @@ class TestWebSocketConnection:
     @pytest.fixture
     async def session_id(self) -> AsyncGenerator[str, None]:
         """Create a test session."""
-        session_service = SessionService()
-        session = await session_service.create_session(
-            user_id="test-user-ws",
-            wallet_address="0xtest123",
-            config={"debug": True}
-        )
-        yield str(session.id)
-        # Cleanup
-        # await session_service.delete_session(str(session.id))
+        from src.core.database import get_db
+        async for db in get_db():
+            session_service = SessionService(db)
+            session = await session_service.create_session(
+                user_id=uuid.uuid4(),
+                wallet_address="0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+                config={"debug": True}
+            )
+            yield str(session.id)
+            break  # Only create one session
 
     @pytest.mark.asyncio
     async def test_websocket_connects_successfully(self, session_id: str):
         """Test that WebSocket connection establishes successfully."""
-        uri = f"ws://localhost:8000/api/v1/ws?session_id={session_id}"
+        uri = f"ws://localhost:8000/ws?session_id={session_id}"
 
         try:
             async with websockets.connect(uri) as websocket:
@@ -58,7 +59,7 @@ class TestWebSocketConnection:
     @pytest.mark.asyncio
     async def test_websocket_ping_heartbeat(self, session_id: str):
         """Test ping/pong heartbeat works."""
-        uri = f"ws://localhost:8000/api/v1/ws?session_id={session_id}"
+        uri = f"ws://localhost:8000/ws?session_id={session_id}"
 
         async with websockets.connect(uri) as websocket:
             # Wait for connection message
@@ -88,7 +89,7 @@ class TestWebSocketConnection:
     @pytest.mark.asyncio
     async def test_websocket_execute_message(self, session_id: str):
         """Test that execute message triggers agent execution."""
-        uri = f"ws://localhost:8000/api/v1/ws?session_id={session_id}"
+        uri = f"ws://localhost:8000/ws?session_id={session_id}"
 
         async with websockets.connect(uri) as websocket:
             # Wait for connection message
@@ -121,7 +122,7 @@ class TestWebSocketConnection:
     async def test_websocket_invalid_session_rejected(self):
         """Test that invalid session_id is rejected."""
         invalid_session_id = str(uuid.uuid4())
-        uri = f"ws://localhost:8000/api/v1/ws?session_id={invalid_session_id}"
+        uri = f"ws://localhost:8000/ws?session_id={invalid_session_id}"
 
         try:
             async with websockets.connect(uri, close_timeout=5.0) as websocket:
@@ -142,7 +143,7 @@ class TestWebSocketConnection:
     @pytest.mark.asyncio
     async def test_websocket_handles_multiple_messages(self, session_id: str):
         """Test that WebSocket handles multiple sequential messages."""
-        uri = f"ws://localhost:8000/api/v1/ws?session_id={session_id}"
+        uri = f"ws://localhost:8000/ws?session_id={session_id}"
 
         async with websockets.connect(uri) as websocket:
             # Wait for connection message
@@ -177,7 +178,7 @@ class TestWebSocketConnection:
     @pytest.mark.asyncio
     async def test_websocket_event_types_consistent(self, session_id: str):
         """Test that WebSocket events follow consistent naming structure."""
-        uri = f"ws://localhost:8000/api/v1/ws?session_id={session_id}"
+        uri = f"ws://localhost:8000/ws?session_id={session_id}"
 
         async with websockets.connect(uri) as websocket:
             # Wait for connection message
@@ -214,7 +215,7 @@ class TestWebSocketConnection:
     @pytest.mark.asyncio
     async def test_websocket_latency_under_100ms(self, session_id: str):
         """Test that WebSocket message latency is under 100ms."""
-        uri = f"ws://localhost:8000/api/v1/ws?session_id={session_id}"
+        uri = f"ws://localhost:8000/ws?session_id={session_id}"
 
         latencies = []
 
@@ -258,7 +259,7 @@ class TestWebSocketConnection:
     @pytest.mark.asyncio
     async def test_websocket_graceful_disconnect(self, session_id: str):
         """Test that WebSocket disconnects gracefully."""
-        uri = f"ws://localhost:8000/api/v1/ws?session_id={session_id}"
+        uri = f"ws://localhost:8000/ws?session_id={session_id}"
 
         async with websockets.connect(uri) as websocket:
             # Wait for connection message
