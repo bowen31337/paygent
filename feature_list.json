@@ -391,7 +391,7 @@
       "Step 4: Verify pricing model (pay-per-call) is returned"
     ],
     "passes": false,
-    "is_dev_done": false,
+    "is_dev_done": true,
     "is_qa_passed": false
   },
   {
@@ -405,7 +405,7 @@
       "Step 5: Verify metered billing record created"
     ],
     "passes": false,
-    "is_dev_done": false,
+    "is_dev_done": true,
     "is_qa_passed": false
   },
   {
@@ -418,7 +418,7 @@
       "Step 4: Verify no additional charges within subscription period"
     ],
     "passes": false,
-    "is_dev_done": false,
+    "is_dev_done": true,
     "is_qa_passed": false
   },
   {
@@ -432,7 +432,7 @@
       "Step 5: Log performance metrics"
     ],
     "passes": false,
-    "is_dev_done": false,
+    "is_dev_done": true,
     "is_qa_passed": false
   },
   {

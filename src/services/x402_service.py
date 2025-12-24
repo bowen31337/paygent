@@ -323,33 +323,35 @@ class X402PaymentService:
             Dict containing signature result
         """
         try:
-            # TODO: Implement actual EIP-712 signature generation
-            # This requires wallet integration and proper domain/data struct
+            from src.x402.signature import get_signature_generator
 
-            # Mock signature for now
-            mock_signature = {
-                "domain": {
-                    "name": "Paygent",
-                    "version": "1.0",
-                    "chainId": 25,  # Cronos mainnet
-                    "verifyingContract": "0x1234567890123456789012345678901234567890",
-                },
-                "primaryType": "Payment",
-                "message": {
-                    "serviceUrl": service_url,
-                    "amount": amount,
-                    "token": token,
-                    "description": description or "",
-                    "timestamp": 1234567890,
-                },
-                "signature": "0x1234567890abcdef",
-            }
+            # Get signature generator
+            generator = get_signature_generator()
 
-            return {
-                "success": True,
-                "signature": mock_signature,
-                "message": "EIP-712 signature generated successfully",
-            }
+            # Get wallet address (mock for development)
+            wallet_address = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"  # Mock address
+
+            # Create payment data
+            payment_data = generator.create_payment_data(
+                service_url=service_url,
+                amount=amount,
+                token=token,
+                wallet_address=wallet_address,
+                description=description,
+            )
+
+            # Sign payment
+            signature_result = generator.sign_payment(payment_data)
+
+            if signature_result["success"]:
+                return {
+                    "success": True,
+                    "signature": signature_result["signature"],
+                    "signer": signature_result["signer"],
+                    "message": "EIP-712 signature generated successfully",
+                }
+            else:
+                return signature_result
 
         except Exception as e:
             logger.error(f"EIP-712 signature generation failed: {e}")
@@ -381,12 +383,34 @@ class X402PaymentService:
             Dict containing facilitator submission result
         """
         try:
-            if not self.facilitator_url:
-                return {
-                    "success": False,
-                    "error": "no_facilitator_configured",
-                    "message": "No x402 facilitator URL configured",
-                }
+            # Use mock facilitator if no real one is configured
+            if not self.facilitator_url or settings.debug:
+                logger.info("Using mock x402 facilitator")
+                from src.x402.mock_facilitator import get_mock_facilitator
+
+                mock_facilitator = get_mock_facilitator()
+                result = await mock_facilitator.submit_payment(
+                    service_url=service_url,
+                    amount=amount,
+                    token=token,
+                    signature=signature,
+                    description=description or "",
+                )
+
+                if "paymentId" in result:
+                    return {
+                        "success": True,
+                        "payment_id": result["paymentId"],
+                        "tx_hash": result.get("txHash"),
+                        "payment_proof": result.get("paymentProof"),
+                        "message": "Payment submitted to mock facilitator successfully",
+                    }
+                else:
+                    return {
+                        "success": False,
+                        "error": result.get("error"),
+                        "message": result.get("message", "Mock facilitator submission failed"),
+                    }
 
             # Prepare facilitator request
             facilitator_payload = {

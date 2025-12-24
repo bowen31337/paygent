@@ -28,6 +28,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.config import settings
 from src.models.agent_sessions import AgentSession
 from src.services.session_service import SessionService
+from src.agents.vvs_trader_subagent import VVSTraderSubagent
 
 logger = logging.getLogger(__name__)
 
@@ -209,7 +210,7 @@ Always be helpful, accurate, and security-conscious."""
         self, command: str, budget_limit_usd: Optional[float] = None
     ) -> Dict[str, Any]:
         """
-        Execute a natural language command.
+        Execute a natural language command with VVS subagent support.
 
         Args:
             command: Natural language command to execute
@@ -221,6 +222,12 @@ Always be helpful, accurate, and security-conscious."""
         try:
             logger.info(f"Session {self.session_id}: Executing command - {command}")
 
+            # Check if this is a swap command that should use VVS subagent
+            if self._should_use_vvs_subagent(command):
+                logger.info(f"Spawning VVS trader subagent for swap command: {command}")
+                return await self._execute_with_vvs_subagent(command, budget_limit_usd)
+
+            # Regular execution for non-swap commands
             # Prepare input
             input_data = {
                 "input": command,
@@ -246,6 +253,177 @@ Always be helpful, accurate, and security-conscious."""
                 "success": False,
                 "error": str(e),
                 "session_id": str(self.session_id),
+            }
+
+    def _should_use_vvs_subagent(self, command: str) -> bool:
+        """
+        Determine if the command should use the VVS trader subagent.
+
+        Args:
+            command: Natural language command
+
+        Returns:
+            True if VVS subagent should be used
+        """
+        command_lower = command.lower()
+
+        # Keywords that indicate a swap operation
+        swap_keywords = [
+            "swap",
+            "exchange",
+            "trade",
+            "convert",
+        ]
+
+        # VVS-specific keywords
+        vvs_keywords = [
+            "vvs",
+            "vvs finance",
+            "dex",
+        ]
+
+        # Check if command contains swap-related keywords
+        has_swap_keyword = any(keyword in command_lower for keyword in swap_keywords)
+
+        # Check if command mentions VVS or DEX
+        mentions_vvs = any(keyword in command_lower for keyword in vvs_keywords)
+
+        # Check for token symbols that indicate a swap
+        # More flexible pattern to match token pairs
+        token_pattern = r"\b(?:CRO|USDC|USDT|BTC|ETH|BNB)\s+(?:for|to|into)\s+(?:CRO|USDC|USDT|BTC|ETH|BNB)\b"
+        import re
+        has_token_pattern = bool(re.search(token_pattern, command_lower, re.IGNORECASE))
+
+        # Use VVS subagent if:
+        # 1. Command contains swap keywords AND (mentions VVS OR has token pattern)
+        # 2. OR command explicitly mentions VVS Finance
+        should_use = (
+            (has_swap_keyword and (mentions_vvs or has_token_pattern)) or
+            mentions_vvs
+        )
+
+        if should_use:
+            logger.info(f"VVS subagent recommended for command: {command}")
+
+        return should_use
+
+    async def _execute_with_vvs_subagent(
+        self,
+        command: str,
+        budget_limit_usd: Optional[float] = None
+    ) -> Dict[str, Any]:
+        """
+        Execute swap command using VVS trader subagent.
+
+        Args:
+            command: Natural language swap command
+            budget_limit_usd: Optional budget limit in USD
+
+        Returns:
+            Dict containing execution result
+        """
+        try:
+            # Parse swap parameters from command
+            swap_params = self._parse_swap_command(command)
+
+            if not swap_params.get("success"):
+                return {
+                    "success": False,
+                    "error": "Could not parse swap command parameters",
+                    "details": swap_params.get("error", "Unknown parsing error"),
+                    "session_id": str(self.session_id),
+                }
+
+            params = swap_params["parameters"]
+
+            # Create VVS trader subagent
+            vvs_subagent = VVSTraderSubagent(
+                db=self.db,
+                session_id=self.session_id,
+                parent_agent_id=self.session_id,
+                llm_model=self.llm_model,
+            )
+
+            # Execute swap via subagent
+            swap_result = await vvs_subagent.execute_swap(
+                from_token=params["from_token"],
+                to_token=params["to_token"],
+                amount=params["amount"],
+                slippage_tolerance_percent=params.get("slippage_tolerance", 1.0),
+            )
+
+            # Update session
+            await self.session_service.update_session_last_active(self.session_id)
+
+            return {
+                "success": True,
+                "result": {
+                    "action": "swap_executed_via_vvs_subagent",
+                    "swap_details": swap_result["swap_details"],
+                    "subagent_id": swap_result["subagent_id"],
+                },
+                "session_id": str(self.session_id),
+                "total_cost_usd": 0.0,  # TODO: Calculate actual cost including gas
+            }
+
+        except Exception as e:
+            logger.error(f"VVS subagent execution failed: {e}")
+            return {
+                "success": False,
+                "error": f"VVS subagent execution failed: {str(e)}",
+                "session_id": str(self.session_id),
+            }
+
+    def _parse_swap_command(self, command: str) -> Dict[str, Any]:
+        """
+        Parse swap command to extract parameters.
+
+        Args:
+            command: Natural language swap command
+
+        Returns:
+            Dict with parsing result and parameters
+        """
+        import re
+
+        try:
+            # Pattern to extract amount, from_token, to_token
+            # Examples: "swap 100 USDC for CRO", "exchange 50 CRO to USDC"
+            pattern = r"(?:swap|exchange|trade|convert)\s+(\d+(?:\.\d+)?)\s*([A-Z]+)\s+(?:for|to|into|and)\s*([A-Z]+)"
+
+            match = re.search(pattern, command, re.IGNORECASE)
+
+            if not match:
+                # Try alternative pattern
+                pattern = r"(\d+(?:\.\d+)?)\s*([A-Z]+)\s+(?:for|to|into|and)\s+(\d+(?:\.\d+)?)\s*([A-Z]+)"
+                match = re.search(pattern, command, re.IGNORECASE)
+
+            if not match:
+                return {
+                    "success": False,
+                    "error": "Could not parse swap command format",
+                    "command": command,
+                }
+
+            amount = float(match.group(1))
+            from_token = match.group(2).upper()
+            to_token = match.group(3).upper()
+
+            return {
+                "success": True,
+                "parameters": {
+                    "from_token": from_token,
+                    "to_token": to_token,
+                    "amount": amount,
+                    "slippage_tolerance": 1.0,  # Default slippage
+                },
+            }
+
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Error parsing swap command: {str(e)}",
+                "command": command,
             }
 
     async def get_session_info(self) -> Dict[str, Any]:

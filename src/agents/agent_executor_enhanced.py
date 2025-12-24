@@ -22,6 +22,14 @@ from src.tools.simple_tools import get_all_tools
 from src.models.agent_sessions import ExecutionLog, AgentSession
 from src.core.database import get_db
 
+# Try to import the subagent, but fall back gracefully if langchain isn't available
+try:
+    from src.agents.vvs_trader_subagent import VVSTraderSubagent
+    HAS_VVS_SUBAGENT = True
+except ImportError:
+    VVSTraderSubagent = None
+    HAS_VVS_SUBAGENT = False
+
 logger = logging.getLogger(__name__)
 
 
@@ -351,30 +359,55 @@ class AgentExecutorEnhanced:
         parsed: ParsedCommand,
         budget_limit_usd: Optional[float]
     ) -> Dict[str, Any]:
-        """Execute a swap command with logging."""
+        """Execute a swap command with VVS subagent (or fallback to simple tool) and logging."""
         params = parsed.parameters
 
-        # Execute swap
-        tool = self.tools["swap_tokens"]
-        swap_result = tool.run(
-            from_token=params["from_token"],
-            to_token=params["to_token"],
-            amount=params["amount"]
-        )
+        if HAS_VVS_SUBAGENT and VVSTraderSubagent:
+            # Create VVS trader subagent
+            vvs_subagent = VVSTraderSubagent(
+                db=self.db,
+                session_id=self.session_id,
+                parent_agent_id=self.session_id,
+            )
 
-        await self._log_tool_call(
-            "swap_tokens",
-            {
-                "from_token": params["from_token"],
-                "to_token": params["to_token"],
-                "amount": params["amount"]
-            },
-            swap_result
-        )
+            # Execute swap via subagent
+            swap_result = await vvs_subagent.execute_swap(
+                from_token=params["from_token"],
+                to_token=params["to_token"],
+                amount=params["amount"]
+            )
+
+            await self._log_tool_call(
+                "vvs_trader_subagent",
+                {
+                    "from_token": params["from_token"],
+                    "to_token": params["to_token"],
+                    "amount": params["amount"]
+                },
+                swap_result
+            )
+        else:
+            # Fallback to simple swap tool
+            tool = self.tools["swap_tokens"]
+            swap_result = tool.run(
+                from_token=params["from_token"],
+                to_token=params["to_token"],
+                amount=params["amount"]
+            )
+
+            await self._log_tool_call(
+                "swap_tokens",
+                {
+                    "from_token": params["from_token"],
+                    "to_token": params["to_token"],
+                    "amount": params["amount"]
+                },
+                swap_result
+            )
 
         return {
             "success": True,
-            "action": "swap",
+            "action": "swap_via_vvs_subagent" if HAS_VVS_SUBAGENT else "swap",
             "result": swap_result,
             "total_cost_usd": 0.0  # Swaps don't have a direct cost (gas is separate)
         }
