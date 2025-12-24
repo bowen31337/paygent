@@ -6,7 +6,9 @@ This module provides Redis connection and cache operations for the Paygent appli
 
 import logging
 import os
-from typing import Optional, Any
+import time
+from abc import ABC, abstractmethod
+from typing import Any, Dict, List, Optional, Union
 from functools import wraps
 
 try:
@@ -27,6 +29,148 @@ except ImportError:
 from src.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+# Cache Interface and Metrics Classes
+class CacheMetrics:
+    """Track cache performance metrics."""
+
+    def __init__(self):
+        self.hits = 0
+        self.misses = 0
+        self.errors = 0
+        self.total_get_time = 0
+        self.total_set_time = 0
+        self.total_delete_time = 0
+        self.get_count = 0
+        self.set_count = 0
+        self.delete_count = 0
+
+    def record_hit(self):
+        """Record a cache hit."""
+        self.hits += 1
+
+    def record_miss(self):
+        """Record a cache miss."""
+        self.misses += 1
+
+    def record_error(self):
+        """Record a cache error."""
+        self.errors += 1
+
+    def record_get_time(self, elapsed_ms: float, count: int = 1):
+        """Record GET operation time."""
+        self.total_get_time += elapsed_ms
+        self.get_count += count
+
+    def record_set_time(self, elapsed_ms: float, count: int = 1):
+        """Record SET operation time."""
+        self.total_set_time += elapsed_ms
+        self.set_count += count
+
+    def record_delete_time(self, elapsed_ms: float, count: int = 1):
+        """Record DELETE operation time."""
+        self.total_delete_time += elapsed_ms
+        self.delete_count += count
+
+    def record_get(self, count: int = 1):
+        """Record GET operations."""
+        self.get_count += count
+
+    def record_set(self, count: int = 1):
+        """Record SET operations."""
+        self.set_count += count
+
+    def record_delete(self, count: int = 1):
+        """Record DELETE operations."""
+        self.delete_count += count
+
+    def get_metrics(self) -> Dict[str, Union[int, float]]:
+        """Get cache performance metrics."""
+        total_requests = self.hits + self.misses
+        hit_rate = (self.hits / total_requests * 100) if total_requests > 0 else 0
+        avg_get_time = (self.total_get_time / self.get_count) if self.get_count > 0 else 0
+        avg_set_time = (self.total_set_time / self.set_count) if self.set_count > 0 else 0
+        avg_delete_time = (self.total_delete_time / self.delete_count) if self.delete_count > 0 else 0
+
+        return {
+            "hits": self.hits,
+            "misses": self.misses,
+            "errors": self.errors,
+            "hit_rate_percent": round(hit_rate, 2),
+            "total_requests": total_requests,
+            "avg_get_time_ms": round(avg_get_time, 2),
+            "avg_set_time_ms": round(avg_set_time, 2),
+            "avg_delete_time_ms": round(avg_delete_time, 2),
+        }
+
+
+class CacheInterface(ABC):
+    """Abstract base class for cache implementations."""
+
+    @abstractmethod
+    async def get(self, key: str) -> Optional[Any]:
+        """Get value from cache."""
+        pass
+
+    @abstractmethod
+    async def set(
+        self,
+        key: str,
+        value: Any,
+        ttl_seconds: Optional[int] = None,
+    ) -> bool:
+        """Set value in cache with optional TTL."""
+        pass
+
+    @abstractmethod
+    async def delete(self, key: str) -> bool:
+        """Delete key from cache."""
+        pass
+
+    @abstractmethod
+    async def get_many(self, keys: List[str]) -> Dict[str, Any]:
+        """Get multiple values from cache."""
+        pass
+
+    @abstractmethod
+    async def set_many(
+        self,
+        key_value_pairs: Dict[str, Any],
+        ttl_seconds: Optional[int] = None,
+    ) -> bool:
+        """Set multiple key-value pairs in cache."""
+        pass
+
+    @abstractmethod
+    async def delete_many(self, keys: List[str]) -> int:
+        """Delete multiple keys from cache."""
+        pass
+
+    @abstractmethod
+    async def keys(self, pattern: str = "*") -> List[str]:
+        """Get all keys matching pattern."""
+        pass
+
+    @abstractmethod
+    async def flush(self) -> bool:
+        """Clear all cache entries."""
+        pass
+
+    @abstractmethod
+    async def close(self) -> None:
+        """Close cache connection."""
+        pass
+
+    @abstractmethod
+    def get_metrics(self) -> Dict[str, Union[int, float]]:
+        """Get cache performance metrics."""
+        pass
+
+    @abstractmethod
+    def get_info(self) -> Dict[str, Any]:
+        """Get cache connection and configuration info."""
+        pass
 
 
 class CacheClient:
@@ -142,16 +286,34 @@ class CacheClient:
 
 # Global cache client instance
 cache_client = CacheClient()
+vercel_cache_client = None
 
 
 async def init_cache() -> None:
     """Initialize Redis cache connection."""
     await cache_client.connect()
 
+    # Try to initialize Vercel KV cache as well
+    try:
+        from src.core.vercel_kv import VercelKVCache
+        global vercel_cache_client
+        vercel_cache_client = VercelKVCache()
+        success = await vercel_cache_client.initialize()
+        if success:
+            logger.info("✓ Vercel KV cache initialized successfully")
+        else:
+            logger.warning("⚠ Vercel KV cache initialization failed")
+    except ImportError:
+        logger.debug("Vercel KV cache not available (vercel_kv module not found)")
+
 
 async def close_cache() -> None:
     """Close Redis cache connection."""
     await cache_client.close()
+
+    # Close Vercel KV cache if available
+    if vercel_cache_client:
+        await vercel_cache_client.close()
 
 
 def cache_result(ttl: int = 300):

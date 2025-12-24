@@ -8,13 +8,17 @@ import logging
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 
 from src.core.config import settings
 from src.core.database import init_db, close_db
+from src.core.vercel_db import close_db as close_vercel_db
 from src.core.cache import init_cache, close_cache
+from src.core.errors import (
+    http_exception_handler,
+    general_exception_handler,
+)
 from src.api import router as api_router
 from src.middleware.metrics import metrics_middleware
 from src.middleware.rate_limiter import rate_limit_middleware
@@ -58,6 +62,7 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("Shutting down...")
     await close_db()
+    await close_vercel_db()
     await close_cache()
     logger.info("All connections closed")
 
@@ -114,26 +119,9 @@ app.middleware("http")(metrics_middleware)
 app.middleware("http")(rate_limit_middleware)
 
 
-# Global exception handler
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    """Handle uncaught exceptions."""
-    logger.exception(f"Unhandled exception: {exc}")
-
-    # Don't expose details in production
-    if settings.is_production:
-        return JSONResponse(
-            status_code=500,
-            content={"detail": "An internal error occurred"},
-        )
-
-    return JSONResponse(
-        status_code=500,
-        content={
-            "detail": str(exc),
-            "type": type(exc).__name__,
-        },
-    )
+# Global exception handlers
+app.add_exception_handler(Exception, general_exception_handler)
+app.add_exception_handler(HTTPException, http_exception_handler)
 
 
 # Health check endpoint

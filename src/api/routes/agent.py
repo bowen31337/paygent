@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from src.core.database import get_db
+from src.core.errors import validate_command_input
 from src.models.agent_sessions import AgentSession, ExecutionLog
 from src.agents.agent_executor_enhanced import execute_agent_command_enhanced, AgentExecutorEnhanced
 from src.agents.command_parser import CommandParser
@@ -138,6 +139,15 @@ async def execute_command(
 
     For high-value operations, human-in-the-loop approval may be required.
     """
+    # Validate and sanitize command input to prevent injection attacks
+    try:
+        safe_command = validate_command_input(request.command)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
     # Get or create session
     session = await get_or_create_session(
         db,
@@ -148,7 +158,7 @@ async def execute_command(
     # Execute using enhanced agent executor (which handles all logging internally)
     try:
         result = await execute_agent_command_enhanced(
-            command=request.command,
+            command=safe_command,  # Use validated command
             session_id=session.id,
             db=db,
             budget_limit_usd=request.budget_limit_usd
