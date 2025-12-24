@@ -142,6 +142,7 @@ async def websocket_endpoint(
         session_id: Agent session ID
         token: Optional authentication token
     """
+    print(f"DEBUG: WebSocket connection attempt - session_id: {session_id}, type: {type(session_id)}, debug: {settings.debug}")
     logger.info(f"WebSocket connection attempt - session_id: {session_id}, type: {type(session_id)}, debug: {settings.debug}")
 
     # Get user_id from token if provided
@@ -156,6 +157,7 @@ async def websocket_endpoint(
 
     # If no user_id and not in debug mode, require authentication
     if not user_id and not settings.debug:
+        print("DEBUG: Authentication required")
         logger.warning("WebSocket: Authentication required")
         await websocket.close(code=WS_1008_POLICY_VIOLATION, reason="Authentication required")
         return
@@ -163,33 +165,44 @@ async def websocket_endpoint(
     # Use a default user ID if not authenticated (for testing)
     if not user_id:
         user_id = "test-user-123"
+    print(f"DEBUG: Using user_id: {user_id}")
 
     # Convert UUID to string for manager operations
     session_id_str = str(session_id)
+    print(f"DEBUG: session_id_str: {session_id_str}")
 
     # Validate session exists - get db session for validation
+    print("DEBUG: Starting session validation")
     async for db in get_db():
+        print(f"DEBUG: Got db session")
         session_service = SessionService(db)
         # Convert session_id string to UUID for get_session
         try:
             session_uuid = UUID(session_id)
-        except ValueError:
+            print(f"DEBUG: Parsed UUID: {session_uuid}")
+        except ValueError as e:
+            print(f"DEBUG: ValueError: {e}")
             logger.warning(f"WebSocket: Invalid session ID format: {session_id}")
             await websocket.close(code=WS_1008_POLICY_VIOLATION, reason="Invalid session ID format")
             return
         session = await session_service.get_session(session_uuid)
+        print(f"DEBUG: Session lookup result: {session}")
         break
     logger.info(f"WebSocket: Session lookup result: {session}")
     if not session:
+        print(f"DEBUG: No session found, closing")
         logger.warning(f"WebSocket: Invalid session {session_id}")
         await websocket.close(code=WS_1008_POLICY_VIOLATION, reason="Invalid session")
         return
 
+    print("DEBUG: About to call manager.connect()")
     # Connect to manager
     await manager.connect(websocket, session_id_str, user_id)
+    print("DEBUG: manager.connect() returned")
 
     try:
         # Send connection established event
+        print("DEBUG: About to send connected event")
         await manager.send_personal_message(
             WebSocketEvent(
                 type="connected",
@@ -197,6 +210,7 @@ async def websocket_endpoint(
             ).dict(),
             session_id_str
         )
+        print("DEBUG: Connected event sent")
 
         # Handle incoming messages
         while True:
