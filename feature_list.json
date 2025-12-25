@@ -2706,7 +2706,7 @@
       "Step 7: Verify gas costs recorded"
     ],
     "passes": false,
-    "is_dev_done": false,
+    "is_dev_done": true,
     "is_qa_passed": false
   },
   {

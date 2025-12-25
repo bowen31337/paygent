@@ -14,7 +14,34 @@ from uuid import UUID
 # from langchain_core.agents import AgentExecutor
 # from langchain.chains import create_history_aware_retriever, create_retrieval_chain
 # from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain.memory import ConversationBufferMemory
+
+# Compatibility layer for langchain 1.x
+try:
+    from langchain.memory import ConversationBufferMemory
+except ImportError:
+    # langchain 1.x moved memory to langchain_community
+    from langchain_core.chat_history import InMemoryChatMessageHistory
+    from langchain_core.messages import HumanMessage, AIMessage
+
+    class ConversationBufferMemory:  # type: ignore
+        """Compatibility wrapper for langchain 1.x memory."""
+
+        def __init__(self, memory_key: str = "chat_history", return_messages: bool = True, session_id: str = ""):
+            self.memory_key = memory_key
+            self.return_messages = return_messages
+            self.session_id = session_id
+            self.chat_history = InMemoryChatMessageHistory()
+
+        def save_context(self, inputs: dict[str, Any], outputs: dict[str, Any]) -> None:
+            """Save context to memory."""
+            if "input" in inputs:
+                self.chat_history.add_message(HumanMessage(inputs["input"]))
+            if "output" in outputs:
+                self.chat_history.add_message(AIMessage(outputs["output"]))
+
+        def load_memory_variables(self, kwargs: dict[str, Any]) -> dict[str, Any]:
+            """Load memory variables."""
+            return {self.memory_key: self.chat_history.messages}
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.prompts import (
     ChatPromptTemplate,
