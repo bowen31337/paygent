@@ -345,14 +345,15 @@ class TestExecutionCostTracking:
             result = await executor.execute_command("check my balance")
 
             # Verify execution log was created
-            log_id = result.get("execution_log_id")
-            assert log_id is not None, "Execution log should be created"
+            log_id_str = result.get("execution_log_id")
+            assert log_id_str is not None, "Execution log should be created"
 
-            # Query the log from database
+            # Query the log from database (convert string back to UUID)
             from sqlalchemy import select
+            from uuid import UUID
 
             log_result = await session.execute(
-                select(ExecutionLog).where(ExecutionLog.id == log_id)
+                select(ExecutionLog).where(ExecutionLog.id == UUID(log_id_str))
             )
             log = log_result.scalar_one_or_none()
 
@@ -367,25 +368,35 @@ class TestErrorAlerting:
     def test_error_handler_exists(self):
         """Verify that error handlers are configured."""
         from src.core.errors import http_exception_handler, general_exception_handler
-        from src.main import app
 
-        # Check that exception handlers are registered
+        # Verify the handlers exist and are callable
+        assert callable(http_exception_handler)
+        assert callable(general_exception_handler)
+
+        # Check that exception handlers are registered in main.py
         import inspect
-        source = inspect.getsource(app)
+        from src import main
+        source = inspect.getsource(main)
 
-        assert "add_exception_handler" in source or "exception_handler" in source.lower()
+        assert "add_exception_handler" in source
 
     def test_error_logging_is_configured(self):
         """Test that errors are properly logged."""
         import logging
-        from src.core.errors import http_exception_handler
+        from src.core.errors import http_exception_handler, general_exception_handler, create_error_response
 
-        # Verify error handler logs errors
+        # Verify error handlers exist
+        assert callable(http_exception_handler)
+        assert callable(general_exception_handler)
+
+        # Check that create_error_response (used by handlers) logs errors
         import inspect
-        source = inspect.getsource(http_exception_handler)
+        error_response_source = inspect.getsource(create_error_response)
+        assert "logger" in error_response_source or "log" in error_response_source
 
-        # Should log errors
-        assert "logger" in source.lower() or "log" in source.lower()
+        # Check that general_exception_handler logs errors
+        general_source = inspect.getsource(general_exception_handler)
+        assert "logger" in general_source or "log" in general_source
 
     @pytest.mark.asyncio
     async def test_execution_failure_logs_error(self):
@@ -418,9 +429,10 @@ class TestErrorAlerting:
 
             # Check database log
             from sqlalchemy import select
-            log_id = result["execution_log_id"]
+            from uuid import UUID
+            log_id_str = result["execution_log_id"]
             log_result = await session.execute(
-                select(ExecutionLog).where(ExecutionLog.id == log_id)
+                select(ExecutionLog).where(ExecutionLog.id == UUID(log_id_str))
             )
             log = log_result.scalar_one_or_none()
 
