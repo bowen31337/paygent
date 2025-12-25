@@ -14,7 +14,7 @@ from uuid import UUID
 
 from src.main import app
 from src.core.database import get_db
-from src.models.agent_sessions import ExecutionLog
+from src.models.execution_logs import ExecutionLog
 
 
 class TestEnhancedExecutorLogging:
