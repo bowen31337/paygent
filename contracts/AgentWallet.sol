@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title AgentWallet
@@ -10,6 +11,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * and operator-based access control
  */
 contract AgentWallet is ReentrancyGuard {
+    using SafeERC20 for IERC20;
     address public owner;
     uint256 public dailyLimit;
     uint256 public lastResetDate;
@@ -119,9 +121,8 @@ contract AgentWallet is ReentrancyGuard {
         uint256 spentToday = getSpentToday();
         require(spentToday + _amount <= dailyLimit, "Daily spending limit exceeded");
 
-        // Transfer tokens
-        bool success = IERC20(_token).transferFrom(msg.sender, _recipient, _amount);
-        require(success, "Token transfer failed");
+        // Transfer tokens using SafeERC20
+        IERC20(_token).safeTransferFrom(msg.sender, _recipient, _amount);
 
         // Update daily spent tracking
         uint256 today = getToday();

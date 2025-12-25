@@ -3,12 +3,14 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title PaymentRouter
  * @dev Router contract for handling batch payments and fee distribution
  */
 contract PaymentRouter is ReentrancyGuard {
+    using SafeERC20 for IERC20;
     address public owner;
     address public feeCollector;
     uint256 public feePercentage; // Fee in basis points (100 = 1%)
@@ -112,14 +114,12 @@ contract PaymentRouter is ReentrancyGuard {
         uint256 feeAmount = (_amount * feePercentage) / 10000;
         uint256 netAmount = _amount - feeAmount;
 
-        // Transfer tokens from agent to recipient and fee collector
+        // Transfer tokens from agent to recipient and fee collector using SafeERC20
         // Agent must approve this contract first
-        bool success = IERC20(_token).transferFrom(msg.sender, _recipient, netAmount);
-        require(success, "Payment to recipient failed");
+        IERC20(_token).safeTransferFrom(msg.sender, _recipient, netAmount);
 
         if (feeAmount > 0) {
-            success = IERC20(_token).transferFrom(msg.sender, feeCollector, feeAmount);
-            require(success, "Fee transfer failed");
+            IERC20(_token).safeTransferFrom(msg.sender, feeCollector, feeAmount);
         }
 
         emit PaymentExecuted(
@@ -165,18 +165,16 @@ contract PaymentRouter is ReentrancyGuard {
             totalNet += _amounts[i] - feeAmount;
         }
 
-        // Transfer total fee to collector
+        // Transfer total fee to collector using SafeERC20
         if (totalFee > 0) {
-            bool success = IERC20(_token).transferFrom(msg.sender, feeCollector, totalFee);
-            require(success, "Fee transfer failed");
+            IERC20(_token).safeTransferFrom(msg.sender, feeCollector, totalFee);
         }
 
-        // Transfer net amounts to recipients
+        // Transfer net amounts to recipients using SafeERC20
         // Using a loop with individual transfers for simplicity and safety
         for (uint256 i = 0; i < _recipients.length; i++) {
             uint256 netAmount = _amounts[i] - ((_amounts[i] * feePercentage) / 10000);
-            bool success = IERC20(_token).transferFrom(msg.sender, _recipients[i], netAmount);
-            require(success, "Payment failed");
+            IERC20(_token).safeTransferFrom(msg.sender, _recipients[i], netAmount);
         }
 
         emit BatchPaymentExecuted(

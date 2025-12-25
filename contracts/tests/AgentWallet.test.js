@@ -299,6 +299,50 @@ describe("AgentWallet", function () {
         });
     });
 
+    describe("Reentrancy Protection", function () {
+        it("Should prevent reentrancy attacks on executePayment", async function () {
+            // Deploy a malicious reentrant contract
+            const ReentrancyAttacker = await ethers.getContractFactory("ReentrancyAttacker");
+            const attacker = await ReentrancyAttacker.deploy(await agentWallet.getAddress(), await mockToken.getAddress());
+            await attacker.waitForDeployment();
+
+            // Add attacker as operator
+            await agentWallet.addOperator(await attacker.getAddress());
+
+            // Mint tokens to attacker
+            await mockToken.mint(await attacker.getAddress(), ethers.parseEther("1000"));
+
+            // Approve agentWallet to spend attacker's tokens
+            await mockToken.connect(attacker).approve(await agentWallet.getAddress(), ethers.parseEther("1000"));
+
+            // Attempt reentrancy attack
+            // The attacker contract will try to call executePayment again during the first call
+            await expect(
+                attacker.attack(ethers.parseEther("100"))
+            ).to.be.revertedWith("ReentrancyGuard: reentrant call");
+        });
+
+        it("Should allow normal execution without reentrancy", async function () {
+            // Add operator
+            await agentWallet.addOperator(operator.address);
+
+            // Mint tokens to operator
+            await mockToken.mint(operator.address, ethers.parseEther("1000"));
+
+            // Approve agentWallet
+            await mockToken.connect(operator).approve(await agentWallet.getAddress(), ethers.parseEther("1000"));
+
+            // Normal payment should work
+            await expect(
+                agentWallet.connect(operator).executePayment(
+                    await mockToken.getAddress(),
+                    recipient.address,
+                    ethers.parseEther("100")
+                )
+            ).to.not.be.reverted;
+        });
+    });
+
     describe("View Functions", function () {
         it("Should return correct remaining allowance", async function () {
             const remaining = await agentWallet.getRemainingAllowance();
