@@ -5,8 +5,9 @@ Tests that the MCP client connects to the server and LangChain tools work proper
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+import asyncio
 
-from src.services.mcp_client import MCPServerClient, MCPServerError, get_mcp_client
+from src.services.mcp_client import MCPServerClient, MCPServerError, get_mcp_client, PriceData
 from src.tools.market_data_tools import GetPriceTool, GetPricesTool, GetMarketStatusTool
 
 
@@ -63,12 +64,22 @@ async def test_langchain_get_price_tool():
     assert tool.args_schema is not None
 
     # Mock the async method
-    with patch.object(tool, '_get_price_async', return_value={
-        "symbol": "BTC_USDT",
-        "price": 50000.0,
-        "success": True
-    }):
-        result = tool._run("BTC_USDT")
+    mock_price_data = PriceData(
+        symbol="BTC_USDT",
+        price=50000.0,
+        volume_24h=1000.0,
+        change_24h=2.5,
+        timestamp=1234567890
+    )
+    
+    with patch('src.tools.market_data_tools.get_mcp_client') as mock_get_client:
+        mock_client = AsyncMock()
+        mock_client.health_check.return_value = True
+        mock_client.get_price.return_value = mock_price_data
+        mock_get_client.return_value = mock_client
+        
+        # Use async method directly for testing
+        result = await tool._get_price_async("BTC_USDT")
         assert result["success"] is True
         assert result["price"] == 50000.0
 
@@ -81,12 +92,18 @@ async def test_langchain_get_prices_tool():
     assert tool.name == "get_crypto_prices"
 
     # Mock the async method
-    with patch.object(tool, '_get_prices_async', return_value={
-        "symbols": ["BTC_USDT", "ETH_USDT"],
-        "total_symbols": 2,
-        "success": True
-    }):
-        result = tool._run(["BTC_USDT", "ETH_USDT"])
+    mock_prices = [
+        PriceData(symbol="BTC_USDT", price=50000.0, volume_24h=1000.0, change_24h=2.5, timestamp=1234567890),
+        PriceData(symbol="ETH_USDT", price=3000.0, volume_24h=5000.0, change_24h=1.5, timestamp=1234567890),
+    ]
+    
+    with patch('src.tools.market_data_tools.get_mcp_client') as mock_get_client:
+        mock_client = AsyncMock()
+        mock_client.health_check.return_value = True
+        mock_client.get_multiple_prices.return_value = mock_prices
+        mock_get_client.return_value = mock_client
+        
+        result = await tool._get_prices_async(["BTC_USDT", "ETH_USDT"])
         assert result["success"] is True
         assert result["total_symbols"] == 2
 
@@ -99,14 +116,24 @@ async def test_langchain_market_status_tool():
     assert tool.name == "get_market_status"
 
     # Mock the async method
-    with patch.object(tool, '_get_market_status_async', return_value={
-        "server_health": True,
+    mock_status = {
+        "server_time": 1234567890,
         "market_status": "open",
-        "success": True
-    }):
-        result = tool._run()
+        "supported_symbols": 100,
+        "api_version": "v1",
+        "rate_limit": {"limit": 100}
+    }
+    
+    with patch('src.tools.market_data_tools.get_mcp_client') as mock_get_client:
+        mock_client = AsyncMock()
+        mock_client.health_check.return_value = True
+        mock_client.get_market_status.return_value = mock_status
+        mock_get_client.return_value = mock_client
+        
+        result = await tool._get_market_status_async()
         assert result["success"] is True
         assert result["server_health"] is True
+        assert result["market_status"] == "open"
 
 
 @pytest.mark.asyncio
