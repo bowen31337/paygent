@@ -10,7 +10,7 @@ import tempfile
 import time
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, List
+from typing import Any
 
 try:
     import aiofiles  # type: ignore
@@ -441,7 +441,7 @@ class VercelBlobStorage(BlobInterface):
             logger.error(f"Blob URL generation error for {path}: {e}")
             return None
 
-    async def _get_url_vercel(self, path: str, expires_in: int | None) -> str | None:
+    async def _get_url_vercel(self, path: str, expires_in: int | None) -> str | None:  # noqa: ARG002
         """Get signed URL from Vercel Blob (placeholder)."""
         logger.warning("Vercel Blob API not implemented, using local storage fallback")
         return await self._get_url_local(path)

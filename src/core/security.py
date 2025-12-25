@@ -304,7 +304,7 @@ class ToolAllowlist:
 
         return allowed
 
-    def validate_tool_call(self, tool_name: str, tool_args: dict[str, Any]) -> None:
+    def validate_tool_call(self, tool_name: str, tool_args: dict[str, Any]) -> None:  # noqa: ARG002
         """
         Validate a tool call, raising an exception if not allowed.
 

@@ -329,7 +329,7 @@ Always be helpful, accurate, and security-conscious."""
     async def _execute_with_vvs_subagent(
         self,
         command: str,
-        budget_limit_usd: float | None = None
+        budget_limit_usd: float | None = None  # noqa: ARG002
     ) -> dict[str, Any]:
         """
         Execute swap command using VVS trader subagent.

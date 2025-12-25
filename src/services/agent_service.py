@@ -28,7 +28,7 @@ class AgentService:
         self,
         session_id: str,
         command: str,
-        plan: list[dict[str, Any]] | None = None
+        plan: list[dict[str, Any]] | None = None  # noqa: ARG002
     ) -> dict[str, Any]:
         """
         Execute a natural language command.

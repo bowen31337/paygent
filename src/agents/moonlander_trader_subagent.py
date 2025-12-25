@@ -30,7 +30,7 @@ class MoonlanderTraderCallbackHandler(BaseCallbackHandler):
         self.events = []
 
     def on_tool_start(
-        self, serialized: dict[str, Any], input_str: str, **kwargs: Any
+        self, serialized: dict[str, Any], input_str: str, **kwargs: Any  # noqa: ARG002
     ) -> Any:
         """Called when a tool is started."""
         event = {
@@ -41,7 +41,7 @@ class MoonlanderTraderCallbackHandler(BaseCallbackHandler):
         self.events.append(event)
         logger.info(f"Moonlander Trader {self.session_id}: Tool call - {event}")
 
-    def on_tool_end(self, output: str, **kwargs: Any) -> Any:
+    def on_tool_end(self, output: str, **kwargs: Any) -> Any:  # noqa: ARG002
         """Called when a tool finishes."""
         event = {
             "type": "tool_result",
@@ -432,7 +432,7 @@ Always be precise and return detailed trading execution information with risk me
             try:
                 import json as json_lib
                 trade_details = json_lib.loads(trade_details)
-            except:
+            except Exception:
                 trade_details = {"raw_output": trade_details}
 
         # Calculate mock entry price and liquidation price
@@ -477,7 +477,7 @@ Always be precise and return detailed trading execution information with risk me
             try:
                 import json as json_lib
                 close_details = json_lib.loads(close_details)
-            except:
+            except Exception:
                 close_details = {"raw_output": close_details}
 
         return {
@@ -509,7 +509,7 @@ Always be precise and return detailed trading execution information with risk me
             try:
                 import json as json_lib
                 order_details = json_lib.loads(order_details)
-            except:
+            except Exception:
                 order_details = {"raw_output": order_details}
 
         return {
@@ -519,7 +519,7 @@ Always be precise and return detailed trading execution information with risk me
             "timestamp": order_details.get("timestamp", "2025-12-24T19:00:00Z"),
         }
 
-    def _get_mock_price(self, symbol: str, direction: str) -> float:
+    def _get_mock_price(self, symbol: str, direction: str) -> float:  # noqa: ARG002
         """Get mock price for symbol (for testing)."""
         prices = {
             "BTC": 45000.0,

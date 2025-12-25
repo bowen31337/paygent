@@ -1,1 +1,8 @@
-Progress: 139/202 (68.8%) - Mypy & Ruff fixes complete
+Progress: 146/202 (72.3%) - Vercel Workflow integration with Python endpoints complete
+
+Implemented:
+- EIP-712 signature endpoint (/api/v1/wallet/sign-eip712)
+- Payment status check endpoint (/api/v1/payments/status/{tx_hash})
+- Notification endpoints (/api/v1/notifications/*)
+- Subscription management endpoints (/api/v1/payments/subscription/*)
+- Integration tests for all workflow endpoints

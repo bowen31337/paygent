@@ -182,12 +182,12 @@ class AgentExecutor:
                         # Check if query is in service name
                         if query_lower in service_name_lower:
                             print(f"DEBUG: Found name match: {service['name']} -> {service['endpoint']}")
-                            return service["endpoint"]
+                            return str(service["endpoint"])
 
                         # Check if query is in service description
                         if query_lower in service_desc_lower:
                             print(f"DEBUG: Found description match: {service['name']} -> {service['endpoint']}")
-                            return service["endpoint"]
+                            return str(service["endpoint"])
 
                     # Try partial matching - look for key terms
                     key_terms = ['market', 'data', 'api', 'cronos', 'crypto', 'trading']
@@ -200,12 +200,12 @@ class AgentExecutor:
 
                         if matches >= 2:  # At least 2 key terms match
                             print(f"DEBUG: Found partial match with {matches} key terms: {service['name']} -> {service['endpoint']}")
-                            return service["endpoint"]
+                            return str(service["endpoint"])
 
                     # If no exact match, return the first MCP-compatible service
                     if services:
                         print(f"DEBUG: No exact match for '{service_name}', using first available service: {services[0]['name']}")
-                        return services[0]["endpoint"]
+                        return str(services[0]["endpoint"])
 
             # Fallback to hardcoded URL
             print(f"DEBUG: Service discovery failed for '{service_name}', using fallback URL")

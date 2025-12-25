@@ -516,7 +516,7 @@ class PerformanceMonitor:
 
         return (total_errors / total_calls) * 100
 
-    def _calculate_rpm(self, metrics: dict[str, Any]) -> float:
+    def _calculate_rpm(self, metrics: dict[str, Any]) -> float:  # noqa: ARG002
         """Calculate requests per minute."""
         # This would require tracking over time intervals
         # Simplified for now

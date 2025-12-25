@@ -334,8 +334,8 @@ class VVSFinanceConnector:
 
     def get_price_impact(
         self,
-        from_token: str,
-        to_token: str,
+        from_token: str,  # noqa: ARG002
+        to_token: str,  # noqa: ARG002
         amount: float
     ) -> Decimal:
         """

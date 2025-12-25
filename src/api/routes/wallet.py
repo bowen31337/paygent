@@ -343,6 +343,7 @@ class EIP712SignRequest(BaseModel):
 
     domain: EIP712Domain
     types: dict[str, list[EIP712Type]]
+    primaryType: str
     message: dict[str, Any]
 
 
@@ -380,9 +381,8 @@ async def sign_eip712(
     Returns:
         EIP712SignResponse: Contains the signature and signer address
     """
-    import hashlib
     from eth_account import Account
-    from eth_utils import to_bytes, to_hex
+    from eth_account.messages import encode_typed_data
 
     # Get the agent wallet's private key from config
     # In production, this would be stored securely in a key management system
@@ -394,39 +394,43 @@ async def sign_eip712(
             detail="Wallet private key not configured",
         )
 
-    # Encode the EIP-712 data
-    # This is a simplified implementation - in production use a proper EIP-712 library
     try:
-        # Get signer address
-        account = Account.from_key(private_key)
-        signer = account.address
+        # Prepare the EIP-712 data structure
+        # Convert domain to dict, handling None values
+        domain_dict = {
+            k: v for k, v in {
+                "name": request.domain.name,
+                "version": request.domain.version,
+                "chainId": request.domain.chainId,
+                "verifyingContract": request.domain.verifyingContract,
+            }.items() if v is not None
+        }
 
-        # Create a deterministic signature for testing
-        # In production, this would use account.sign_typed_data()
-        # For now, we'll create a mock signature that follows EIP-712 format
+        # Convert types to dict format
+        types_dict = {
+            name: [{"name": t.name, "type": t.type} for t in types]
+            for name, types in request.types.items()
+        }
 
-        # Hash the domain
-        domain_separator = _hash_eip712_domain(request.domain)
+        # Prepare full message
+        full_message = {
+            "types": types_dict,
+            "primaryType": request.primaryType,
+            "domain": domain_dict,
+            "message": request.message,
+        }
 
-        # Hash the message
-        message_hash = _hash_eip712_message(
-            request.types,
-            request.primaryType,
-            request.message
+        # Sign using the proper method
+        signed = Account.sign_typed_data(
+            private_key=private_key,
+            full_message=full_message
         )
 
-        # Combine and hash (EIP-712 structure)
-        final_hash = to_bytes(hexstr=to_hex(
-            hashlib.sha256(
-                b'\x19\x01' + domain_separator + message_hash
-            ).digest()
-        ))
+        # Get signer address
+        signer = Account.from_key(private_key).address
 
-        # Sign the hash
-        signed = account.signHash(final_hash)
-
-        # Format signature as hex string with v, r, s components
-        signature = to_hex(signed.signature)
+        # Format signature as hex string
+        signature = "0x" + signed.signature.hex()
 
         return EIP712SignResponse(
             signature=signature,
@@ -440,56 +444,3 @@ async def sign_eip712(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Signature generation failed: {str(e)}",
         )
-
-
-def _hash_eip712_domain(domain: EIP712Domain) -> bytes:
-    """Hash EIP-712 domain separator."""
-    import hashlib
-    from eth_utils import to_bytes
-
-    # EIP-712 domain type encoding
-    domain_type = "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-    domain_type_hash = hashlib.sha256(domain_type.encode()).digest()
-
-    # Encode domain values
-    name_hash = hashlib.sha256(domain.name.encode() if domain.name else b"").digest()
-    version_hash = hashlib.sha256(domain.version.encode() if domain.version else b"").digest()
-    chain_id_bytes = domain.chainId.to_bytes(32, 'big') if domain.chainId else b'\x00' * 32
-    verifying_contract_bytes = to_bytes(hexstr=domain.verifyingContract) if domain.verifyingContract else b'\x00' * 20
-
-    # Combine and hash
-    encoded = domain_type_hash + name_hash + version_hash + chain_id_bytes + verifying_contract_bytes
-    return hashlib.sha256(encoded).digest()
-
-
-def _hash_eip712_message(types: dict[str, list[EIP712Type]], primary_type: str, message: dict) -> bytes:
-    """Hash EIP-712 message data."""
-    import hashlib
-    from eth_utils import to_bytes
-
-    # For simplicity, create a hash of the encoded data
-    # In production, use a proper EIP-712 encoding library
-    type_str = primary_type
-    for type_name, fields in types.items():
-        if type_name != primary_type:
-            continue
-        for field in fields:
-            type_str += f"({field.type} {field.name})"
-
-    type_hash = hashlib.sha256(type_str.encode()).digest()
-
-    # Hash message values
-    value_bytes = b''
-    for key, value in message.items():
-        if isinstance(value, str):
-            if value.startswith('0x'):
-                value_bytes += to_bytes(hexstr=value)
-            else:
-                value_bytes += hashlib.sha256(value.encode()).digest()
-        elif isinstance(value, int):
-            value_bytes += value.to_bytes(32, 'big')
-        else:
-            value_bytes += hashlib.sha256(str(value).encode()).digest()
-
-    encoded = type_hash + value_bytes
-    return hashlib.sha256(encoded).digest()

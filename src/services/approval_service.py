@@ -33,8 +33,8 @@ class ApprovalService:
         session_id: UUID,
         tool_name: str,
         tool_args: dict[str, Any],
-        amount: float | None = None,
-        token: str | None = None,
+        amount: float | None = None,  # noqa: ARG002
+        token: str | None = None,  # noqa: ARG002
     ) -> ApprovalRequest:
         """Create a new approval request."""
         # Note: amount and token are not stored in the model, but can be included in tool_args
@@ -195,7 +195,7 @@ class BudgetLimitService:
         }
 
     async def check_budget_limit(
-        self, session_id: UUID, amount: float, currency: str = "USD"
+        self, session_id: UUID, amount: float, currency: str = "USD"  # noqa: ARG002
     ) -> bool:
         """Check if a transaction would exceed budget limits."""
         budget = await self.get_session_budget(session_id)

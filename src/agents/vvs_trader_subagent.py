@@ -30,7 +30,7 @@ class VVSTraderCallbackHandler(BaseCallbackHandler):
         self.events = []
 
     def on_tool_start(
-        self, serialized: dict[str, Any], input_str: str, **kwargs: Any
+        self, serialized: dict[str, Any], input_str: str, **kwargs: Any  # noqa: ARG002
     ) -> Any:
         """Called when a tool is started."""
         event = {
@@ -41,7 +41,7 @@ class VVSTraderCallbackHandler(BaseCallbackHandler):
         self.events.append(event)
         logger.info(f"VVS Trader {self.session_id}: Tool call - {event}")
 
-    def on_tool_end(self, output: str, **kwargs: Any) -> Any:
+    def on_tool_end(self, output: str, **kwargs: Any) -> Any:  # noqa: ARG002
         """Called when a tool finishes."""
         event = {
             "type": "tool_result",
@@ -307,7 +307,7 @@ Always be precise and return detailed swap execution information."""
             try:
                 import json as json_lib
                 swap_details = json_lib.loads(swap_details)
-            except:
+            except Exception:
                 swap_details = {"raw_output": swap_details}
 
         # Ensure swap details have expected structure

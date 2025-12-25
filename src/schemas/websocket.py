@@ -180,7 +180,7 @@ class SubagentEndEventData(BaseModel):
 
 
 # Convenience functions for creating events
-def create_thinking_event(session_id: str, command: str, step: int = None, total_steps: int = None, thought_process: str = None) -> ThinkingEvent:
+def create_thinking_event(session_id: str, command: str, step: int | None = None, total_steps: int | None = None, thought_process: str | None = None) -> ThinkingEvent:
     """Create a thinking event."""
     data = ThinkingEventData(
         session_id=session_id,
@@ -192,7 +192,7 @@ def create_thinking_event(session_id: str, command: str, step: int = None, total
     return ThinkingEvent(type="thinking", data=data.model_dump(mode='json'))
 
 
-def create_tool_call_event(session_id: str, tool_name: str, tool_args: dict[str, Any], tool_id: str = None) -> ToolCallEvent:
+def create_tool_call_event(session_id: str, tool_name: str, tool_args: dict[str, Any], tool_id: str | None = None) -> ToolCallEvent:
     """Create a tool call event."""
     data = ToolCallEventData(
         session_id=session_id,
@@ -203,7 +203,7 @@ def create_tool_call_event(session_id: str, tool_name: str, tool_args: dict[str,
     return ToolCallEvent(type="tool_call", data=data.model_dump(mode='json'))
 
 
-def create_tool_result_event(session_id: str, tool_id: str, result: Any, success: bool, error: str = None) -> ToolResultEvent:
+def create_tool_result_event(session_id: str, tool_id: str, result: Any, success: bool, error: str | None = None) -> ToolResultEvent:
     """Create a tool result event."""
     data = ToolResultEventData(
         session_id=session_id,
@@ -221,9 +221,9 @@ def create_approval_required_event(
     tool_name: str,
     tool_args: dict[str, Any],
     reason: str,
-    amount: str = None,
-    currency: str = None,
-    estimated_cost: str = None
+    amount: str | None = None,
+    currency: str | None = None,
+    estimated_cost: str | None = None
 ) -> ApprovalRequiredEvent:
     """Create an approval required event."""
     data = ApprovalRequiredEventData(
@@ -244,9 +244,9 @@ def create_complete_event(
     execution_id: UUID,
     result: Any,
     success: bool,
-    total_cost: str = None,
-    duration_ms: int = None,
-    tool_calls: list[dict[str, Any]] = None
+    total_cost: str | None = None,
+    duration_ms: int | None = None,
+    tool_calls: list[dict[str, Any]] | None = None
 ) -> CompleteEvent:
     """Create a complete event."""
     data = CompleteEventData(
@@ -263,10 +263,10 @@ def create_complete_event(
 
 def create_error_event(
     message: str,
-    session_id: str = None,
-    execution_id: UUID = None,
-    error_type: str = None,
-    details: dict[str, Any] = None
+    session_id: str | None = None,
+    execution_id: UUID | None = None,
+    error_type: str | None = None,
+    details: dict[str, Any] | None = None
 ) -> ErrorEvent:
     """Create an error event."""
     data = ErrorEventData(
@@ -302,8 +302,8 @@ def create_subagent_end_event(
     subagent_id: str,
     result: Any,
     success: bool,
-    duration_ms: int = None,
-    error: str = None
+    duration_ms: int | None = None,
+    error: str | None = None
 ) -> SubagentEndEvent:
     """Create a subagent end event."""
     data = SubagentEndEventData(

@@ -14,6 +14,7 @@ from src.api.routes import (
     defi,
     logs,
     metrics,
+    notifications,
     payments,
     services,
     wallet,
@@ -33,5 +34,6 @@ router.include_router(websocket.router, prefix="/ws", tags=["WebSocket"])
 router.include_router(defi.router, prefix="/defi")
 router.include_router(metrics.router, prefix="", tags=["Monitoring"])
 router.include_router(cache.router, prefix="/cache", tags=["Cache"])
+router.include_router(notifications.router, prefix="/notifications", tags=["Notifications"])
 
 __all__ = ["router"]

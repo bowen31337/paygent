@@ -224,7 +224,7 @@ class DiscoverServicesTool(SimpleTool):
     def run(  # type: ignore[override]
         self,
         category: str | None = None,
-        max_price_usd: float | None = None,
+        max_price_usd: float | None = None,  # noqa: ARG002
         mcp_compatible: bool = True  # noqa: ARG002
     ) -> dict[str, Any]:
         """Discover services."""

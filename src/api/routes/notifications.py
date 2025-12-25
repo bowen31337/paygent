@@ -12,9 +12,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.config import settings
 from src.core.database import get_db
-from src.services.alerting_service import AlertType, AlertSeverity, alerting_service
+from src.services.alerting_service import AlertSeverity, AlertType, alerting_service
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

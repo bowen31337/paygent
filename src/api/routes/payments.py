@@ -490,3 +490,173 @@ async def get_payment_status(
             failed=True,
             error=str(e),
         )
+
+
+class SubscriptionInfo(BaseModel):
+    """Information about a subscription."""
+
+    id: str
+    userId: str
+    serviceId: str
+    amount: str
+    token: str
+    renewalInterval: int  # days
+    nextRenewalDate: str
+    status: str = Field(..., description="active, paused, or cancelled")
+
+
+class SubscriptionProgressRequest(BaseModel):
+    """Request to save subscription renewal progress."""
+
+    subscriptionId: str
+    renewalCount: int
+    nextRenewalDate: str
+
+
+class SubscriptionSuccessRequest(BaseModel):
+    """Request to mark renewal as successful."""
+
+    txHash: str
+    renewalDate: str
+
+
+class SubscriptionResponse(BaseModel):
+    """Response for subscription operations."""
+
+    success: bool
+    message: str
+
+
+# Mock subscription storage for demo purposes
+# In production, this would be in a database
+_mock_subscriptions: dict[str, dict] = {
+    "sub-123": {
+        "id": "sub-123",
+        "userId": "user-456",
+        "serviceId": "https://api.example.com",
+        "amount": "10.0",
+        "token": "USDC",
+        "renewalInterval": 30,
+        "nextRenewalDate": "2025-01-25T00:00:00Z",
+        "status": "active",
+        "renewalCount": 0,
+    }
+}
+
+
+@router.get(
+    "/subscription/{subscription_id}",
+    response_model=SubscriptionInfo,
+    summary="Get subscription details",
+    description="Get details of a subscription for renewal processing.",
+)
+async def get_subscription(
+    subscription_id: str,
+    db: AsyncSession = Depends(get_db),
+) -> SubscriptionInfo:
+    """
+    Get subscription details.
+
+    This endpoint is used by Vercel Workflows to get subscription details
+    for renewal processing.
+
+    Args:
+        subscription_id: Subscription ID
+        db: Database session
+
+    Returns:
+        SubscriptionInfo: Subscription details
+    """
+    # In production, query from database
+    # For demo, return mock data
+    subscription = _mock_subscriptions.get(subscription_id)
+
+    if not subscription:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Subscription {subscription_id} not found",
+        )
+
+    return SubscriptionInfo(**subscription)
+
+
+@router.post(
+    "/subscription/progress",
+    response_model=SubscriptionResponse,
+    summary="Save renewal progress",
+    description="Save progress of a subscription renewal.",
+)
+async def save_subscription_progress(
+    request: SubscriptionProgressRequest,
+    db: AsyncSession = Depends(get_db),
+) -> SubscriptionResponse:
+    """
+    Save subscription renewal progress.
+
+    This endpoint is used by Vercel Workflows to save progress
+    after each renewal cycle.
+
+    Args:
+        request: Progress details
+        db: Database session
+
+    Returns:
+        SubscriptionResponse: Success confirmation
+    """
+    logger.info(
+        f"Saving renewal progress for {request.subscriptionId}: "
+        f"count={request.renewalCount}, next={request.nextRenewalDate}"
+    )
+
+    # In production, update database
+    # For demo, just log and return success
+    if request.subscriptionId in _mock_subscriptions:
+        _mock_subscriptions[request.subscriptionId]["renewalCount"] = request.renewalCount
+        _mock_subscriptions[request.subscriptionId]["nextRenewalDate"] = request.nextRenewalDate
+
+    return SubscriptionResponse(
+        success=True,
+        message="Renewal progress saved successfully",
+    )
+
+
+@router.post(
+    "/subscription/{subscription_id}/success",
+    response_model=SubscriptionResponse,
+    summary="Mark renewal as successful",
+    description="Mark a subscription renewal as successful.",
+)
+async def mark_renewal_successful(
+    subscription_id: str,
+    request: SubscriptionSuccessRequest,
+    db: AsyncSession = Depends(get_db),
+) -> SubscriptionResponse:
+    """
+    Mark a subscription renewal as successful.
+
+    This endpoint is used by Vercel Workflows after a successful renewal.
+
+    Args:
+        subscription_id: Subscription ID
+        request: Success details
+        db: Database session
+
+    Returns:
+        SubscriptionResponse: Success confirmation
+    """
+    logger.info(
+        f"Renewal successful for {subscription_id}: "
+        f"txHash={request.txHash}, date={request.renewalDate}"
+    )
+
+    # In production, update database with txHash and renewal date
+    # For demo, just log and return success
+    if subscription_id in _mock_subscriptions:
+        _mock_subscriptions[subscription_id]["lastTxHash"] = request.txHash
+        _mock_subscriptions[subscription_id]["lastRenewalDate"] = request.renewalDate
+
+    return SubscriptionResponse(
+        success=True,
+        message="Renewal marked as successful",
+    )
+
