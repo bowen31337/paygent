@@ -1,11 +1,10 @@
 """Unit tests for rate limiting middleware."""
 
-import pytest
-import time
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
-from src.middleware.rate_limiter import RateLimiter, rate_limit_middleware, rate_limit
-from fastapi import HTTPException
+import pytest
+
+from src.middleware.rate_limiter import RateLimiter, rate_limit, rate_limit_middleware
 
 
 class TestRateLimiter:

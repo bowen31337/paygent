@@ -7,14 +7,12 @@ for high-value operations requiring multiple approvals.
 
 import asyncio
 from datetime import datetime, timedelta
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.models.agent_sessions import ApprovalRequest
 from src.services.approval_service import ApprovalService
 
 
@@ -59,7 +57,6 @@ class TestMultiSigApproval:
     @pytest.mark.asyncio
     async def test_multi_sig_approval_workflow(self, mock_db):
         """Test complete multi-sig approval workflow."""
-        from src.models.agent_sessions import AgentSession
 
         # Create a session
         session_id = uuid4()
@@ -421,7 +418,6 @@ class TestMultiSigDatabaseIntegration:
     @pytest.mark.asyncio
     async def test_query_pending_by_session(self, mock_db):
         """Test querying pending requests by session ID."""
-        from sqlalchemy import select
 
         session_id = uuid4()
         approval_service = ApprovalService(mock_db)

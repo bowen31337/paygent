@@ -8,15 +8,11 @@ This module tests end-to-end payment workflows including:
 - Service discovery and pricing
 """
 
-import pytest
-import json
-from uuid import uuid4
-from datetime import datetime
-from unittest.mock import patch, MagicMock
 
+import pytest
 from fastapi.testclient import TestClient
+
 from src.main import app
-from src.core.config import settings
 
 
 class TestX402PaymentFlow:

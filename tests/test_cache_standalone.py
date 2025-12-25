@@ -8,6 +8,7 @@ the full application stack.
 import asyncio
 import json
 import time
+
 from fakeredis import FakeAsyncRedis
 
 print("Testing Vercel KV Cache Operations (Standalone)")
@@ -73,13 +74,13 @@ async def test_cache_operations():
     # Serialize to JSON before storing
     json_str = json.dumps(json_value)
     await client.set(json_key, json_str, ex=60)
-    print(f"✓ Stored JSON value")
+    print("✓ Stored JSON value")
 
     # Retrieve and deserialize
     retrieved_str = await client.get(json_key)
     retrieved_obj = json.loads(retrieved_str)
     assert retrieved_obj == json_value, "JSON value mismatch"
-    print(f"✓ Retrieved and deserialized JSON value correctly")
+    print("✓ Retrieved and deserialized JSON value correctly")
 
     # Test 6: Test delete operation
     print("\nStep 7: Test delete operation")

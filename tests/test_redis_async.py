@@ -7,7 +7,6 @@ including connection handling, caching, and error handling.
 
 import asyncio
 import os
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -311,7 +310,6 @@ class TestRedisPerformance:
     async def test_cache_memory_efficiency(self):
         """Test that cache doesn't leak memory."""
         import gc
-        import sys
 
         initial_objects = len(gc.get_objects())
 

@@ -4,11 +4,9 @@ Test script for EIP-712 signature generation functionality.
 This tests Feature 354: EIP-712 signature generation for x402 payment protocol.
 """
 
-import json
 import os
 import sys
 import traceback
-from typing import Dict, Any
 
 # Add src to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
@@ -20,7 +18,10 @@ def test_eip712_signature_generation():
 
     try:
         # Import the signature module
-        from src.x402.signature import EIP712SignatureGenerator, get_signature_generator, PaymentSignatureData
+        from src.x402.signature import (
+            PaymentSignatureData,
+            get_signature_generator,
+        )
 
         # Test 1: Check if signature generator can be created
         print("✅ Test 1: Creating signature generator instance")
@@ -100,7 +101,7 @@ def test_eip712_signature_generation():
             assert sig_hex.startswith("0x"), "Signature should have 0x prefix"
             assert len(sig_hex) == 132, "Signature should be 65 bytes (132 chars with 0x)"
 
-            print(f"   ✓ Signature generated successfully:")
+            print("   ✓ Signature generated successfully:")
             print(f"     - Signer: {signature['signerAddress']}")
             print(f"     - Signature: {sig_hex[:20]}...{sig_hex[-8:]}")
 
@@ -116,7 +117,7 @@ def test_eip712_signature_generation():
             )
 
             assert is_valid == True, "Signature verification should succeed"
-            print(f"   ✓ Signature verified successfully")
+            print("   ✓ Signature verified successfully")
 
         else:
             print("\n⚠ Skipping signature generation test (no signer configured)")

@@ -6,21 +6,20 @@ automatic renewal triggering, manual renewal requests, and subscription
 status management.
 """
 
-from datetime import datetime
-from typing import Any, Dict, List, Optional
-from uuid import UUID
 import logging
+from datetime import datetime
+from typing import Any, Optional
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.dependencies import get_db, get_current_user
 from src.core.blockchain_errors import BlockchainErrorHandler
+from src.core.dependencies import get_current_user, get_db
 from src.models.agent_sessions import ServiceSubscription
+from src.services.notification_service import NotificationService
 from src.services.subscription_service import SubscriptionService
 from src.services.x402_service import X402PaymentService
-from src.services.notification_service import NotificationService
-from src.services.service_registry import ServiceRegistryService
 
 logger = logging.getLogger(__name__)
 
@@ -206,7 +205,7 @@ async def get_expiring_subscriptions(
     hours: int = 24,
     db: AsyncSession = Depends(get_db),
     user_id: str = Depends(get_current_user)
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """
     Get subscriptions expiring within the specified hours.
 
@@ -259,7 +258,7 @@ async def cancel_subscription(
     subscription_id: str,
     db: AsyncSession = Depends(get_db),
     user_id: str = Depends(get_current_user)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Cancel a subscription.
 
@@ -395,7 +394,7 @@ async def process_subscription_renewal(
 
 
 async def process_bulk_renewals(
-    subscriptions: List[ServiceSubscription],
+    subscriptions: list[ServiceSubscription],
     subscription_service: SubscriptionService,
     blockchain_error_handler: BlockchainErrorHandler
 ):
@@ -434,7 +433,7 @@ async def schedule_future_renewal(
     logger.info(f"Scheduled future renewal checks for {subscription_id}")
 
 
-async def get_service_details(service_id: UUID) -> Dict[str, Any]:
+async def get_service_details(service_id: UUID) -> dict[str, Any]:
     """Get service details for renewal."""
     # This would fetch service details from the service registry
     return {

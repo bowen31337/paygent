@@ -10,12 +10,13 @@ import json
 import sys
 import traceback
 from uuid import uuid4
+
 from fastapi.testclient import TestClient
 
 # Import the FastAPI app
 try:
-    from src.main import app
     from src.core.database import async_session_maker
+    from src.main import app
     from src.models.agent_sessions import AgentSession
     print("✓ Successfully imported FastAPI app and dependencies")
 except ImportError as e:

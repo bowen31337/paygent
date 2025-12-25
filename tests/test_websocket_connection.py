@@ -5,15 +5,14 @@ Tests WebSocket endpoint for real-time agent execution and HITL workflows.
 """
 import asyncio
 import json
-import pytest
-import websockets
-from typing import AsyncGenerator
 import uuid
+from collections.abc import AsyncGenerator
 from datetime import datetime
 
-from src.main import app
+import pytest
+import websockets
+
 from src.services.session_service import SessionService
-from src.core.database import get_db
 
 
 class TestWebSocketConnection:
@@ -248,7 +247,7 @@ class TestWebSocketConnection:
             avg_latency = sum(latencies) / len(latencies)
             max_latency = max(latencies)
 
-            print(f"✓ WebSocket latency stats:")
+            print("✓ WebSocket latency stats:")
             print(f"  Average: {avg_latency:.2f}ms")
             print(f"  Max: {max_latency:.2f}ms")
             print(f"  Min: {min(latencies):.2f}ms")

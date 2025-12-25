@@ -5,10 +5,10 @@ This test verifies that the agent can execute complex, multi-step operations eff
 Feature 115: Complex multi-step workflows complete within 5 minutes
 """
 
-import asyncio
 import time
-import pytest
 from uuid import uuid4
+
+import pytest
 
 from src.agents.agent_executor_enhanced import AgentExecutorEnhanced
 from src.core.database import async_session_maker
@@ -68,7 +68,7 @@ class TestComplexWorkflowPerformance:
             assert total_time < 120.0, f"Multi-step workflow took {total_time:.2f}s, expected < 120s"
 
             print(f"\n{'='*60}")
-            print(f"Multi-Step Workflow Performance Summary")
+            print("Multi-Step Workflow Performance Summary")
             print(f"{'='*60}")
             print(f"Step 1 (Balance Check):     {step1_time:.2f}s")
             print(f"Step 2 (Swap):              {step2_time:.2f}s")
@@ -219,7 +219,7 @@ class TestComplexWorkflowPerformance:
             avg_time = sum(step_times) / len(step_times)
             assert avg_time < 60.0, f"Average step time {avg_time:.2f}s is too high"
 
-            print(f"✓ Complex workflow completed well within 5-minute requirement!")
+            print("✓ Complex workflow completed well within 5-minute requirement!")
 
 
 if __name__ == "__main__":

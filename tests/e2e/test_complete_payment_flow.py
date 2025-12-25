@@ -10,13 +10,10 @@ This test verifies the complete flow:
 6. Transaction is logged and tracked
 """
 
-import pytest
-import json
-from uuid import uuid4
-from datetime import datetime
-from unittest.mock import patch, MagicMock, AsyncMock
 
+import pytest
 from fastapi.testclient import TestClient
+
 from src.main import app
 
 

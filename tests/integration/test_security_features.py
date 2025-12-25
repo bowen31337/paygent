@@ -4,15 +4,15 @@ Test security features: JWT authentication, rate limiting, CORS, and Pydantic va
 This module verifies that security features are properly implemented and working.
 """
 
-import pytest
-import json
 from datetime import datetime, timedelta
+
+import pytest
+from fastapi.testclient import TestClient
 from jose import jwt
 
-from fastapi.testclient import TestClient
-from src.main import app
-from src.core.config import settings
 from src.core.auth import create_access_token, verify_token
+from src.core.config import settings
+from src.main import app
 
 
 class TestJWTAuthentication:
@@ -174,8 +174,9 @@ class TestPydanticValidation:
 
     def test_session_info_model(self):
         """Test that SessionInfo has proper field descriptions."""
-        from src.api.routes.agent import SessionInfo
         from uuid import uuid4
+
+        from src.api.routes.agent import SessionInfo
 
         # Check model has proper structure
         session = SessionInfo(

@@ -5,9 +5,10 @@ This test suite covers the basic agent functionality including command parsing,
 tool handling, and mock LLM responses.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
+
+import pytest
 
 from src.agents.basic_agent import BasicAgentCallbackHandler, BasicPaygentAgent
 from src.core.config import settings

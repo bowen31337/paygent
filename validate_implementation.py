@@ -6,12 +6,12 @@ This script performs basic smoke tests to validate that core functionality
 is working correctly for features marked as dev_done and passing.
 """
 
-import asyncio
 import json
-import time
 import logging
+import time
+from typing import Any
+
 import requests
-from typing import Dict, Any, List
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -227,7 +227,7 @@ def validate_feature_list() -> bool:
         return False
 
 
-def run_validation_tests() -> Dict[str, Any]:
+def run_validation_tests() -> dict[str, Any]:
     """Run all validation tests and return results."""
     print("🧪 Running Basic Validation Tests")
     print("=" * 50)

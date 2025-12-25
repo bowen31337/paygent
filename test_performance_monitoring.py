@@ -7,10 +7,11 @@ correctly and provides accurate metrics.
 """
 
 import asyncio
-import time
 import random
-from src.core.monitoring import performance_monitor, Timer, PerformanceRegistry
-from src.core.metrics import time_operation, track_performance
+import time
+
+from src.core.metrics import track_performance
+from src.core.monitoring import PerformanceRegistry, Timer, performance_monitor
 
 
 async def test_performance_monitoring():

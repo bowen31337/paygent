@@ -3,16 +3,15 @@ Tests for security utilities, particularly private key protection in logs.
 """
 
 import logging
-import pytest
 from io import StringIO
 
 from src.core.security import (
     RedactingFormatter,
+    is_safe_for_logging,
     redact_dict,
     redact_string,
-    is_safe_for_logging,
-    sanitize,
     safe_log_dict,
+    sanitize,
 )
 
 

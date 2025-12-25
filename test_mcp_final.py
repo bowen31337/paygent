@@ -5,10 +5,9 @@ Final verification test for Crypto.com Market Data MCP Server integration.
 This test verifies that all feature requirements are met without agent dependencies.
 """
 
+import json
 import sys
 import time
-import json
-from typing import Any, Dict
 
 # Add the project root to Python path
 sys.path.insert(0, '/media/DATA/projects/autonomous-coding-cro/paygent')
@@ -77,8 +76,10 @@ def verify_mcp_integration():
         # 4. Tool verification
         print("\n4. Market Data Tools Verification")
         from src.tools.market_data_tools import (
-            GetPriceTool, GetPricesTool, GetMarketStatusTool,
-            get_market_data_tools, GetPriceInput, GetPricesInput
+            GetPriceInput,
+            GetPricesInput,
+            GetPriceTool,
+            get_market_data_tools,
         )
 
         # Test tool creation

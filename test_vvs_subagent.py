@@ -13,9 +13,10 @@ from pathlib import Path
 # Add src to Python path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from src.agents.vvs_trader_subagent import VVSTraderSubagent
-from src.agents.command_parser import CommandParser
 from uuid import uuid4
+
+from src.agents.command_parser import CommandParser
+from src.agents.vvs_trader_subagent import VVSTraderSubagent
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -165,7 +166,7 @@ async def test_vvs_subagent_parsing():
             print(f"      Parsed: {amount} {from_token} -> {to_token}")
         else:
             print(f"   ❌ Command: '{command}'")
-            print(f"      Failed to parse")
+            print("      Failed to parse")
 
 
 async def main():

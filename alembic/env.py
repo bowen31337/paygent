@@ -1,7 +1,6 @@
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from sqlalchemy import engine_from_config, pool
 
 from alembic import context
 
@@ -29,6 +28,7 @@ target_metadata = None
 def get_url():
     """Get database URL from environment or config."""
     import os
+
     from src.core.config import settings
 
     # Try to get from environment first

@@ -1,16 +1,17 @@
 """Unit tests for simple agent tools."""
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 from src.tools.simple_tools import (
     CheckBalanceTool,
-    X402PaymentTool,
-    SwapTokensTool,
-    VVSQuoteTool,
-    VVSLiquidityTool,
-    VVSFarmingTool,
     DiscoverServicesTool,
+    SwapTokensTool,
+    VVSFarmingTool,
+    VVSLiquidityTool,
+    VVSQuoteTool,
+    X402PaymentTool,
     get_all_tools,
 )
 

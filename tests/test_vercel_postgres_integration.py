@@ -6,17 +6,16 @@ by testing the actual database connection and health check.
 """
 
 import os
-import pytest
-import asyncio
 from unittest.mock import patch
+
+import pytest
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from src.core.vercel_db import (
-    get_database_url,
-    engine,
-    test_connection,
     check_database_health,
+    get_database_url,
     get_sync_engine,
+    test_connection,
 )
 
 
@@ -49,8 +48,9 @@ class TestVercelPostgresIntegration:
         # Test with SQLite (should always work)
         with patch.dict(os.environ, {}, clear=True):
             # Recreate engine with new environment
-            from src.core import vercel_db
             import importlib
+
+            from src.core import vercel_db
             importlib.reload(vercel_db)
 
             assert isinstance(vercel_db.engine, AsyncEngine)
@@ -60,8 +60,9 @@ class TestVercelPostgresIntegration:
         """Test database health check functionality."""
         with patch.dict(os.environ, {}, clear=True):
             # Recreate engine with new environment
-            from src.core import vercel_db
             import importlib
+
+            from src.core import vercel_db
             importlib.reload(vercel_db)
 
             health = await check_database_health()
@@ -80,8 +81,9 @@ class TestVercelPostgresIntegration:
         """Test sync engine creation for Alembic migrations."""
         with patch.dict(os.environ, {}, clear=True):
             # Recreate engine with new environment
-            from src.core import vercel_db
             import importlib
+
+            from src.core import vercel_db
             importlib.reload(vercel_db)
 
             sync_engine = get_sync_engine()
@@ -93,8 +95,9 @@ class TestVercelPostgresIntegration:
         """Test database connection test functionality."""
         with patch.dict(os.environ, {}, clear=True):
             # Recreate engine with new environment
-            from src.core import vercel_db
             import importlib
+
+            from src.core import vercel_db
             importlib.reload(vercel_db)
 
             # Test connection (should work with SQLite)

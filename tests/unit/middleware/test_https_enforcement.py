@@ -1,11 +1,12 @@
 """Unit tests for HTTPS enforcement middleware."""
 
-import pytest
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from src.middleware.https_enforcement import https_enforcement_middleware, is_secure_request
+import pytest
 from fastapi import HTTPException
 from fastapi.responses import RedirectResponse
+
+from src.middleware.https_enforcement import https_enforcement_middleware, is_secure_request
 
 
 class TestHTTPSEnforcementMiddleware:

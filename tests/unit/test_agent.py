@@ -4,13 +4,13 @@ Unit tests for agent execution API routes.
 Tests the /api/v1/agent/execute endpoint and related functionality.
 """
 
-import pytest
-from httpx import AsyncClient, ASGITransport
 from uuid import UUID
 
-from src.main import app
+import pytest
+from httpx import ASGITransport, AsyncClient
+
 from src.core.database import get_db
-from tests.conftest import TEST_DATABASE_URL
+from src.main import app
 
 
 class TestAgentExecute:
@@ -205,6 +205,7 @@ class TestAgentExecute:
     async def test_execute_command_stores_in_database(self, db_session):
         """Test that execute command stores session and log in database."""
         from sqlalchemy import select
+
         from src.models.execution_logs import ExecutionLog
 
         # Override the get_db dependency to use our test db_session
@@ -276,7 +277,7 @@ class TestAgentSessions:
     async def test_get_session_returns_200(self, db_session):
         """Test that get session returns 200 for existing session."""
         from uuid import uuid4
-        from sqlalchemy import select
+
         from src.models.agent_sessions import AgentSession
 
         # Create a test session in the database
@@ -329,7 +330,7 @@ class TestAgentSessions:
     async def test_terminate_session_returns_200(self, db_session):
         """Test that terminate session returns 200 for existing session."""
         from uuid import uuid4
-        from sqlalchemy import select
+
         from src.models.agent_sessions import AgentSession
 
         # Create a test session in the database

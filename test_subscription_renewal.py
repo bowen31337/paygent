@@ -7,19 +7,14 @@ including renewal workflows, payment processing, and failure handling.
 
 import asyncio
 import logging
-from datetime import datetime, timedelta
 from uuid import uuid4
-from typing import Any, Dict, List
 
-from src.services.subscription_service import SubscriptionService
-from src.services.x402_service import X402PaymentService
-from src.workflows.subscription_renewal import (
-    subscriptionRenewalWorkflow,
-    processSubscriptionRenewal,
-    getExpiringSubscriptions
-)
 from src.models.agent_sessions import ServiceSubscription
-from src.models.services import Service
+from src.services.subscription_service import SubscriptionService
+from src.workflows.subscription_renewal import (
+    processSubscriptionRenewal,
+    subscriptionRenewalWorkflow,
+)
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)

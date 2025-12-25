@@ -9,8 +9,8 @@ This test suite verifies that:
 """
 
 import pytest
-from src.agents.command_parser import CommandParser, ParsedCommand
-from src.agents.agent_executor_enhanced import AgentExecutorEnhanced
+
+from src.agents.command_parser import CommandParser
 from src.tools.simple_tools import get_all_tools
 
 
@@ -153,6 +153,7 @@ class TestAgentNoShellExecution:
     def test_no_subprocess_imports_in_tools(self):
         """Verify that tools don't import subprocess modules."""
         import inspect
+
         import src.tools.simple_tools as tools_module
 
         source = inspect.getsource(tools_module)
@@ -168,6 +169,7 @@ class TestAgentNoShellExecution:
         # This is a structural test - verify the executor doesn't have shell access
 
         import inspect
+
         from src.agents import agent_executor_enhanced
 
         source = inspect.getsource(agent_executor_enhanced)
@@ -300,6 +302,7 @@ class TestSQLCommandInjection:
         """Test that ORM is used instead of raw SQL."""
         # This is a code inspection test
         import inspect
+
         import src.services.payment_service as payment_service
 
         source = inspect.getsource(payment_service)
@@ -373,8 +376,8 @@ class TestIntegrationEndToEnd:
     def test_no_eval_or_exec_usage(self):
         """Verify that eval() or exec() are not used."""
         import inspect
-        from src.agents import command_parser
-        from src.agents import agent_executor_enhanced
+
+        from src.agents import agent_executor_enhanced, command_parser
         from src.tools import simple_tools
 
         modules_to_check = [
@@ -438,6 +441,7 @@ class TestLLMBasedCommandSafety:
 
         # This test verifies the structure exists
         import inspect
+
         import src.agents.agent_executor_enhanced as executor_module
 
         source = inspect.getsource(executor_module)
@@ -450,6 +454,7 @@ class TestLLMBasedCommandSafety:
         """Verify that tool parameters are validated."""
         # Tools should validate their inputs
         import inspect
+
         import src.tools.simple_tools as tools_module
 
         source = inspect.getsource(tools_module)

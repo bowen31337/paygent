@@ -1,8 +1,9 @@
 """Unit tests for metrics middleware."""
 
 import asyncio
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import MagicMock, patch, AsyncMock
 
 from src.middleware.metrics import metrics_middleware
 

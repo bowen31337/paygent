@@ -7,11 +7,10 @@ are properly implemented and functional.
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.main import app
-from src.core.database import async_session_maker, init_db, close_db
 from src.core.config import settings
+from src.core.database import async_session_maker, close_db, init_db
+from src.main import app
 
 # Use a test database URL for these tests
 settings.database_url = "sqlite:///:memory:"

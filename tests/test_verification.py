@@ -4,16 +4,19 @@ Comprehensive verification test for all completed features.
 This test verifies that all the features we've implemented are working correctly.
 """
 
-import pytest
-import os
-import tempfile
 import asyncio
+import os
 from unittest.mock import patch
+
+import pytest
+
 
 # Test all implemented features
 def test_vercel_postgres_integration():
     """Test Vercel Postgres connection and configuration."""
-    from src.core.vercel_db import get_database_url, VERCEL_POSTGRES_URL, VERCEL_POSTGRES_URL_NON_POOLING
+    from src.core.vercel_db import (
+        get_database_url,
+    )
 
     # Test with Vercel environment variables
     with patch.dict(os.environ, {
@@ -75,7 +78,7 @@ def test_vercel_blob_storage():
 
 def test_performance_optimization():
     """Test performance optimization features."""
-    from src.core.performance import PerformanceOptimizer, performance_monitor, fast_cache
+    from src.core.performance import PerformanceOptimizer, fast_cache
 
     optimizer = PerformanceOptimizer()
 
@@ -102,8 +105,8 @@ def test_performance_optimization():
 
 def test_security_implementation():
     """Test security implementation."""
-    from src.core.security import redact_string, redact_dict, sanitize
     from src.core.auth import create_access_token, verify_token
+    from src.core.security import redact_string
 
     # Test data redaction
     private_key = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
@@ -158,7 +161,6 @@ def test_configuration():
 def test_api_structure():
     """Test API structure and endpoints."""
     from src.main import app
-    from src.api.routes import api_router
 
     # Test that API router is included
     assert app.include_router is not None
@@ -172,8 +174,8 @@ def test_api_structure():
 def test_database_models():
     """Test that database models are properly defined."""
     from src.core.database import Base
-    from src.models.services import Service
     from src.models.payments import Payment
+    from src.models.services import Service
 
     # Test that models inherit from Base
     assert issubclass(Service, Base)
@@ -196,7 +198,7 @@ def test_schemas():
 
 def test_error_handling():
     """Test error handling system."""
-    from src.core.errors import PaygentError, http_exception_handler, general_exception_handler
+    from src.core.errors import PaygentError
 
     # Test error creation
     error = PaygentError(message="Test error", details={"key": "value"})
@@ -234,7 +236,6 @@ def test_dependency_injection():
 
 def test_logging_configuration():
     """Test logging configuration."""
-    import logging
     from src.core.security import configure_secure_logging
 
     # Test that secure logging can be configured
@@ -248,7 +249,7 @@ def test_logging_configuration():
 
 def test_validation():
     """Test input validation."""
-    from src.core.security import sanitize, is_safe_for_logging
+    from src.core.security import is_safe_for_logging, sanitize
 
     # Test string sanitization
     unsafe_string = "private key: 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"

@@ -8,8 +8,9 @@ Tests all VVS Finance connector functionality including:
 - Price quotes
 """
 
-import pytest
 from decimal import Decimal
+
+import pytest
 
 from src.connectors.vvs import VVSFinanceConnector
 
@@ -360,7 +361,7 @@ class TestGetAllTools:
         assert "vvs_farm" in tools
 
     def test_tools_are_instances(self):
-        from src.tools.simple_tools import get_all_tools, SimpleTool
+        from src.tools.simple_tools import SimpleTool, get_all_tools
 
         tools = get_all_tools()
 

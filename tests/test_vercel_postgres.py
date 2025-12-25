@@ -6,18 +6,14 @@ in various deployment scenarios.
 """
 
 import os
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import patch, MagicMock
-from sqlalchemy.ext.asyncio import AsyncEngine
 
 from src.core.vercel_db import (
     get_database_url,
-    test_connection,
-    check_database_health,
-    get_sync_engine,
-    get_vercel_postgres_url,
-    get_vercel_postgres_url_non_pooling,
     get_dev_database_url,
+    get_sync_engine,
 )
 
 
@@ -112,6 +108,7 @@ class TestVercelEnvironmentDetection:
         with patch.dict(os.environ, {"POSTGRES_URL": test_url}, clear=True):
             # Re-import to test detection
             import importlib
+
             import src.core.vercel_db
             importlib.reload(src.core.vercel_db)
 
@@ -122,6 +119,7 @@ class TestVercelEnvironmentDetection:
         # Clear environment
         with patch.dict(os.environ, {}, clear=True):
             import importlib
+
             import src.core.vercel_db
             importlib.reload(src.core.vercel_db)
 

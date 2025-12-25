@@ -3,9 +3,8 @@
 Test MCP schema compliance for Crypto.com Market Data integration.
 """
 
-import sys
 import json
-from typing import Any, Dict, List
+import sys
 
 # Add the project root to Python path
 sys.path.insert(0, '/media/DATA/projects/autonomous-coding-cro/paygent')
@@ -15,8 +14,9 @@ def test_mcp_response_schemas():
     try:
         print("=== Testing MCP Response Schemas ===")
 
-        from src.services.mcp_client import PriceData
         from datetime import datetime
+
+        from src.services.mcp_client import PriceData
 
         # Test PriceData schema compliance
         price_data = PriceData(
@@ -68,9 +68,7 @@ def test_tool_input_schemas():
     try:
         print("\n=== Testing Tool Input Schemas ===")
 
-        from src.tools.market_data_tools import (
-            GetPriceInput, GetPricesInput, GetMarketStatusInput
-        )
+        from src.tools.market_data_tools import GetMarketStatusInput, GetPriceInput, GetPricesInput
 
         # Test GetPriceInput
         price_input = GetPriceInput(symbol="BTC_USDT")

@@ -4,7 +4,7 @@ Final test of VVS subagent detection logic after fixes.
 """
 
 import re
-from pathlib import Path
+
 
 def test_detection_logic():
     """Test the fixed VVS detection logic."""

@@ -6,13 +6,10 @@ including connection pooling, transactions, and error handling.
 """
 
 import asyncio
-from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from sqlalchemy import select, text
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import (
     Base,
@@ -264,7 +261,7 @@ class TestSQLAlchemyConnectionPool:
                     await session.execute(text("SELECT 1"))
                     await asyncio.sleep(0.01)
                     return True
-            except Exception as e:
+            except Exception:
                 # Should handle errors gracefully
                 return False
 

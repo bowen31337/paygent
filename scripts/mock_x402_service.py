@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 """Mock service that returns HTTP 402 for x402 payment testing."""
+import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
-import uvicorn
-
 
 app = FastAPI(title="Mock x402 Service")
 

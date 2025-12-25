@@ -8,9 +8,9 @@ This test verifies that:
 4. Type validation works correctly
 5. Constraint validation (min/max, etc.) works
 """
+
 import pytest
-from httpx import AsyncClient, ASGITransport
-from typing import Dict, Any
+from httpx import ASGITransport, AsyncClient
 
 
 class TestPydanticValidation:

@@ -5,18 +5,16 @@ This test verifies that complex multi-step workflows complete within 5 minutes
 and that all steps are executed correctly.
 """
 
-import pytest
-import asyncio
 import time
 from uuid import uuid4
-from datetime import datetime
 
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+import pytest
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from src.agents.agent_executor_enhanced import AgentExecutorEnhanced
-from src.agents.planner import CommandPlanner, ExecutionPlan, PlanStep
-from src.models.agent_sessions import AgentSession, AgentMemory
+from src.agents.planner import CommandPlanner
+from src.models.agent_sessions import AgentMemory, AgentSession
 from src.models.execution_logs import ExecutionLog
 
 
@@ -73,8 +71,9 @@ class TestComplexMultiStepWorkflows:
             assert "execution_log_id" in result, "Should have execution log ID"
 
             # Query the execution log to verify plan was created
-            from sqlalchemy import select
             from uuid import UUID
+
+            from sqlalchemy import select
             log_id_str = result["execution_log_id"]
             log_result = await session.execute(
                 select(ExecutionLog).where(ExecutionLog.id == UUID(log_id_str))
@@ -283,8 +282,9 @@ class TestWorkflowPerformanceMetrics:
             assert result["duration_ms"] > 0, "duration_ms should be positive"
 
             # Verify duration is in database log
-            from sqlalchemy import select
             from uuid import UUID
+
+            from sqlalchemy import select
             log_id_str = result["execution_log_id"]
             log_result = await session.execute(
                 select(ExecutionLog).where(ExecutionLog.id == UUID(log_id_str))

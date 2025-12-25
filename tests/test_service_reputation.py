@@ -6,8 +6,8 @@ Tests:
 """
 
 import asyncio
-import sys
 import os
+import sys
 from pathlib import Path
 from uuid import uuid4
 
@@ -18,14 +18,14 @@ os.environ["USE_MOCK_REDIS"] = "true"
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from src.core.database import init_db, close_db
-from src.core.cache import init_cache, close_cache
-from src.services.service_registry import ServiceRegistryService
-from src.services.payment_service import PaymentService
-from src.api.routes.payments import ExecuteX402Request
-from src.models.services import Service
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
+
+from src.core.cache import close_cache, init_cache
+from src.core.database import close_db, init_db
+from src.models.services import Service
+from src.services.payment_service import PaymentService
+from src.services.service_registry import ServiceRegistryService
 
 
 async def test_feature_45_service_reputation_update():
@@ -90,7 +90,7 @@ async def test_feature_45_service_reputation_update():
             print(f"   ✓ Reputation updated: {updated_service.reputation_score}")
             print(f"   ✓ Total calls incremented: {updated_service.total_calls}")
         else:
-            print(f"   ✗ Failed to update reputation")
+            print("   ✗ Failed to update reputation")
             return False
 
         # Step 4: Verify the update
@@ -98,11 +98,11 @@ async def test_feature_45_service_reputation_update():
         if updated_service.reputation_score > 0.0 and updated_service.total_calls == 1:
             print(f"   ✓ Reputation is now: {updated_service.reputation_score}")
             print(f"   ✓ Total calls is now: {updated_service.total_calls}")
-            print(f"\n✅ PASSED: Service reputation updates correctly after payment")
+            print("\n✅ PASSED: Service reputation updates correctly after payment")
             return True
         else:
-            print(f"   ✗ Reputation not updated correctly")
-            print(f"      Expected: reputation > 0, total_calls = 1")
+            print("   ✗ Reputation not updated correctly")
+            print("      Expected: reputation > 0, total_calls = 1")
             print(f"      Got: reputation = {updated_service.reputation_score}, total_calls = {updated_service.total_calls}")
             return False
 
@@ -152,14 +152,14 @@ async def test_multiple_reputation_updates():
             print(f"   Payment {i}: rating={rating}, new_score={test_service.reputation_score:.2f}")
 
         # Verify final average
-        print(f"\n[2] Verifying final reputation...")
+        print("\n[2] Verifying final reputation...")
         if abs(test_service.reputation_score - expected_avg) < 0.01:
             print(f"   ✓ Final reputation: {test_service.reputation_score:.2f} (expected: {expected_avg})")
             print(f"   ✓ Total calls: {test_service.total_calls}")
-            print(f"\n✅ PASSED: Multiple reputation updates work correctly")
+            print("\n✅ PASSED: Multiple reputation updates work correctly")
             return True
         else:
-            print(f"   ✗ Reputation mismatch")
+            print("   ✗ Reputation mismatch")
             print(f"      Expected: {expected_avg}, Got: {test_service.reputation_score}")
             return False
 

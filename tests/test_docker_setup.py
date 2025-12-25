@@ -9,10 +9,10 @@ This test validates that:
 5. Health checks are configured
 """
 
-import os
-import yaml
-import pytest
 from pathlib import Path
+
+import pytest
+import yaml
 
 
 class TestDockerConfiguration:

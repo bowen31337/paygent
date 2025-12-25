@@ -4,13 +4,12 @@ Unit tests for cache layer performance.
 Tests that the service cache returns results within 100ms target.
 """
 
-import pytest
 import time
-from httpx import AsyncClient, ASGITransport
+
+import pytest
+from httpx import ASGITransport, AsyncClient
 
 from src.main import app
-from src.models.services import Service
-from sqlalchemy import select
 
 
 @pytest.mark.asyncio
@@ -55,10 +54,10 @@ async def test_service_cache_performance_under_100ms():
         # All cache hits should be under 100ms
         assert third_request_time < 100, f"Third request took {third_request_time:.2f}ms, exceeds 100ms target"
 
-        print(f"\n✓ Cache performance test passed!")
+        print("\n✓ Cache performance test passed!")
         print(f"  - First request (miss): {first_request_time:.2f}ms")
         print(f"  - Cache hits: {cache_hit_time:.2f}ms, {third_request_time:.2f}ms")
-        print(f"  - Target: <100ms ✓")
+        print("  - Target: <100ms ✓")
 
 
 @pytest.mark.asyncio
@@ -91,7 +90,7 @@ async def test_service_cache_with_filters_performance():
         # Verify cache performance
         assert cache_time < 100, f"Filtered cache hit took {cache_time:.2f}ms, exceeds 100ms"
 
-        print(f"✓ Filtered cache performance test passed!")
+        print("✓ Filtered cache performance test passed!")
 
 
 @pytest.mark.asyncio
@@ -129,7 +128,7 @@ async def test_service_pricing_cache_performance():
             # Verify cache performance
             assert cache_time < 100, f"Pricing cache hit took {cache_time:.2f}ms, exceeds 100ms"
 
-            print(f"✓ Pricing cache performance test passed!")
+            print("✓ Pricing cache performance test passed!")
 
 
 if __name__ == "__main__":

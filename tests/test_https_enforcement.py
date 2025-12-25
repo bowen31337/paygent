@@ -4,13 +4,14 @@ HTTPS enforcement tests (Feature 3).
 Tests that HTTPS is enforced in production environments.
 """
 
+from unittest.mock import Mock, patch
+
 import pytest
 from fastapi import Request
 from fastapi.responses import RedirectResponse
-from unittest.mock import Mock, patch
 
-from src.middleware.https_enforcement import https_enforcement_middleware, is_secure_request
 from src.core.config import settings
+from src.middleware.https_enforcement import https_enforcement_middleware, is_secure_request
 
 
 class TestHTTPSEnforcement:

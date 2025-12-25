@@ -7,9 +7,9 @@ Tests:
 """
 
 import asyncio
-import time
-import sys
 import os
+import sys
+import time
 from pathlib import Path
 
 # Enable mock Redis BEFORE importing modules
@@ -20,8 +20,9 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from httpx import AsyncClient
-from src.core.database import init_db, close_db
-from src.core.cache import init_cache, close_cache, cache_client
+
+from src.core.cache import cache_client, close_cache, init_cache
+from src.core.database import close_db, init_db
 from src.services.cache import CacheService, cache_metrics
 
 
@@ -70,7 +71,7 @@ async def test_feature_43_cache_response_time():
 
     # Verify data integrity
     if result == test_data:
-        print(f"   ✓ Data integrity verified")
+        print("   ✓ Data integrity verified")
     else:
         print(f"   ✗ Data mismatch: {result}")
         return False
@@ -110,14 +111,14 @@ async def test_feature_44_cache_ttl():
 
     # Set with 2 second TTL
     await cache_service.set(test_key, test_data, expiration=2)
-    print(f"   Set with 2s TTL")
+    print("   Set with 2s TTL")
 
     # Verify it exists immediately
     result = await cache_service.get(test_key)
     if result:
-        print(f"   ✓ Data exists immediately after set")
+        print("   ✓ Data exists immediately after set")
     else:
-        print(f"   ✗ Data not found immediately after set")
+        print("   ✗ Data not found immediately after set")
         return False
 
     # Wait 1 second (should still exist)
@@ -125,9 +126,9 @@ async def test_feature_44_cache_ttl():
     await asyncio.sleep(1)
     result = await cache_service.get(test_key)
     if result:
-        print(f"   ✓ Data still exists after 1 second")
+        print("   ✓ Data still exists after 1 second")
     else:
-        print(f"   ✗ Data expired too early")
+        print("   ✗ Data expired too early")
         return False
 
     # Wait 2 more seconds (total 3, should be expired)
@@ -135,12 +136,12 @@ async def test_feature_44_cache_ttl():
     await asyncio.sleep(2)
     result = await cache_service.get(test_key)
     if result is None:
-        print(f"   ✓ Data expired after TTL")
-        print(f"\n✅ PASSED: Cache TTL expiration works correctly")
+        print("   ✓ Data expired after TTL")
+        print("\n✅ PASSED: Cache TTL expiration works correctly")
         return True
     else:
-        print(f"   ✗ Data still exists after TTL expired")
-        print(f"\n⚠️  WARNING: TTL may not be working as expected")
+        print("   ✗ Data still exists after TTL expired")
+        print("\n⚠️  WARNING: TTL may not be working as expected")
         return False
 
 
@@ -180,23 +181,23 @@ async def test_service_discovery_caching():
 
         # Verify responses are the same
         if response1.json() == response2.json():
-            print(f"   ✓ Responses match")
+            print("   ✓ Responses match")
         else:
-            print(f"   ✗ Responses differ")
+            print("   ✗ Responses differ")
             return False
 
         # Check cache metrics
         stats = cache_metrics.get_stats()
-        print(f"\n[3] Cache Metrics:")
+        print("\n[3] Cache Metrics:")
         print(f"   Hits: {stats['hits']}, Misses: {stats['misses']}")
         print(f"   Hit Rate: {stats['hit_rate_percent']}%")
         print(f"   Avg Get Time: {stats['avg_get_time_ms']}ms")
 
         if stats['hits'] > 0:
-            print(f"\n✅ PASSED: Caching is working")
+            print("\n✅ PASSED: Caching is working")
             return True
         else:
-            print(f"\n⚠️  WARNING: No cache hits recorded")
+            print("\n⚠️  WARNING: No cache hits recorded")
             return False
 
     await close_db()

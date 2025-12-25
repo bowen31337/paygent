@@ -14,8 +14,6 @@ from typing import Any
 from anthropic import Anthropic
 from deepagents import Agent
 
-from src.core.config import settings
-
 logger = logging.getLogger(__name__)
 
 

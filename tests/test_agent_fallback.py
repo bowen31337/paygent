@@ -1,7 +1,8 @@
 """Test agent fallback to OpenAI GPT-4 when Claude is unavailable."""
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.agents.main_agent import PaygentAgent

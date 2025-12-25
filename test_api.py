@@ -4,16 +4,17 @@ Test script to verify API services are working.
 """
 
 import asyncio
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from src.core.config import settings
-from src.core.database import engine, async_session_maker
-from src.services.payment_service import PaymentService
-from src.models.agent_sessions import ApprovalRequest as ApprovalRequestModel
 from sqlalchemy import select
+
+from src.core.database import async_session_maker, engine
+from src.models.agent_sessions import ApprovalRequest as ApprovalRequestModel
+from src.services.payment_service import PaymentService
+
 
 async def test_api_services():
     """Test the service layer directly."""

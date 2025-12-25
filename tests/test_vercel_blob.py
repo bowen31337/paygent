@@ -5,15 +5,16 @@ This test verifies that the Vercel Blob storage integration works correctly.
 """
 
 import os
-import tempfile
-import pytest
 from unittest.mock import patch
+
+import pytest
+
 
 # Test basic Vercel Blob functionality
 def test_vercel_blob_import():
     """Test that Vercel Blob can be imported."""
     try:
-        from src.core.vercel_blob import VercelBlobStorage, BlobMetrics, BlobInterface
+        from src.core.vercel_blob import BlobInterface, BlobMetrics, VercelBlobStorage
         assert VercelBlobStorage is not None
         assert BlobMetrics is not None
         assert BlobInterface is not None

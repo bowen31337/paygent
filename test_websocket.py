@@ -8,8 +8,8 @@ This script tests the WebSocket endpoint to verify that:
 """
 import asyncio
 import json
+
 import websockets
-from uuid import uuid4
 
 
 async def test_websocket_connection():

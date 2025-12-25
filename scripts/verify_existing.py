@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 """Verify existing passing features still work."""
-import httpx
 import asyncio
 import sys
+
+import httpx
 
 
 async def verify_features():

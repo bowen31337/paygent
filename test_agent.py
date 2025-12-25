@@ -6,25 +6,22 @@ This script tests the agent execution endpoint to ensure it works correctly.
 """
 
 import asyncio
-import json
-import sys
 import os
-from typing import Any, Dict, Optional
+import sys
 
 # Add the project root to Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from fastapi.testclient import TestClient
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
+
+from src.core.config import settings
 
 # Import the FastAPI app
 from src.main import app
 
 # Import database models
 from src.models import Base
-from src.core.config import settings
 
 
 async def setup_test_database():

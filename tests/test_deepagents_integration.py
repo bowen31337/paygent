@@ -35,7 +35,7 @@ def test_deepagents_integration_initialization():
 
     # Check if deepagents is available (may be False in some environments)
     available = integration.is_available()
-    print(f"✓ DeepAgentsIntegration initialized")
+    print("✓ DeepAgentsIntegration initialized")
     print(f"  Session ID: {integration.session_id}")
     print(f"  Available: {available}")
 
@@ -50,13 +50,13 @@ def test_get_model_info():
     assert "model" in info
     assert "available" in info
 
-    print(f"✓ Model info retrieved")
+    print("✓ Model info retrieved")
     print(f"  Framework: {info['framework']}")
     print(f"  Model: {info['model']}")
     print(f"  Available: {info['available']}")
 
     if info.get("features"):
-        print(f"  Features:")
+        print("  Features:")
         for feature in info["features"]:
             print(f"    - {feature}")
 
@@ -74,7 +74,7 @@ def test_verify_claude_sonnet_4():
     assert verification is not None
     assert "framework" in verification
 
-    print(f"✓ Claude Sonnet 4 verification completed")
+    print("✓ Claude Sonnet 4 verification completed")
     print(f"  Framework: {verification['framework']}")
     print(f"  Success: {verification.get('success', False)}")
 
@@ -95,7 +95,7 @@ def test_singleton_integration():
 
     # Should be the same instance
     assert integration1 is integration2
-    print(f"✓ Singleton integration works correctly")
+    print("✓ Singleton integration works correctly")
 
 
 def test_deepagents_dependency():
@@ -121,9 +121,9 @@ def test_deepagents_dependency():
                 if major > 0 or (major == 0 and minor >= 2):
                     print(f"  ✓ Version {version} meets requirement (>=0.2.7)")
                     return
-        print(f"  ⚠ Could not verify version requirement")
+        print("  ⚠ Could not verify version requirement")
     else:
-        print(f"✗ deepagents package not found")
+        print("✗ deepagents package not found")
         assert False, "deepagents should be installed as a dependency"
 
 

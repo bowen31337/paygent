@@ -3,8 +3,9 @@
 Tests that the agent properly falls back from Claude to GPT-4 when Claude is unavailable.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from src.agents.main_agent import PaygentAgent
 

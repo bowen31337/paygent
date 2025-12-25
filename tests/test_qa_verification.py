@@ -7,11 +7,9 @@ It tests the features end-to-end and updates the feature_list.json accordingly.
 """
 
 import asyncio
-import json
 import sys
 from pathlib import Path
 from uuid import uuid4
-from datetime import datetime
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -19,11 +17,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from httpx import AsyncClient
 from sqlalchemy import select
 
-from src.core.database import get_db
-from src.models.agent_sessions import ApprovalRequest
-from src.services.x402_service import X402PaymentService
 from src.agents.command_parser import CommandParser
-
+from src.core.database import get_db
+from src.services.x402_service import X402PaymentService
 
 # Feature IDs for DEV DONE features that need QA
 FEATURE_IDS = {
@@ -195,7 +191,7 @@ async def test_wallet_transfer_balance():
 
         if response.status_code == 400:
             data = response.json()
-            print(f"✓ Status 400 (Bad Request)")
+            print("✓ Status 400 (Bad Request)")
             print(f"✓ Error: {data.get('detail', 'No detail')}")
             print_result("Insufficient Balance Validation", True, "Correctly rejected")
             return True
@@ -247,7 +243,7 @@ async def test_wallet_transfer_daily_limit():
                 print_result("Daily Limit Validation", True, "Limit enforced")
                 return True
             else:
-                print(f"⚠ Transfer succeeded (may not have reached limit yet)")
+                print("⚠ Transfer succeeded (may not have reached limit yet)")
                 print(f"  Status: {transfer_response.status_code}")
                 print_result("Daily Limit Validation", True, "Logic implemented")
                 return True
@@ -304,19 +300,19 @@ async def test_high_value_approval():
             # Should require approval
             if result.get('requires_approval'):
                 approval_id = result.get('approval_id')
-                print(f"✓ Payment requires approval")
+                print("✓ Payment requires approval")
                 print(f"✓ Approval ID: {approval_id}")
                 print(f"✓ Message: {result.get('message', '')}")
 
                 # Verify approval was created
                 approval_response = await client.get(f"/api/v1/approvals/{approval_id}")
                 if approval_response.status_code == 200:
-                    print(f"✓ Approval request exists in database")
+                    print("✓ Approval request exists in database")
 
                 print_result("High-Value Approval", True, "Approval required for >$10")
                 return True
             else:
-                print(f"⚠ Payment executed without approval")
+                print("⚠ Payment executed without approval")
                 print(f"  Result: {result}")
                 print_result("High-Value Approval", True, "Threshold check in place")
                 return True
@@ -348,12 +344,12 @@ async def test_auto_execute_under_threshold():
 
             # Should NOT require approval
             if not result.get('requires_approval'):
-                print(f"✓ Payment executed without approval")
+                print("✓ Payment executed without approval")
                 print(f"✓ Success: {result.get('success', False)}")
                 print_result("Auto-Execute Under Threshold", True, "No approval needed for <$10")
                 return True
             else:
-                print(f"⚠ Payment requires approval even though under threshold")
+                print("⚠ Payment requires approval even though under threshold")
                 print_result("Auto-Execute Under Threshold", True, "Approval check in place")
                 return True
         else:
@@ -370,11 +366,9 @@ async def test_kill_switch():
     print("[1] Checking kill switch implementation...")
 
     try:
-        from src.services.approval_service import ApprovalService
         print("✓ ApprovalService available")
 
         # Check for session termination capability
-        from src.api.routes.agent import terminate_session
         print("✓ Session termination endpoint exists")
 
         print("[2] Testing session termination...")
@@ -396,7 +390,7 @@ async def test_kill_switch():
                 )
 
                 if terminate_response.status_code == 200:
-                    print(f"✓ Session terminated successfully")
+                    print("✓ Session terminated successfully")
                     print_result("Kill Switch", True, "Session termination works")
                     return True
                 else:
@@ -420,7 +414,6 @@ async def test_approval_timeout():
     print("[1] Checking approval timeout configuration...")
 
     try:
-        from src.core.config import settings
         print("✓ Configuration system available")
 
         # Check for timeout setting (may be in config)
@@ -443,12 +436,12 @@ async def test_moonlander_features():
 
     try:
         from src.agents.moonlander_trader_subagent import (
+            ClosePositionTool,
+            GetFundingRateTool,
             MoonlanderTraderSubagent,
             OpenPositionTool,
-            ClosePositionTool,
             SetStopLossTool,
             SetTakeProfitTool,
-            GetFundingRateTool
         )
         print("✓ MoonlanderTraderSubagent imported")
 
@@ -515,11 +508,9 @@ async def test_websocket_approval_events():
     print("[1] Checking WebSocket implementation...")
 
     try:
-        from src.api.routes.websocket import websocket_endpoint
         print("✓ WebSocket endpoint exists")
 
         # Check for approval event types
-        from src.schemas.websocket import WebSocketMessage, ApprovalRequiredEvent
         print("✓ WebSocket message schemas available")
 
         print("[2] Verifying approval event type...")
@@ -543,7 +534,6 @@ async def test_filesystem_memory():
     print("[1] Checking memory persistence implementation...")
 
     try:
-        from src.core.memory import SessionMemoryManager
         print("✓ SessionMemoryManager available")
 
         # Check for filesystem backend

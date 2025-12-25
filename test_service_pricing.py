@@ -5,11 +5,9 @@ This tests Feature 400: x402 payment handles service pricing discovery.
 """
 
 import asyncio
-import json
 import os
 import sys
 import traceback
-from typing import Dict, Any
 
 # Add src to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
@@ -21,9 +19,9 @@ async def test_service_pricing_discovery():
 
     try:
         # Import required modules
-        from src.services.service_registry import ServiceRegistryService
-        from src.models.services import Service
         from src.core.database import get_db
+        from src.models.services import Service
+        from src.services.service_registry import ServiceRegistryService
 
         # Test 1: Check service registry service initialization
         print("✅ Test 1: Creating service registry service instance")
@@ -57,7 +55,7 @@ async def test_service_pricing_discovery():
 
             # Test cache service availability
             assert registry_service.cache_service is not None, "Cache service should be available"
-            print(f"   ✓ Cache service available for pricing data")
+            print("   ✓ Cache service available for pricing data")
 
         # Test 4: Test service model structure
         print("\n✅ Test 4: Testing service model structure")
@@ -80,7 +78,7 @@ async def test_service_pricing_discovery():
         assert service.price_token == "USDC", "Price token should be USDC"
         assert service.mcp_compatible == True, "Service should be MCP compatible"
 
-        print(f"   ✓ Service model structure verified:")
+        print("   ✓ Service model structure verified:")
         print(f"     - Name: {service.name}")
         print(f"     - Pricing: {service.price_amount} {service.price_token}")
         print(f"     - Model: {service.pricing_model}")
@@ -110,7 +108,7 @@ async def test_service_pricing_discovery():
         # Test cache key generation (this is internal but we can test the pattern)
         test_cache_key = "service:test-service:pricing"
         # Just verify the cache service can handle the key
-        print(f"   ✓ Cache key pattern for pricing: service:{{service_id}}:pricing")
+        print("   ✓ Cache key pattern for pricing: service:{service_id}:pricing")
 
         print("\n🎉 All service pricing discovery tests passed!")
         return True

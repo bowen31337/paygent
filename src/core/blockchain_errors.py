@@ -8,22 +8,25 @@ error scenarios.
 
 import logging
 import re
-from typing import Any, Optional, Dict, Union
+from typing import Any, Optional
 
 from eth_account.exceptions import (
     InvalidTransaction,
-    TransactionNotFound,
     TimeExhausted,
+    TransactionNotFound,
 )
 from eth_typing import HexStr
 from web3.exceptions import (
     ContractLogicError,
-    InsufficientFunds,
     ContractPanicError,
-    TransactionNotFound as Web3TransactionNotFound,
+    InsufficientFunds,
+)
+from web3.exceptions import (
     TimeExhausted as Web3TimeExhausted,
 )
-from web3.types import HexBytes
+from web3.exceptions import (
+    TransactionNotFound as Web3TransactionNotFound,
+)
 
 from src.core.errors import SafeException, create_safe_error_message
 
@@ -37,7 +40,7 @@ class BlockchainError(SafeException):
         self,
         message: str,
         error_type: str = "blockchain_error",
-        details: Optional[Dict[str, Any]] = None,
+        details: Optional[dict[str, Any]] = None,
     ):
         """
         Initialize blockchain error.
@@ -126,7 +129,7 @@ class GasError(BlockchainError):
 
     def __init__(
         self,
-        gas_error: Union[InsufficientFunds, ContractLogicError, str],
+        gas_error: InsufficientFunds | ContractLogicError | str,
         estimated_gas: Optional[int] = None,
         current_gas_price: Optional[int] = None,
         tx_hash: Optional[HexStr] = None,
@@ -248,7 +251,7 @@ class BlockchainErrorHandler:
 
     @staticmethod
     def handle_revert_error(
-        error: Union[ContractLogicError, ContractPanicError],
+        error: ContractLogicError | ContractPanicError,
         tx_hash: Optional[HexStr] = None,
     ) -> RevertError:
         """
@@ -272,7 +275,7 @@ class BlockchainErrorHandler:
 
     @staticmethod
     def handle_gas_error(
-        error: Union[InsufficientFunds, ContractLogicError],
+        error: InsufficientFunds | ContractLogicError,
         estimated_gas: Optional[int] = None,
         current_gas_price: Optional[int] = None,
         tx_hash: Optional[HexStr] = None,
@@ -387,9 +390,9 @@ class BlockchainErrorHandler:
     @staticmethod
     async def estimate_transaction_safety(
         web3_client,
-        transaction: Dict[str, Any],
+        transaction: dict[str, Any],
         wallet_address: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Estimate transaction safety before execution.
 
@@ -438,7 +441,7 @@ class BlockchainErrorHandler:
             }
 
     @staticmethod
-    def format_error_for_user(error: Union[Exception, BlockchainError]) -> Dict[str, Any]:
+    def format_error_for_user(error: Exception | BlockchainError) -> dict[str, Any]:
         """
         Format error for user display with actionable guidance.
 

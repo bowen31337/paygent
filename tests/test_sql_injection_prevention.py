@@ -6,8 +6,8 @@ This test verifies that:
 2. User input is properly escaped
 3. SQL injection attempts are prevented
 """
+
 import pytest
-import json
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,10 +18,10 @@ class TestSQLInjectionPrevention:
     @pytest.mark.asyncio
     async def test_sql_injection_in_command(self, db_session: AsyncSession):
         """Test that SQL injection in agent command is prevented."""
-        from src.services.execution_log_service import ExecutionLogService
-        from src.models.execution_logs import ExecutionLog, AgentSession
         from uuid import uuid4
-        from datetime import datetime
+
+        from src.models.execution_logs import AgentSession
+        from src.services.execution_log_service import ExecutionLogService
 
         # Create a session
         session = AgentSession(
@@ -66,9 +66,11 @@ class TestSQLInjectionPrevention:
     @pytest.mark.asyncio
     async def test_sql_injection_in_filter(self, db_session: AsyncSession):
         """Test that SQL injection in WHERE clause filters is prevented."""
-        from src.models.agent_sessions import AgentSession
         from uuid import uuid4
+
         from sqlalchemy import select
+
+        from src.models.agent_sessions import AgentSession
 
         # Create test session
         test_session = AgentSession(
@@ -133,10 +135,11 @@ class TestSQLInjectionPrevention:
     @pytest.mark.asyncio
     async def test_union_based_injection_prevented(self, db_session: AsyncSession):
         """Test that UNION-based injection is prevented."""
-        from src.models.agent_sessions import AgentSession
-        from src.models.execution_logs import ExecutionLog
-        from sqlalchemy import select
         from uuid import uuid4
+
+        from sqlalchemy import select
+
+        from src.models.agent_sessions import AgentSession
 
         # Create test session
         session = AgentSession(

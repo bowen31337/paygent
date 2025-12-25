@@ -7,13 +7,14 @@ Verifies that:
 - Budget limits are enforced
 """
 
-import pytest
-from httpx import AsyncClient, ASGITransport
-from sqlalchemy import select
 from uuid import UUID
 
-from src.main import app
+import pytest
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy import select
+
 from src.core.database import get_db
+from src.main import app
 from src.models.execution_logs import ExecutionLog
 
 

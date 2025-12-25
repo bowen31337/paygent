@@ -40,7 +40,7 @@ async def test_deepagents_executor_initialization():
         assert executor.session_id == "test-session"
         assert executor.api_key == api_key
 
-        print(f"✓ DeepAgentsExecutor initialized successfully")
+        print("✓ DeepAgentsExecutor initialized successfully")
         print(f"  Session ID: {executor.session_id}")
         print(f"  Workspace: {executor.workspace_dir}")
 
@@ -68,7 +68,7 @@ async def test_claude_sonnet_4_verification():
         assert "claude-sonnet-4" in verification.get("model", "").lower()
         assert verification.get("framework") == "deepagents"
 
-        print(f"✓ Claude Sonnet 4 verified successfully")
+        print("✓ Claude Sonnet 4 verified successfully")
         print(f"  Model: {verification.get('model')}")
         print(f"  Framework: {verification.get('framework')}")
         print(f"  Verification: {verification.get('verification')}")
@@ -108,15 +108,15 @@ async def test_deepagents_simple_command():
         assert result.get("model") == "claude-sonnet-4"
 
         # Check if execution was successful (may fail if deepagents API differs)
-        print(f"✓ Command execution completed")
+        print("✓ Command execution completed")
         print(f"  Session ID: {result.get('session_id')}")
         print(f"  Framework: {result.get('framework')}")
         print(f"  Model: {result.get('model')}")
         print(f"  Success: {result.get('success')}")
 
         if not result.get("success"):
-            print(f"  Note: Command execution reported as unsuccessful")
-            print(f"  This may be expected if deepagents API structure differs")
+            print("  Note: Command execution reported as unsuccessful")
+            print("  This may be expected if deepagents API structure differs")
 
         await executor.cleanup()
 
@@ -125,7 +125,7 @@ async def test_deepagents_simple_command():
     except Exception as e:
         # Don't fail the test, just report
         print(f"⚠ Command execution test failed: {e}")
-        print(f"  This is expected if deepagents API differs from implementation")
+        print("  This is expected if deepagents API differs from implementation")
 
 
 def test_deepagents_convenience_function():

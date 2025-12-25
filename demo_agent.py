@@ -6,13 +6,12 @@ This script demonstrates how the AI agent processes natural language commands
 and executes various payment and blockchain operations.
 """
 
-import json
+from uuid import uuid4
+
 from src.agents.main_agent import PaygentAgent
 from src.agents.tools import create_agent_tools
-from src.services.x402_service import X402PaymentService
 from src.services.service_registry import ServiceRegistryService
-from sqlalchemy.ext.asyncio import AsyncSession
-from uuid import uuid4
+from src.services.x402_service import X402PaymentService
 
 
 async def demo_agent_execution():

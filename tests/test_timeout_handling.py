@@ -6,7 +6,7 @@ with user-friendly error messages and proper retry logic.
 """
 
 import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from httpx import TimeoutException as HttpxTimeoutException

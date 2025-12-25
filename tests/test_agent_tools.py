@@ -1,13 +1,13 @@
 """Test agent tools functionality."""
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from sqlalchemy.ext.asyncio import AsyncSession
+from unittest.mock import AsyncMock, MagicMock
 
-from src.agents.tools import X402PaymentTool, DiscoverServicesTool
-from src.services.x402_service import X402PaymentService
-from src.services.service_registry import ServiceRegistryService
+import pytest
+
+from src.agents.tools import DiscoverServicesTool, X402PaymentTool
 from src.models import Service
+from src.services.service_registry import ServiceRegistryService
+from src.services.x402_service import X402PaymentService
 
 
 def test_x402_payment_tool_initialization():

@@ -9,24 +9,20 @@ This test suite verifies:
 5. Error alerting (Feature 126)
 """
 
-import pytest
-import asyncio
 import time
 from uuid import uuid4
-from unittest.mock import Mock, patch, AsyncMock
-from datetime import datetime
 
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+import pytest
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from src.agents.agent_executor_enhanced import AgentExecutorEnhanced
 from src.core.security import (
     ToolAllowlist,
     ToolAllowlistError,
-    get_tool_allowlist,
     configure_tool_allowlist,
+    get_tool_allowlist,
 )
-from src.agents.command_parser import CommandParser
 
 
 # Fixture to reset global state between tests
@@ -54,7 +50,7 @@ class TestAgentCommandTiming:
         async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
         # Create all required tables
-        from src.models.agent_sessions import AgentSession, AgentMemory
+        from src.models.agent_sessions import AgentMemory, AgentSession
         from src.models.execution_logs import ExecutionLog
         async with engine.begin() as conn:
             await conn.run_sync(AgentSession.__table__.create)
@@ -90,7 +86,7 @@ class TestAgentCommandTiming:
         async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
         # Create tables
-        from src.models.agent_sessions import AgentSession, AgentMemory
+        from src.models.agent_sessions import AgentMemory, AgentSession
         from src.models.execution_logs import ExecutionLog
         async with engine.begin() as conn:
             await conn.run_sync(AgentSession.__table__.create)
@@ -188,7 +184,7 @@ class TestToolAllowlistSecurity:
         async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
         # Create tables
-        from src.models.agent_sessions import AgentSession, AgentMemory
+        from src.models.agent_sessions import AgentMemory, AgentSession
         from src.models.execution_logs import ExecutionLog
         async with engine.begin() as conn:
             await conn.run_sync(AgentSession.__table__.create)
@@ -244,8 +240,9 @@ class TestSubagentContextIsolation:
 
         This test verifies that subagents get unique session IDs.
         """
-        from src.agents.agent_executor_enhanced import AgentExecutorEnhanced
         import inspect
+
+        from src.agents.agent_executor_enhanced import AgentExecutorEnhanced
 
         source = inspect.getsource(AgentExecutorEnhanced)
 
@@ -296,7 +293,7 @@ class TestExecutionCostTracking:
         async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
         # Create tables
-        from src.models.agent_sessions import AgentSession, AgentMemory
+        from src.models.agent_sessions import AgentMemory, AgentSession
         from src.models.execution_logs import ExecutionLog
         async with engine.begin() as conn:
             await conn.run_sync(AgentSession.__table__.create)
@@ -329,7 +326,7 @@ class TestExecutionCostTracking:
         async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
         # Import models and create tables
-        from src.models.agent_sessions import AgentSession, AgentMemory
+        from src.models.agent_sessions import AgentMemory, AgentSession
         from src.models.execution_logs import ExecutionLog
 
         async with engine.begin() as conn:
@@ -354,8 +351,9 @@ class TestExecutionCostTracking:
             assert log_id_str is not None, "Execution log should be created"
 
             # Query the log from database (convert string back to UUID)
-            from sqlalchemy import select
             from uuid import UUID
+
+            from sqlalchemy import select
 
             log_result = await session.execute(
                 select(ExecutionLog).where(ExecutionLog.id == UUID(log_id_str))
@@ -372,7 +370,7 @@ class TestErrorAlerting:
 
     def test_error_handler_exists(self):
         """Verify that error handlers are configured."""
-        from src.core.errors import http_exception_handler, general_exception_handler
+        from src.core.errors import general_exception_handler, http_exception_handler
 
         # Verify the handlers exist and are callable
         assert callable(http_exception_handler)
@@ -380,6 +378,7 @@ class TestErrorAlerting:
 
         # Check that exception handlers are registered in main.py
         import inspect
+
         from src import main
         source = inspect.getsource(main)
 
@@ -387,8 +386,11 @@ class TestErrorAlerting:
 
     def test_error_logging_is_configured(self):
         """Test that errors are properly logged."""
-        import logging
-        from src.core.errors import http_exception_handler, general_exception_handler, create_error_response
+        from src.core.errors import (
+            create_error_response,
+            general_exception_handler,
+            http_exception_handler,
+        )
 
         # Verify error handlers exist
         assert callable(http_exception_handler)
@@ -410,7 +412,7 @@ class TestErrorAlerting:
         async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
         # Create tables
-        from src.models.agent_sessions import AgentSession, AgentMemory
+        from src.models.agent_sessions import AgentMemory, AgentSession
         from src.models.execution_logs import ExecutionLog
         async with engine.begin() as conn:
             await conn.run_sync(AgentSession.__table__.create)
@@ -434,8 +436,9 @@ class TestErrorAlerting:
             assert "execution_log_id" in result, "Log should be created even for failures"
 
             # Check database log
-            from sqlalchemy import select
             from uuid import UUID
+
+            from sqlalchemy import select
             log_id_str = result["execution_log_id"]
             log_result = await session.execute(
                 select(ExecutionLog).where(ExecutionLog.id == UUID(log_id_str))
@@ -459,7 +462,7 @@ class TestIntegrationSecurityFeatures:
         async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
         # Create tables
-        from src.models.agent_sessions import AgentSession, AgentMemory
+        from src.models.agent_sessions import AgentMemory, AgentSession
         from src.models.execution_logs import ExecutionLog
         async with engine.begin() as conn:
             await conn.run_sync(AgentSession.__table__.create)
@@ -500,13 +503,13 @@ class TestIntegrationSecurityFeatures:
         from src.core.security import (
             ToolAllowlist,
             ToolAllowlistError,
-            get_tool_allowlist,
             configure_tool_allowlist,
+            get_tool_allowlist,
             is_tool_allowed,
-            validate_tool_call,
             redact_dict,
             redact_string,
             sanitize,
+            validate_tool_call,
         )
 
         # Just verify imports work

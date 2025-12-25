@@ -4,8 +4,9 @@ Tests that the wallet service can check actual blockchain balances
 and falls back to mock data on failure.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 
 @pytest.mark.asyncio

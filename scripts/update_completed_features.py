@@ -4,9 +4,10 @@ Update completed features in feature_list.json
 """
 import json
 
+
 def update_features():
     # Load features
-    with open('feature_list.json', 'r') as f:
+    with open('feature_list.json') as f:
         features = json.load(f)
 
     # Features we've implemented (by description)

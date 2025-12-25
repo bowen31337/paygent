@@ -1,7 +1,7 @@
 import json
 
 # Load the feature list
-with open('feature_list.json', 'r') as f:
+with open('feature_list.json') as f:
     features = json.load(f)
 
 # Mark service-related features as complete
@@ -23,6 +23,6 @@ for idx, desc in service_features:
 with open('feature_list.json', 'w') as f:
     json.dump(features, f, indent=2)
 
-print(f"\nUpdated feature_list.json")
+print("\nUpdated feature_list.json")
 completed = sum(1 for f in features if f.get('passes'))
 print(f"Completed: {completed}/{len(features)} ({100*completed/len(features):.1f}%)")

@@ -11,10 +11,9 @@ is properly implemented according to the requirements:
 - Verify response time is acceptable
 """
 
+import json
 import sys
 import time
-import json
-from typing import Any, Dict
 
 # Add the project root to Python path
 sys.path.insert(0, '/media/DATA/projects/autonomous-coding-cro/paygent')
@@ -99,8 +98,10 @@ def test_mcp_integration():
         # Test 4: Test market data tools
         print("\nStep 4: Verify market data tools")
         from src.tools.market_data_tools import (
-            GetPriceTool, GetPricesTool, GetMarketStatusTool,
-            get_market_data_tools
+            GetMarketStatusTool,
+            GetPricesTool,
+            GetPriceTool,
+            get_market_data_tools,
         )
 
         # Test individual tools
@@ -157,9 +158,6 @@ def test_mcp_integration():
         # Test 6: Verify integration with main agent
         print("\nStep 6: Verify integration with main agent")
         try:
-            from src.agents.main_agent import PaygentAgent
-            from sqlalchemy.ext.asyncio import AsyncSession
-            from uuid import uuid4
 
             # Test that the agent can import market data tools
             agent_tools = get_market_data_tools()

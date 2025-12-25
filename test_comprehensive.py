@@ -5,20 +5,21 @@ Tests all major components and features.
 """
 
 import asyncio
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from src.core.config import settings
-from src.core.database import engine, async_session_maker, Base
-from src.services.payment_service import PaymentService
-from src.services.wallet_service import WalletService
-from src.services.service_registry import ServiceRegistryService
-from src.services.approval_service import ApprovalService
-from src.tools.simple_tools import CheckBalanceTool, SwapTokensTool, X402PaymentTool
-from src.models.agent_sessions import ApprovalRequest as ApprovalRequestModel
 from sqlalchemy import select
+
+from src.core.database import Base, async_session_maker, engine
+from src.models.agent_sessions import ApprovalRequest as ApprovalRequestModel
+from src.services.approval_service import ApprovalService
+from src.services.payment_service import PaymentService
+from src.services.service_registry import ServiceRegistryService
+from src.services.wallet_service import WalletService
+from src.tools.simple_tools import CheckBalanceTool, SwapTokensTool, X402PaymentTool
+
 
 async def test_all_components():
     """Test all implemented components."""

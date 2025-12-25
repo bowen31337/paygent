@@ -9,11 +9,11 @@ This test suite verifies that:
 5. Command injection is prevented
 """
 
-import pytest
-from unittest.mock import Mock, patch
-from fastapi import HTTPException
-from fastapi.requests import Request
 import json
+from unittest.mock import Mock, patch
+
+import pytest
+from fastapi.requests import Request
 
 
 class TestErrorResponsesNoLeakage:
@@ -21,8 +21,8 @@ class TestErrorResponsesNoLeakage:
 
     def test_general_exception_handler_no_stack_trace_in_production(self):
         """Test that general exception handler doesn't expose stack traces in production."""
-        from src.core.errors import general_exception_handler
         from src.core.config import settings
+        from src.core.errors import general_exception_handler
 
         # Mock request
         request = Mock(spec=Request)
@@ -47,8 +47,8 @@ class TestErrorResponsesNoLeakage:
 
     def test_safe_error_message_mapping(self):
         """Test that specific error types map to safe messages."""
-        from src.core.errors import create_safe_error_message
         from src.core.config import settings
+        from src.core.errors import create_safe_error_message
 
         # Test in production mode
         with patch.object(settings, 'debug', False):
@@ -68,8 +68,8 @@ class TestErrorResponsesNoLeakage:
 
     def test_create_error_response_hides_detail_in_production(self):
         """Test that error response hides detail in production."""
-        from src.core.errors import create_error_response
         from src.core.config import settings
+        from src.core.errors import create_error_response
 
         with patch.object(settings, 'debug', False):
             response = create_error_response(
@@ -86,8 +86,8 @@ class TestErrorResponsesNoLeakage:
 
     def test_create_error_response_shows_detail_in_debug(self):
         """Test that error response shows detail in debug mode."""
-        from src.core.errors import create_error_response
         from src.core.config import settings
+        from src.core.errors import create_error_response
 
         with patch.object(settings, 'debug', True):
             response = create_error_response(
@@ -103,8 +103,8 @@ class TestErrorResponsesNoLeakage:
 
     def test_sqlalchemy_error_sanitization(self):
         """Test that SQLAlchemy errors are sanitized."""
-        from src.core.errors import create_safe_error_message
         from src.core.config import settings
+        from src.core.errors import create_safe_error_message
 
         with patch.object(settings, 'debug', False):
             # Simulate SQLAlchemy error with connection string
@@ -118,8 +118,8 @@ class TestErrorResponsesNoLeakage:
 
     def test_redis_error_sanitization(self):
         """Test that Redis errors are sanitized."""
-        from src.core.errors import create_safe_error_message
         from src.core.config import settings
+        from src.core.errors import create_safe_error_message
 
         with patch.object(settings, 'debug', False):
             error = Exception("RedisError: Connection to redis://:password@internal-cache:6379 failed")
@@ -132,8 +132,8 @@ class TestErrorResponsesNoLeakage:
 
     def test_authentication_error_sanitization(self):
         """Test that authentication errors don't leak token details."""
-        from src.core.errors import create_safe_error_message
         from src.core.config import settings
+        from src.core.errors import create_safe_error_message
 
         with patch.object(settings, 'debug', False):
             error = Exception("AuthenticationError: Invalid token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
@@ -145,8 +145,8 @@ class TestErrorResponsesNoLeakage:
 
     def test_generic_error_fallback(self):
         """Test that unknown error types get generic fallback message."""
-        from src.core.errors import create_safe_error_message
         from src.core.config import settings
+        from src.core.errors import create_safe_error_message
 
         with patch.object(settings, 'debug', False):
             # Custom error type not in the safe_messages dict

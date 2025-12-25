@@ -4,7 +4,6 @@ Simple test script to verify MCP client configuration.
 """
 
 import sys
-import os
 
 # Add the project root to Python path
 sys.path.insert(0, '/media/DATA/projects/autonomous-coding-cro/paygent')
@@ -22,7 +21,7 @@ try:
 
     # Create client instance
     client = MCPServerClient()
-    print(f"✓ MCP client created successfully")
+    print("✓ MCP client created successfully")
     print(f"  Server URL: {client.server_url}")
     print(f"  API Key set: {client.api_key is not None}")
 

@@ -6,15 +6,16 @@ Tests:
 - Delphi prediction markets
 """
 
-import pytest
-import sys
 import os
+import sys
+
+import pytest
 
 # Add src to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.connectors.moonlander import get_moonlander_connector
 from src.connectors.delphi import get_delphi_connector
+from src.connectors.moonlander import get_moonlander_connector
 
 
 class TestMoonlanderConnector:
@@ -393,7 +394,7 @@ class TestDefiAPIEndpoints:
         assert data["success"] is True
         assert "data" in data
 
-        print(f"✓ GET /defi/moonlander/funding-rate/BTC")
+        print("✓ GET /defi/moonlander/funding-rate/BTC")
 
 
 def run_tests():

@@ -5,8 +5,6 @@ Test response time performance for MCP integration.
 
 import sys
 import time
-import asyncio
-from typing import Any, Dict
 
 # Add the project root to Python path
 sys.path.insert(0, '/media/DATA/projects/autonomous-coding-cro/paygent')
@@ -26,8 +24,9 @@ def test_mcp_client_performance():
         print(f"✓ Client instantiation time: {instantiation_time:.4f}s")
 
         # Test data model creation time
-        from src.services.mcp_client import PriceData
         from datetime import datetime
+
+        from src.services.mcp_client import PriceData
 
         start_time = time.time()
         price_data = PriceData(
@@ -74,7 +73,7 @@ def test_mcp_client_performance():
         total_time = (instantiation_time + data_creation_time +
                      serialization_time + deserialization_time + error_creation_time)
 
-        print(f"\nPerformance Summary:")
+        print("\nPerformance Summary:")
         print(f"  Total time: {total_time:.6f}s")
         print(f"  Instantiation: {instantiation_time:.6f}s")
         print(f"  Data creation: {data_creation_time:.6f}s")
@@ -122,9 +121,7 @@ def test_tool_creation_performance():
     try:
         print("\n=== Testing Tool Creation Performance ===")
 
-        from src.tools.market_data_tools import (
-            GetPriceTool, GetPricesTool, GetMarketStatusTool
-        )
+        from src.tools.market_data_tools import GetMarketStatusTool, GetPricesTool, GetPriceTool
 
         # Test individual tool creation times
         start_time = time.time()

@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 
 # Try to import deepagents, but don't fail if not available
 try:
-    from deepagents import Agent
     from anthropic import Anthropic
+    from deepagents import Agent
     DEEPAGENTS_AVAILABLE = True
     logger.info("✓ deepagents package is available")
 except ImportError as e:

@@ -6,9 +6,8 @@ This script provides a comprehensive summary of the VVS subagent implementation
 and verifies that all components are properly structured.
 """
 
-import sys
-from pathlib import Path
 import re
+from pathlib import Path
 
 
 def check_implementation():

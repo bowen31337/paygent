@@ -5,8 +5,9 @@ This module tests the Settings class and configuration loading functionality.
 """
 
 import os
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 from pydantic import ValidationError
 
 from src.core.config import Settings, get_settings

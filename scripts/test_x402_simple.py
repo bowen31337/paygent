@@ -6,8 +6,8 @@ This script tests the x402 payment implementation directly.
 """
 
 import asyncio
-import sys
 import os
+import sys
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -26,7 +26,7 @@ async def test_signature_generation():
         test_private_key = "0x" + "1" * 64
         generator = EIP712SignatureGenerator(private_key=test_private_key)
 
-        print(f"✓ Signature generator initialized")
+        print("✓ Signature generator initialized")
         print(f"  Domain: {generator.domain['name']} v{generator.domain['version']}")
         print(f"  Chain ID: {generator.domain['chainId']}")
 
@@ -39,7 +39,7 @@ async def test_signature_generation():
             description="Test payment",
         )
 
-        print(f"\n✓ Payment data created")
+        print("\n✓ Payment data created")
         print(f"  Service URL: {payment_data.service_url}")
         print(f"  Amount: {payment_data.amount} (scaled)")
         print(f"  Token: {payment_data.token}")
@@ -49,7 +49,7 @@ async def test_signature_generation():
         result = generator.sign_payment(payment_data)
 
         if result["success"]:
-            print(f"\n✓ Payment signed successfully")
+            print("\n✓ Payment signed successfully")
             print(f"  Signer: {result['signer']}")
             print(f"  Signature: {result['signature']['signature'][:20]}...")
 
@@ -61,9 +61,9 @@ async def test_signature_generation():
             )
 
             if is_valid:
-                print(f"\n✓ Signature verification passed")
+                print("\n✓ Signature verification passed")
             else:
-                print(f"\n✗ Signature verification failed")
+                print("\n✗ Signature verification failed")
                 return False
         else:
             print(f"\n✗ Payment signing failed: {result.get('error')}")
@@ -88,7 +88,7 @@ async def test_mock_facilitator():
         from src.x402.mock_facilitator import MockX402Facilitator
 
         facilitator = MockX402Facilitator()
-        print(f"✓ Mock facilitator initialized")
+        print("✓ Mock facilitator initialized")
 
         # Create mock signature
         mock_signature = {
@@ -107,7 +107,7 @@ async def test_mock_facilitator():
         )
 
         if "paymentId" in result:
-            print(f"\n✓ Payment submitted to mock facilitator")
+            print("\n✓ Payment submitted to mock facilitator")
             print(f"  Payment ID: {result['paymentId']}")
             print(f"  TX Hash: {result['txHash'][:20]}...")
             print(f"  Status: {result['status']}")
@@ -117,11 +117,11 @@ async def test_mock_facilitator():
             verify_result = await facilitator.verify_payment(payment_id)
 
             if verify_result.get('verified'):
-                print(f"\n✓ Payment verified successfully")
+                print("\n✓ Payment verified successfully")
                 print(f"  Status: {verify_result['status']}")
                 return True
             else:
-                print(f"\n✗ Payment verification failed")
+                print("\n✗ Payment verification failed")
                 return False
         else:
             print(f"\n✗ Payment submission failed: {result.get('error')}")
@@ -144,7 +144,7 @@ async def test_x402_service():
         from src.services.x402_service import X402PaymentService
 
         service = X402PaymentService()
-        print(f"✓ X402 service initialized")
+        print("✓ X402 service initialized")
         print(f"  Facilitator URL: {service.facilitator_url or 'Mock mode'}")
         print(f"  Retry attempts: {service.retry_attempts}")
 
@@ -156,7 +156,7 @@ async def test_x402_service():
             description="Test payment via x402 service",
         )
 
-        print(f"\n✓ Payment execution completed")
+        print("\n✓ Payment execution completed")
         print(f"  Success: {result.get('success')}")
         print(f"  Message: {result.get('message', 'N/A')}")
 

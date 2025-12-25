@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """Test x402 payment flow end-to-end."""
 import asyncio
+
 import httpx
-from uuid import UUID
 
 
 async def test_x402_payment_flow():
@@ -31,7 +31,7 @@ async def test_x402_payment_flow():
 
             if response.status_code == 200:
                 data = response.json()
-                print(f"   ✓ Payment initiated successfully")
+                print("   ✓ Payment initiated successfully")
                 print(f"   Payment ID: {data.get('payment_id')}")
                 print(f"   Status: {data.get('status')}")
                 print(f"   TX Hash: {data.get('tx_hash')}")
@@ -43,7 +43,7 @@ async def test_x402_payment_flow():
 
                 if history_response.status_code == 200:
                     history = history_response.json()
-                    print(f"   ✓ Payment history retrieved")
+                    print("   ✓ Payment history retrieved")
                     print(f"   Total payments: {history.get('total', 0)}")
 
                 # Test 3: Get payment stats
@@ -53,7 +53,7 @@ async def test_x402_payment_flow():
 
                 if stats_response.status_code == 200:
                     stats = stats_response.json()
-                    print(f"   ✓ Payment stats retrieved")
+                    print("   ✓ Payment stats retrieved")
                     print(f"   Total payments: {stats.get('total_payments')}")
                     print(f"   Success rate: {stats.get('success_rate'):.1%}")
 

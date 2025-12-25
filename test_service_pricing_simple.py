@@ -4,11 +4,9 @@ Simple test script for service registry pricing functionality.
 This tests Feature 400: x402 payment handles service pricing discovery.
 """
 
-import json
 import os
 import sys
 import traceback
-from typing import Dict, Any
 
 # Add src to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
@@ -44,7 +42,7 @@ def test_service_pricing_discovery():
         assert service.price_token == "USDC", "Price token should be USDC"
         assert service.mcp_compatible == True, "Service should be MCP compatible"
 
-        print(f"   ✓ Service model structure verified:")
+        print("   ✓ Service model structure verified:")
         print(f"     - Name: {service.name}")
         print(f"     - Pricing: {service.price_amount} {service.price_token}")
         print(f"     - Model: {service.pricing_model}")
@@ -71,20 +69,21 @@ def test_service_pricing_discovery():
         print("\n✅ Test 3: Testing service registry service initialization")
         # Just test that we can import and create the service class
         from src.services.service_registry import ServiceRegistryService
-        print(f"   ✓ ServiceRegistryService imported successfully")
+        print("   ✓ ServiceRegistryService imported successfully")
 
         # Test 4: Test cache service integration
         print("\n✅ Test 4: Testing cache service integration")
         from src.services.cache import CacheService
         cache_service = CacheService()
         assert cache_service is not None, "Cache service should be created"
-        print(f"   ✓ Cache service available for service registry")
+        print("   ✓ Cache service available for service registry")
 
         # Test 5: Test service discovery method signature
         print("\n✅ Test 5: Testing service discovery method signature")
         # Just verify the method exists and has the right signature
-        from src.services.service_registry import ServiceRegistryService
         import inspect
+
+        from src.services.service_registry import ServiceRegistryService
 
         # Get method signature
         method = getattr(ServiceRegistryService, 'discover_services', None)
@@ -99,16 +98,16 @@ def test_service_pricing_discovery():
             if param in params:
                 print(f"   ✓ Parameter '{param}' found in method signature")
 
-        print(f"   ✓ Service discovery method signature verified")
+        print("   ✓ Service discovery method signature verified")
 
         # Test 6: Test pricing discovery functionality
         print("\n✅ Test 6: Testing pricing discovery functionality")
         # Test the method exists and can be called with pricing parameters
-        print(f"   ✓ Pricing discovery parameters available:")
-        print(f"     - min_price: for minimum price filtering")
-        print(f"     - max_price: for maximum price filtering")
-        print(f"     - price_amount: service price field")
-        print(f"     - price_token: pricing currency")
+        print("   ✓ Pricing discovery parameters available:")
+        print("     - min_price: for minimum price filtering")
+        print("     - max_price: for maximum price filtering")
+        print("     - price_amount: service price field")
+        print("     - price_token: pricing currency")
 
         print("\n🎉 All service pricing discovery tests passed!")
         return True

@@ -10,6 +10,7 @@ from datetime import datetime
 sys.path.insert(0, 'src')
 
 import websockets
+
 from src.core.database import get_db
 from src.services.session_service import SessionService
 

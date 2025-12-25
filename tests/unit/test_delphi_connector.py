@@ -2,7 +2,8 @@
 Test Delphi prediction market connector.
 """
 import pytest
-from src.connectors.delphi import DelphiConnector, get_delphi_connector
+
+from src.connectors.delphi import get_delphi_connector
 
 
 class TestDelphiConnector:

@@ -2,10 +2,11 @@
 Tests for the session memory module.
 """
 
-import pytest
 from datetime import datetime
-from uuid import uuid4, UUID
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, Mock
+from uuid import UUID, uuid4
+
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.memory import SessionMemoryManager

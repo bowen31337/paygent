@@ -4,12 +4,12 @@ Performance tests for Paygent API response times.
 This test verifies that API endpoints meet the 200ms p95 target.
 """
 
-import pytest
-import time
 import asyncio
 import statistics
-from typing import List
+import time
+
 import httpx
+import pytest
 
 
 class TestAPIPerformance:
@@ -55,7 +55,7 @@ class TestAPIPerformance:
             p95 = statistics.quantiles(latencies, n=20)[18]  # 95th percentile
             p99 = statistics.quantiles(latencies, n=100)[98]  # 99th percentile
 
-            print(f"\nHealth endpoint latency:")
+            print("\nHealth endpoint latency:")
             print(f"  p50: {p50:.2f}ms")
             print(f"  p95: {p95:.2f}ms")
             print(f"  p99: {p99:.2f}ms")
@@ -75,7 +75,7 @@ class TestAPIPerformance:
             p50 = statistics.median(latencies)
             p95 = statistics.quantiles(latencies, n=20)[18]
 
-            print(f"\nOpenAPI endpoint latency:")
+            print("\nOpenAPI endpoint latency:")
             print(f"  p50: {p50:.2f}ms")
             print(f"  p95: {p95:.2f}ms")
 
@@ -93,7 +93,7 @@ class TestAPIPerformance:
             p50 = statistics.median(latencies)
             p95 = statistics.quantiles(latencies, n=20)[18]
 
-            print(f"\nSessions endpoint latency:")
+            print("\nSessions endpoint latency:")
             print(f"  p50: {p50:.2f}ms")
             print(f"  p95: {p95:.2f}ms")
 
@@ -137,7 +137,7 @@ class TestAPIPerformance:
             p99 = statistics.quantiles(latencies, n=100)[98]
             avg = statistics.mean(latencies)
 
-            print(f"\nConcurrent load test (20 requests):")
+            print("\nConcurrent load test (20 requests):")
             print(f"  Average: {avg:.2f}ms")
             print(f"  p50: {p50:.2f}ms")
             print(f"  p95: {p95:.2f}ms")
@@ -162,7 +162,7 @@ class TestAPIPerformance:
 
             p95 = statistics.quantiles(latencies, n=20)[18]
 
-            print(f"\nBurst test (50 rapid requests):")
+            print("\nBurst test (50 rapid requests):")
             print(f"  p95: {p95:.2f}ms")
 
             assert p95 < 200, f"p95 latency {p95:.2f}ms exceeds 200ms threshold"
@@ -201,11 +201,11 @@ class TestAPIPerformance:
         avg = statistics.mean(all_latencies)
 
         print(f"\n{'='*60}")
-        print(f"OVERALL API PERFORMANCE TEST")
+        print("OVERALL API PERFORMANCE TEST")
         print(f"{'='*60}")
         print(f"Total requests: {len(all_latencies)}")
         print(f"Endpoints tested: {len(endpoints)}")
-        print(f"\nLatency statistics:")
+        print("\nLatency statistics:")
         print(f"  Average: {avg:.2f}ms")
         print(f"  p50 (median): {p50:.2f}ms")
         print(f"  p95: {p95:.2f}ms")
@@ -219,7 +219,7 @@ class TestAPIPerformance:
         )
 
         print(f"\n✓ PASSED: p95 latency ({p95:.2f}ms) is under 200ms threshold")
-        print(f"✓ Feature 'API endpoints respond within 200ms (p95)' is VERIFIED")
+        print("✓ Feature 'API endpoints respond within 200ms (p95)' is VERIFIED")
 
 
 if __name__ == "__main__":

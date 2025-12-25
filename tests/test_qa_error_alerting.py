@@ -8,26 +8,20 @@ This test verifies that the error alerting system:
 4. Includes error details in alert payloads
 """
 
-import pytest
-import asyncio
-from unittest.mock import Mock, patch, AsyncMock
-from httpx import AsyncClient, ASGITransport
-from uuid import uuid4
 
-from src.main import app
-from src.core.database import get_db
-from src.services.alerting_service import (
-    AlertingService,
-    AlertType,
-    AlertSeverity,
-    Alert,
-    alerting_service,
-    send_critical_alert,
-    reset_alerting_service,
-    get_alerting_service,
-)
-from src.core.errors import general_exception_handler
+import pytest
+
 from src.core.config import settings
+from src.core.errors import general_exception_handler
+from src.services.alerting_service import (
+    Alert,
+    AlertingService,
+    AlertSeverity,
+    AlertType,
+    get_alerting_service,
+    reset_alerting_service,
+    send_critical_alert,
+)
 
 
 class TestAlertingServiceConfiguration:
@@ -322,8 +316,9 @@ class TestIntegrationWithExceptionHandler:
     @pytest.mark.asyncio
     async def test_general_exception_handler_sends_alert(self, caplog):
         """Verify general exception handler sends critical alert."""
-        from fastapi.requests import Request
         from unittest.mock import Mock
+
+        from fastapi.requests import Request
 
         # Configure webhook URL
         original_url = settings.alert_webhook_url

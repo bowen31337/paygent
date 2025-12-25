@@ -1,9 +1,9 @@
 """Test command parser functionality."""
 
-import pytest
-from unittest.mock import patch
 
-from src.agents.command_parser import CommandParser, ParsedCommand
+import pytest
+
+from src.agents.command_parser import CommandParser
 
 
 def test_parse_payment_command():

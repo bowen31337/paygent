@@ -19,10 +19,9 @@ sys.path.insert(0, str(project_root))
 
 from httpx import AsyncClient, TimeoutException
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.models.agent_sessions import ApprovalRequest
 from src.core.database import get_db
+from src.models.agent_sessions import ApprovalRequest
 
 
 async def test_feature_59_list_pending():
@@ -84,7 +83,7 @@ async def test_feature_60_approve_request():
         return False
 
     async with AsyncClient(base_url="http://localhost:8000", timeout=10.0) as client:
-        print(f"\n[2] Testing approve endpoint...")
+        print("\n[2] Testing approve endpoint...")
         response = await client.post(f"/api/v1/approvals/{request_id}/approve")
 
         if response.status_code == 200:
@@ -134,7 +133,7 @@ async def test_feature_61_reject_request():
         return False
 
     async with AsyncClient(base_url="http://localhost:8000", timeout=10.0) as client:
-        print(f"\n[2] Testing reject endpoint...")
+        print("\n[2] Testing reject endpoint...")
         response = await client.post(
             f"/api/v1/approvals/{request_id}/reject",
             json={"reason": "Testing rejection"}
@@ -176,7 +175,7 @@ async def test_feature_62_edit_and_approve():
             await db.commit()
             request_id = mock_request.id
             print(f"\n[1] Created test approval request: {request_id}")
-            print(f"    Original amount: $200")
+            print("    Original amount: $200")
         except Exception as e:
             print(f"✗ Failed to create test request: {e}")
         finally:
@@ -188,8 +187,8 @@ async def test_feature_62_edit_and_approve():
         return False
 
     async with AsyncClient(base_url="http://localhost:8000", timeout=10.0) as client:
-        print(f"\n[2] Testing edit and approve endpoint...")
-        print(f"    Reducing amount to $50...")
+        print("\n[2] Testing edit and approve endpoint...")
+        print("    Reducing amount to $50...")
 
         edited_args = {"amount": 50.0, "recipient": "0xabcd..."}
         response = await client.post(
@@ -260,7 +259,7 @@ async def test_feature_63_get_approval_request():
         return False
 
     async with AsyncClient(base_url="http://localhost:8000", timeout=10.0) as client:
-        print(f"\n[2] Testing get approval request endpoint...")
+        print("\n[2] Testing get approval request endpoint...")
         response = await client.get(f"/api/v1/approvals/{request_id}")
 
         if response.status_code == 200:

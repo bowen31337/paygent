@@ -6,7 +6,6 @@ properly initializes with Claude Sonnet 4 and falls back to GPT-4 when needed.
 """
 
 import asyncio
-import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest

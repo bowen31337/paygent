@@ -14,7 +14,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import httpx
-from fakeredis import FakeAsyncRedis
 
 
 async def test_cache_operations():

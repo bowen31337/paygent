@@ -8,6 +8,7 @@ correctly in both local and production environments.
 
 import asyncio
 import os
+
 from src.core.vercel_kv import VercelKVCache
 
 
@@ -115,7 +116,7 @@ async def test_vercel_kv_cache():
         # We can't easily test URL detection without modifying the class,
         # but we can at least verify the cache instance is created
 
-        print(f"     Cache instance created: ✓")
+        print("     Cache instance created: ✓")
 
     # Test 7: Test URL parsing scenarios
     print("\n7. Testing URL parsing scenarios...")

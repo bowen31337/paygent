@@ -2,7 +2,6 @@
 Tests for the command parser module.
 """
 
-import pytest
 from src.agents.command_parser import CommandParser, ParsedCommand
 
 

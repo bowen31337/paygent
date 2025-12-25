@@ -12,7 +12,6 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.agents.basic_agent import BasicPaygentAgent
-from src.agents.main_agent import PaygentAgent
 
 
 class TestConcurrentRequests:

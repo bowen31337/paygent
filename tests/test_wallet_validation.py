@@ -20,14 +20,9 @@ sys.path.insert(0, str(project_root))
 
 from httpx import AsyncClient, TimeoutException
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
 
+from src.core.database import get_db
 from src.models.payments import Payment
-from src.models.agent_sessions import AgentSession
-from src.core.database import get_db, init_db, close_db
-from src.core.config import settings
-
 
 # Test data
 MOCK_WALLET = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"

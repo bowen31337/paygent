@@ -7,20 +7,16 @@ This module tests the WebSocket endpoints for:
 - Subagent event streaming
 - Error handling and cancellation
 """
-import asyncio
 import json
+from uuid import uuid4
+
 import pytest
-from typing import Any, Dict
-from uuid import UUID, uuid4
 from fastapi.testclient import TestClient
 from fastapi.websockets import WebSocketDisconnect
 
-from src.main import app
 from src.core.database import async_session_maker
+from src.main import app
 from src.models.agent_sessions import AgentSession
-from src.models.execution_logs import ExecutionLog
-from src.models.payments import Payment
-from src.services.agent_service import AgentService
 
 
 class TestWebSocketStreaming:
@@ -153,8 +149,9 @@ class TestWebSocketEventCreation:
 
     def test_create_approval_required_event(self):
         """Test approval required event creation."""
-        from src.schemas.websocket import create_approval_required_event
         from uuid import uuid4
+
+        from src.schemas.websocket import create_approval_required_event
 
         request_id = uuid4()
         event = create_approval_required_event(
@@ -179,8 +176,9 @@ class TestWebSocketEventCreation:
 
     def test_create_complete_event(self):
         """Test complete event creation."""
-        from src.schemas.websocket import create_complete_event
         from uuid import uuid4
+
+        from src.schemas.websocket import create_complete_event
 
         execution_id = uuid4()
         event = create_complete_event(
@@ -204,8 +202,9 @@ class TestWebSocketEventCreation:
 
     def test_create_error_event(self):
         """Test error event creation."""
-        from src.schemas.websocket import create_error_event
         from uuid import uuid4
+
+        from src.schemas.websocket import create_error_event
 
         execution_id = uuid4()
         event = create_error_event(

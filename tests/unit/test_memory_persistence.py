@@ -4,13 +4,13 @@ Unit tests for memory persistence in AgentExecutorEnhanced.
 Tests that conversation memory is properly persisted across command executions.
 """
 
-import pytest
-from httpx import AsyncClient, ASGITransport
 from uuid import UUID
 
-from src.main import app
+import pytest
+from httpx import ASGITransport, AsyncClient
+
 from src.core.database import get_db
-from tests.conftest import TEST_DATABASE_URL
+from src.main import app
 
 
 class TestMemoryPersistence:
@@ -19,10 +19,12 @@ class TestMemoryPersistence:
     @pytest.mark.asyncio
     async def test_memory_persistence_basic(self, db_session):
         """Test that basic memory persistence works."""
-        from sqlalchemy import select
-        from src.models.agent_sessions import AgentSession, AgentMemory
-        from src.agents.agent_executor_enhanced import AgentExecutorEnhanced
         from uuid import uuid4
+
+        from sqlalchemy import select
+
+        from src.agents.agent_executor_enhanced import AgentExecutorEnhanced
+        from src.models.agent_sessions import AgentMemory, AgentSession
 
         # Override the get_db dependency
         async def override_get_db():
@@ -75,9 +77,10 @@ class TestMemoryPersistence:
     @pytest.mark.asyncio
     async def test_memory_context_includes_history(self, db_session):
         """Test that memory context includes previous conversation."""
+        from uuid import uuid4
+
         from src.agents.agent_executor_enhanced import AgentExecutorEnhanced
         from src.models.agent_sessions import AgentSession
-        from uuid import uuid4
 
         # Override the get_db dependency
         async def override_get_db():
@@ -117,6 +120,7 @@ class TestMemoryPersistence:
     async def test_memory_via_api_endpoint(self, db_session):
         """Test memory persistence via the API endpoint."""
         from sqlalchemy import select
+
         from src.models.agent_sessions import AgentMemory
 
         # Override the get_db dependency

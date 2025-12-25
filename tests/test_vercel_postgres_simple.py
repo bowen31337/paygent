@@ -6,9 +6,10 @@ in various deployment scenarios.
 """
 
 import os
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import patch, MagicMock
-from sqlalchemy.ext.asyncio import AsyncEngine
+
 
 # Test the configuration logic without importing the module
 def test_database_url_logic():
@@ -20,7 +21,6 @@ def test_database_url_logic():
     # Test Vercel Postgres URL
     with patch.dict(os.environ, {"POSTGRES_URL": test_postgres_url}):
         # Re-import to test the logic
-        import importlib
         import sys
 
         # Remove module from cache to test fresh import
@@ -81,7 +81,6 @@ def test_engine_configuration():
     with patch('src.core.vercel_db.get_database_url') as mock_get_url:
         mock_get_url.return_value = test_url
 
-        import importlib
         import sys
 
         # Remove module from cache
@@ -101,7 +100,6 @@ class TestVercelEnvironmentDetection:
         """Test environment variable fallback behavior."""
         # Clear environment
         with patch.dict(os.environ, {}, clear=True):
-            import importlib
             import sys
 
             # Remove module from cache

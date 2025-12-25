@@ -3,12 +3,12 @@
 Tests that the MCP client connects to the server and LangChain tools work properly.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-import asyncio
 
-from src.services.mcp_client import MCPServerClient, MCPServerError, get_mcp_client, PriceData
-from src.tools.market_data_tools import GetPriceTool, GetPricesTool, GetMarketStatusTool
+import pytest
+
+from src.services.mcp_client import MCPServerClient, MCPServerError, PriceData, get_mcp_client
+from src.tools.market_data_tools import GetMarketStatusTool, GetPricesTool, GetPriceTool
 
 
 @pytest.mark.asyncio

@@ -18,7 +18,7 @@ import json
 import logging
 import sys
 import time
-from typing import Any, Dict, Optional
+from typing import Optional
 from uuid import UUID, uuid4
 
 import websockets

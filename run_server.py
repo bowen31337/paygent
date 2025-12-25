@@ -5,8 +5,8 @@ Server startup script for Paygent.
 This script sets up the Python path and starts the FastAPI server.
 """
 
-import sys
 import os
+import sys
 
 # Add the src directory to the path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

@@ -5,14 +5,16 @@ This test verifies that the Vercel KV cache integration works correctly.
 """
 
 import os
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+
 
 # Test basic Vercel KV functionality
 def test_vercel_kv_import():
     """Test that Vercel KV can be imported."""
     try:
-        from src.core.vercel_kv import VercelKVCache, CacheMetrics
+        from src.core.vercel_kv import CacheMetrics, VercelKVCache
         assert VercelKVCache is not None
         assert CacheMetrics is not None
         print("✓ Vercel KV cache imports successfully")

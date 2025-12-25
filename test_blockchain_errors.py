@@ -8,25 +8,17 @@ transaction errors.
 
 import asyncio
 import logging
-from typing import Any, Dict, Optional
 
 from eth_account.exceptions import InvalidTransaction
-from eth_typing import HexStr
 from web3.exceptions import (
     ContractLogicError,
-    InsufficientFunds,
     ContractPanicError,
-    TimeExhausted,
+    InsufficientFunds,
 )
-from web3.types import HexBytes
 
 from src.core.blockchain_errors import (
     BlockchainErrorHandler,
-    BlockchainError,
-    GasError,
     RevertError,
-    TimeoutError,
-    TransactionError,
 )
 
 # Set up logging

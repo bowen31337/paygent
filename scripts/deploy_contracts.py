@@ -9,13 +9,12 @@ import logging
 import os
 import subprocess
 import time
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
+
+from eth_account import Account
 from web3 import Web3
 from web3.contract import Contract
 from web3.middleware import geth_poa_middleware
-from eth_account import Account
-from eth_account.messages import encode_defunct
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +62,7 @@ class ContractDeployer:
         contract_path: str,
         contract_name: str,
         optimizer_runs: int = 200,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Compile a Solidity contract using Hardhat.
 
@@ -89,7 +88,7 @@ class ContractDeployer:
 
             # Read compiled artifact
             artifact_path = f"contracts/artifacts/contracts/{contract_path}/{contract_name}.sol/{contract_name}.json"
-            with open(artifact_path, "r") as f:
+            with open(artifact_path) as f:
                 artifact = json.load(f)
 
             logger.info(f"Contract {contract_name} compiled successfully")
@@ -106,11 +105,11 @@ class ContractDeployer:
     def deploy_contract(
         self,
         contract_name: str,
-        abi: List[Dict[str, Any]],
+        abi: list[dict[str, Any]],
         bytecode: str,
-        constructor_args: List[Any] = None,
+        constructor_args: list[Any] = None,
         gas_limit: int = 5000000,
-    ) -> Tuple[str, Contract]:
+    ) -> tuple[str, Contract]:
         """
         Deploy a smart contract.
 
@@ -181,7 +180,7 @@ class ContractDeployer:
         owner_address: str,
         name: str = "Paygent Agent Wallet",
         symbol: str = "PAW",
-    ) -> Tuple[str, Contract]:
+    ) -> tuple[str, Contract]:
         """
         Deploy AgentWallet contract.
 
@@ -214,7 +213,7 @@ class ContractDeployer:
         agent_wallet_address: str,
         fee_collector_address: str,
         fee_percentage: int = 100,  # 1% fee (in basis points)
-    ) -> Tuple[str, Contract]:
+    ) -> tuple[str, Contract]:
         """
         Deploy PaymentRouter contract.
 
@@ -247,7 +246,7 @@ class ContractDeployer:
         owner_address: str,
         reputation_required: int = 50,  # Minimum reputation score
         default_stake: int = 1000000000000000000,  # 1 CRO in wei
-    ) -> Tuple[str, Contract]:
+    ) -> tuple[str, Contract]:
         """
         Deploy ServiceRegistry contract.
 
@@ -280,7 +279,7 @@ class ContractDeployer:
         router_address: str,
         weth_address: str,
         factory_address: str,
-    ) -> Tuple[str, Contract]:
+    ) -> tuple[str, Contract]:
         """
         Deploy VVS Finance adapter contract.
 
@@ -313,7 +312,7 @@ class ContractDeployer:
         trading_router_address: str,
         fee_manager_address: str,
         default_leverage: int = 10,  # 10x default leverage
-    ) -> Tuple[str, Contract]:
+    ) -> tuple[str, Contract]:
         """
         Deploy Moonlander trading adapter contract.
 
@@ -346,7 +345,7 @@ class ContractDeployer:
         markets_registry_address: str,
         fee_collector_address: str,
         default_fee: int = 500,  # 5% fee (in basis points)
-    ) -> Tuple[str, Contract]:
+    ) -> tuple[str, Contract]:
         """
         Deploy Delphi prediction market adapter contract.
 
@@ -379,8 +378,7 @@ class ContractDeployer:
         contract_address: str,
         contract_path: str,
         contract_name: str,
-        constructor_args: List[Any] = None,
-        optimizer_runs: int = 200,
+        constructor_args: list[Any] = None,
     ) -> bool:
         """
         Verify contract on Cronos Explorer.
@@ -390,7 +388,6 @@ class ContractDeployer:
             contract_path: Path to contract source
             contract_name: Contract name
             constructor_args: Constructor arguments
-            optimizer_runs: Number of optimizer runs
 
         Returns:
             True if verification successful
@@ -420,7 +417,7 @@ class ContractDeployer:
             logger.error(f"Contract verification error: {e}")
             return False
 
-    def get_deployment_status(self, tx_hash: str) -> Dict[str, Any]:
+    def get_deployment_status(self, tx_hash: str) -> dict[str, Any]:
         """
         Get deployment transaction status.
 
@@ -445,7 +442,7 @@ class ContractDeployer:
             logger.error(f"Error getting deployment status: {e}")
             return {"status": "error", "error": str(e)}
 
-    def wait_for_confirmation(self, tx_hash: str, timeout: int = 300) -> Dict[str, Any]:
+    def wait_for_confirmation(self, tx_hash: str, timeout: int = 300) -> dict[str, Any]:
         """
         Wait for transaction confirmation.
 
@@ -477,7 +474,7 @@ class DeploymentManager:
     and handles post-deployment configuration.
     """
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         """
         Initialize deployment manager.
 
@@ -495,7 +492,7 @@ class DeploymentManager:
         self.deployments = {}
         self.artifacts = {}
 
-    def deploy_full_ecosystem(self) -> Dict[str, Any]:
+    def deploy_full_ecosystem(self) -> dict[str, Any]:
         """
         Deploy complete Paygent ecosystem.
 
@@ -549,7 +546,7 @@ class DeploymentManager:
 
             # Step 4: Deploy Market adapters
             logger.info("Step 4: Deploying market adapters...")
-            self._deploy_market_adapters(wallet_address)
+            self._deploy_market_adapters()
 
             # Step 5: Configure contracts
             logger.info("Step 5: Configuring contracts...")
@@ -566,7 +563,7 @@ class DeploymentManager:
             logger.error(f"Deployment failed: {e}")
             return {"success": False, "error": str(e)}
 
-    def _deploy_market_adapters(self, wallet_address: str):
+    def _deploy_market_adapters(self):
         """Deploy market adapter contracts."""
         # VVS Adapter
         if self.config.get("deploy_vvs_adapter", True):
@@ -611,8 +608,8 @@ class DeploymentManager:
         """Configure deployed contracts with each other."""
         try:
             # Configure PaymentRouter with agents
-            router = self.deployments["PaymentRouter"]["contract"]
-            wallet_address = self.deployments["AgentWallet"]["address"]
+            # router = self.deployments["PaymentRouter"]["contract"]
+            # wallet_address = self.deployments["AgentWallet"]["address"]
 
             # Set up agent permissions (example)
             # tx = router.functions.setAgentPermission(wallet_address, True).buildTransaction({
@@ -649,7 +646,7 @@ class DeploymentManager:
             else:
                 logger.warning(f"{contract_name} verification failed")
 
-    def _get_deployment_summary(self) -> Dict[str, Any]:
+    def _get_deployment_summary(self) -> dict[str, Any]:
         """Get deployment summary."""
         return {
             "success": True,
@@ -682,9 +679,9 @@ class DeploymentManager:
         logger.info(f"Deployment artifacts saved to {output_dir}/")
 
 
-def load_deployment_config(config_path: str) -> Dict[str, Any]:
+def load_deployment_config(config_path: str) -> dict[str, Any]:
     """Load deployment configuration from file."""
-    with open(config_path, "r") as f:
+    with open(config_path) as f:
         return json.load(f)
 
 

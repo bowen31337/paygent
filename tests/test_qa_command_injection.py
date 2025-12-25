@@ -6,14 +6,14 @@ These tests verify that the two pending QA features work correctly:
 2. Error responses don't leak sensitive information
 """
 
-import pytest
-from httpx import AsyncClient, ASGITransport
-from uuid import UUID
 
-from src.main import app
-from src.core.errors import validate_command_input
-from src.core.security import sanitize, redact_string
+import pytest
+from httpx import ASGITransport, AsyncClient
+
 from src.core.database import get_db
+from src.core.errors import validate_command_input
+from src.core.security import redact_string, sanitize
+from src.main import app
 
 
 class TestCommandInjectionPreventionQA:
@@ -158,8 +158,8 @@ class TestErrorSanitizationQA:
 
     def test_create_safe_error_message_production(self):
         """Test that error messages are safe in production mode."""
-        from src.core.errors import create_safe_error_message
         from src.core.config import settings
+        from src.core.errors import create_safe_error_message
 
         # Temporarily disable debug mode
         original_debug = settings.debug
@@ -189,8 +189,8 @@ class TestErrorSanitizationQA:
 
     def test_create_safe_error_message_debug(self):
         """Test that debug mode shows full error details."""
-        from src.core.errors import create_safe_error_message
         from src.core.config import settings
+        from src.core.errors import create_safe_error_message
 
         original_debug = settings.debug
         settings.debug = True
@@ -286,8 +286,6 @@ class TestEndToEndSecurityQA:
     @pytest.mark.asyncio
     async def test_malicious_commands_never_reach_tools(self, db_session):
         """Verify malicious commands are blocked before reaching any tools."""
-        from src.agents.agent_executor_enhanced import AgentExecutorEnhanced
-        from sqlalchemy.ext.asyncio import AsyncSession
 
         # This test verifies the security layer is in place
         # The validate_command_input is called in the API route before executor
@@ -296,8 +294,9 @@ class TestEndToEndSecurityQA:
         # the parser will extract it as strings, but the API layer should block it first
 
         # Test that the API route has the validation
-        from src.api.routes.agent import execute_command
         import inspect
+
+        from src.api.routes.agent import execute_command
 
         source = inspect.getsource(execute_command)
         assert "validate_command_input" in source, \
@@ -305,10 +304,12 @@ class TestEndToEndSecurityQA:
 
     def test_error_handler_sanitizes_responses(self):
         """Test that error handlers sanitize responses."""
-        from src.core.errors import general_exception_handler, http_exception_handler
-        from fastapi import HTTPException, status
-        from fastapi.requests import Request
         from unittest.mock import Mock
+
+        from fastapi import HTTPException
+        from fastapi.requests import Request
+
+        from src.core.errors import general_exception_handler
 
         # Mock request
         mock_request = Mock(spec=Request)
@@ -323,7 +324,6 @@ class TestEndToEndSecurityQA:
         # The handler should sanitize the detail
 
         # Test general exception handler
-        import asyncio
 
         async def test_general_handler():
             exc = Exception("Internal error with sensitive data")
@@ -336,9 +336,9 @@ class TestEndToEndSecurityQA:
 
     def test_no_stack_traces_in_production(self):
         """Verify stack traces are not included in production error responses."""
-        from src.core.errors import create_error_response, create_safe_error_message
+
         from src.core.config import settings
-        from unittest.mock import Mock
+        from src.core.errors import create_error_response, create_safe_error_message
 
         original_debug = settings.debug
         settings.debug = False

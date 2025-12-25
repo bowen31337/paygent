@@ -6,7 +6,6 @@ This script tests the VVS subagent through the API endpoint.
 """
 
 import asyncio
-import json
 import logging
 import sys
 from pathlib import Path
@@ -14,8 +13,9 @@ from pathlib import Path
 # Add src to Python path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-import httpx
 from uuid import uuid4
+
+import httpx
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

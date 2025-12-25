@@ -5,10 +5,10 @@ This test verifies that the agent maintains a complete audit trail of all
 transactions including commands, tool calls, results, costs, and timing.
 """
 
-import pytest
 from datetime import datetime
-from uuid import UUID, uuid4
+from uuid import uuid4
 
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.services.audit_service import AuditService

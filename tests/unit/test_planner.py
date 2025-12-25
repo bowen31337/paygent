@@ -2,9 +2,9 @@
 Tests for the agent planner module.
 """
 
-import pytest
 from datetime import datetime
-from src.agents.planner import PlanStep, ExecutionPlan, CommandPlanner
+
+from src.agents.planner import CommandPlanner, ExecutionPlan, PlanStep
 
 
 class TestPlanStep:

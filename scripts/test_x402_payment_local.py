@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 """Test x402 payment flow with local mock service."""
 import asyncio
-import httpx
 import subprocess
-import time
-import sys
+
+import httpx
 
 
 async def test_x402_with_local_mock():
@@ -34,7 +33,7 @@ async def test_x402_with_local_mock():
             async with httpx.AsyncClient() as client:
                 resp = await client.get(f"{mock_service}/free", timeout=2.0)
                 if resp.status_code == 200:
-                    print(f"   ✓ Mock service is running")
+                    print("   ✓ Mock service is running")
                 else:
                     print(f"   ✗ Mock service returned {resp.status_code}")
                     return False
@@ -58,7 +57,7 @@ async def test_x402_with_local_mock():
 
             if response.status_code == 200:
                 data = response.json()
-                print(f"   ✓ Payment initiated successfully")
+                print("   ✓ Payment initiated successfully")
                 print(f"   Payment ID: {data.get('payment_id')}")
                 print(f"   Status: {data.get('status')}")
 

@@ -5,11 +5,10 @@ This test verifies that the agent can execute simple commands quickly and effici
 Feature 114: Agent command execution completes within 30 seconds for simple operations
 """
 
-import asyncio
 import time
-import pytest
 from uuid import uuid4
-from sqlalchemy.ext.asyncio import AsyncSession
+
+import pytest
 
 from src.agents.agent_executor_enhanced import AgentExecutorEnhanced
 from src.core.database import async_session_maker

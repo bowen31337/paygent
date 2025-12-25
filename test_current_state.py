@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 """Test current state of the agent executor."""
 import sys
+
 sys.path.insert(0, '.')
 import asyncio
-from httpx import AsyncClient, ASGITransport
-from src.main import app
+
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
+
 from src.core.database import get_db
-from src.models.agent_sessions import 
+from src.main import app
 from src.models.execution_logs import ExecutionLog
+
 
 async def test():
     async with AsyncClient(transport=ASGITransport(app=app), base_url='http://test') as client:
@@ -31,7 +34,7 @@ async def test():
             print(f'   Action: {data.get("result", {}).get("action")}')
             plan = data.get('result', {}).get('plan')
             if plan:
-                print(f'   Plan generated: Yes')
+                print('   Plan generated: Yes')
                 print(f'   Approach: {plan.get("approach")}')
                 print(f'   Steps: {len(plan.get("steps", []))}')
             tool_calls = data.get('result', {}).get('tool_calls')
@@ -63,7 +66,7 @@ async def test():
             print(f'   Success: {data.get("result", {}).get("success")}')
             plan = data.get('result', {}).get('plan')
             if plan:
-                print(f'   Plan generated: Yes')
+                print('   Plan generated: Yes')
                 print(f'   Steps: {len(plan.get("steps", []))}')
         print()
 
@@ -82,7 +85,7 @@ async def test():
             print(f'   Success: {data.get("result", {}).get("success")}')
             if not data.get('result', {}).get('success'):
                 error = data.get('result', {}).get('error', '')
-                print(f'   Budget enforced: Yes')
+                print('   Budget enforced: Yes')
                 print(f'   Error: {error[:80]}...')
         print()
 

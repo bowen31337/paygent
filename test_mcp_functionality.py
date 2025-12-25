@@ -3,10 +3,8 @@
 Test script for BTC price query functionality.
 """
 
-import sys
 import asyncio
-import time
-from typing import Any, Dict
+import sys
 
 # Add the project root to Python path
 sys.path.insert(0, '/media/DATA/projects/autonomous-coding-cro/paygent')
@@ -64,9 +62,7 @@ async def test_market_data_tools():
     try:
         print("\n=== Testing Market Data Tools ===")
 
-        from src.tools.market_data_tools import (
-            GetPriceTool, GetPricesTool, GetMarketStatusTool
-        )
+        from src.tools.market_data_tools import GetMarketStatusTool, GetPricesTool, GetPriceTool
 
         print("✓ Market data tools imported successfully")
 
@@ -113,8 +109,9 @@ async def test_mcp_data_model():
     try:
         print("\n=== Testing MCP Data Models ===")
 
-        from src.services.mcp_client import PriceData
         from datetime import datetime
+
+        from src.services.mcp_client import PriceData
 
         # Test PriceData creation
         price_data = PriceData(

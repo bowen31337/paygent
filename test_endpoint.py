@@ -3,6 +3,7 @@ Simple test to check if the WebSocket endpoint is accessible.
 """
 import requests
 
+
 def test_websocket_endpoint():
     """Test if WebSocket endpoint is accessible."""
     try:

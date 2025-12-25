@@ -6,10 +6,10 @@ invalid content types, and unexpected response structures gracefully.
 """
 
 import json
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
-from httpx import HTTPStatusError, InvalidURL, Response, Request
+from httpx import Response
 
 from src.services.x402_service import X402PaymentService
 

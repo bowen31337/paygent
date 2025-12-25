@@ -1,13 +1,14 @@
 """Test Crypto.com AI Agent SDK integration."""
 
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from src.services.crypto_com_sdk import (
     CryptoComAgentSDK,
     CryptoComAgentSDKError,
-    get_crypto_com_sdk,
     create_crypto_com_sdk,
+    get_crypto_com_sdk,
 )
 
 

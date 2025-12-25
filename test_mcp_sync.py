@@ -4,8 +4,6 @@ Simple synchronous test for MCP functionality.
 """
 
 import sys
-import time
-from typing import Any, Dict
 
 # Add the project root to Python path
 sys.path.insert(0, '/media/DATA/projects/autonomous-coding-cro/paygent')
@@ -13,8 +11,9 @@ sys.path.insert(0, '/media/DATA/projects/autonomous-coding-cro/paygent')
 def test_mcp_client_basic():
     """Test basic MCP client functionality."""
     try:
-        from src.services.mcp_client import MCPServerClient, MCPServerError, PriceData
         from datetime import datetime
+
+        from src.services.mcp_client import MCPServerClient, MCPServerError, PriceData
 
         print("=== Testing MCP Client Basic Functionality ===")
 
@@ -48,9 +47,7 @@ def test_market_data_tools():
     try:
         print("\n=== Testing Market Data Tools ===")
 
-        from src.tools.market_data_tools import (
-            GetPriceTool, GetPricesTool, GetMarketStatusTool
-        )
+        from src.tools.market_data_tools import GetMarketStatusTool, GetPricesTool, GetPriceTool
 
         print("✓ Market data tools imported successfully")
 
@@ -65,7 +62,7 @@ def test_market_data_tools():
         print(f"  Status tool name: {status_tool.name}")
 
         # Test input schemas
-        from src.tools.market_data_tools import GetPriceInput, GetPricesInput, GetMarketStatusInput
+        from src.tools.market_data_tools import GetPriceInput, GetPricesInput
 
         price_input = GetPriceInput(symbol="BTC_USDT")
         print(f"✓ Price input schema: {price_input.symbol}")
@@ -87,7 +84,7 @@ def test_configuration():
 
         from src.core.config import settings
 
-        print(f"✓ Configuration loaded")
+        print("✓ Configuration loaded")
         print(f"  MCP Server URL: {settings.crypto_com_mcp_url}")
         print(f"  API Key set: {settings.crypto_com_api_key is not None}")
 

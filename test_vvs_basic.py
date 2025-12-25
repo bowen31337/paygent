@@ -11,7 +11,6 @@ from pathlib import Path
 # Add src to Python path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from uuid import uuid4
 
 
 def test_imports():
@@ -96,7 +95,7 @@ def test_command_parsing():
             to_token = match.group(3).upper()
             print(f"      Parsed: {amount} {from_token} -> {to_token}")
         else:
-            print(f"      Failed to parse")
+            print("      Failed to parse")
 
 
 def test_file_structure():

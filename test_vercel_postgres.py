@@ -8,14 +8,16 @@ correctly in both local and production environments.
 
 import asyncio
 import os
-from src.core.vercel_db import (
-    get_database_url,
-    test_connection,
-    check_database_health,
-    get_sync_engine,
-    close_db
-)
+
 from sqlalchemy import text
+
+from src.core.vercel_db import (
+    check_database_health,
+    close_db,
+    get_database_url,
+    get_sync_engine,
+    test_connection,
+)
 
 
 async def test_vercel_postgres():

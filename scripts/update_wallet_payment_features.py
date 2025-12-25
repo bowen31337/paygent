@@ -13,11 +13,11 @@ features = json.loads(feature_file.read_text())
 feature_indices = {
     # Wallet features (24-28)
     24: "GET /api/v1/wallet/balance returns token balances",
-    25: "Wallet balance supports multiple token queries", 
+    25: "Wallet balance supports multiple token queries",
     26: "GET /api/v1/wallet/allowance returns daily spending allowance",
     27: "POST /api/v1/wallet/transfer executes token transfer",
     28: "GET /api/v1/wallet/transactions returns transaction history",
-    
+
     # Payment features (30-34)
     30: "GET /api/v1/payments/history returns payment history",
     31: "Payment history supports filtering by status",
@@ -25,13 +25,13 @@ feature_indices = {
     33: "GET /api/v1/payments/{payment_id} returns payment details",
     34: "POST /api/v1/payments/x402 executes x402 payment flow",
     35: "GET /api/v1/payments/stats returns payment statistics",
-    
+
     # Logs features (39-42)
     39: "GET /api/v1/logs returns execution logs",
     40: "Execution logs support filtering by session_id",
     41: "GET /api/v1/logs/{log_id} returns specific execution log",
     42: "GET /api/v1/logs/{session_id}/summary returns session summary",
-    
+
     # Approvals features (44-50)
     44: "GET /api/v1/approvals/pending lists pending approval requests",
     45: "POST /api/v1/approvals/{request_id}/approve resumes agent execution",

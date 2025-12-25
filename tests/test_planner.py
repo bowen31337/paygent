@@ -1,8 +1,7 @@
 """Test planning functionality."""
 
+
 import pytest
-from unittest.mock import patch, MagicMock
-from datetime import datetime
 
 from src.agents.planner import CommandPlanner, ExecutionPlan, PlanStep
 

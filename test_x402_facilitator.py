@@ -5,11 +5,9 @@ This tests Feature 370: x402 payment successfully integrates with Cronos Facilit
 """
 
 import asyncio
-import json
 import os
 import sys
 import traceback
-from typing import Dict, Any
 
 # Add src to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
@@ -36,7 +34,7 @@ async def test_x402_facilitator_integration():
 
         mock_facilitator = get_mock_facilitator()
         assert mock_facilitator is not None, "Mock facilitator should be available"
-        print(f"   ✓ Mock facilitator service available")
+        print("   ✓ Mock facilitator service available")
 
         # Test 3: Test payment submission to mock facilitator
         print("\n✅ Test 3: Testing payment submission to mock facilitator")
@@ -67,7 +65,7 @@ async def test_x402_facilitator_integration():
         assert "paymentProof" in payment_result, "Payment result should contain paymentProof"
         assert payment_result["status"] == "confirmed", "Payment should be confirmed"
 
-        print(f"   ✓ Payment submitted successfully:")
+        print("   ✓ Payment submitted successfully:")
         print(f"     - Payment ID: {payment_result['paymentId']}")
         print(f"     - TX Hash: {payment_result['txHash']}")
         print(f"     - Status: {payment_result['status']}")
@@ -80,7 +78,7 @@ async def test_x402_facilitator_integration():
         assert verify_result["status"] == "confirmed", "Payment should be confirmed"
         assert verify_result["verified"] == True, "Payment should be marked as verified"
 
-        print(f"   ✓ Payment verified successfully:")
+        print("   ✓ Payment verified successfully:")
         print(f"     - Status: {verify_result['status']}")
         print(f"     - Verified: {verify_result['verified']}")
 
@@ -103,7 +101,7 @@ async def test_x402_facilitator_integration():
         assert "message" in signature, "Signature should contain message"
         assert "signature" in signature, "Signature should contain signature"
 
-        print(f"   ✓ EIP-712 signature generated successfully:")
+        print("   ✓ EIP-712 signature generated successfully:")
         print(f"     - Signer: {signature['signerAddress']}")
         print(f"     - Domain: {signature['domain']['name']} v{signature['domain']['version']}")
         print(f"     - Service: {signature['message']['serviceUrl']}")
@@ -178,7 +176,7 @@ async def test_facilitator_submission_flow():
         assert "tx_hash" in result, "Result should contain tx_hash"
         assert "payment_proof" in result, "Result should contain payment_proof"
 
-        print(f"   ✓ Complete submission flow successful:")
+        print("   ✓ Complete submission flow successful:")
         print(f"     - Payment ID: {result['payment_id']}")
         print(f"     - TX Hash: {result['tx_hash']}")
         print(f"     - Payment Proof: {result['payment_proof'][:20]}...")

@@ -6,29 +6,19 @@ for database and cache operations.
 """
 
 import asyncio
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
+import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.core.cache import (
+    CacheClient,
+)
 from src.core.database import (
     async_session_maker,
-    engine,
     get_db,
-    init_db,
-    close_db,
-    Base,
 )
-from src.core.cache import (
-    cache_client,
-    init_cache,
-    close_cache,
-    CacheClient,
-    CacheInterface,
-    CacheMetrics,
-)
-
 
 # ============================================================================
 # SQLAlchemy Async Operations Tests
@@ -50,8 +40,9 @@ class TestSQLAlchemyAsyncOperations:
     @pytest.mark.asyncio
     async def test_execute_async_query(self):
         """Step 2: Execute async query."""
-        from src.models.execution_logs import ExecutionLog
         import uuid
+
+        from src.models.execution_logs import ExecutionLog
 
         async with async_session_maker() as session:
             # Create a test log entry
@@ -83,8 +74,9 @@ class TestSQLAlchemyAsyncOperations:
     @pytest.mark.asyncio
     async def test_verify_result_returned(self):
         """Step 3: Verify result returned."""
-        from src.models.execution_logs import ExecutionLog
         import uuid
+
+        from src.models.execution_logs import ExecutionLog
 
         async with async_session_maker() as session:
             # Create multiple test entries with proper UUIDs
@@ -119,8 +111,9 @@ class TestSQLAlchemyAsyncOperations:
     @pytest.mark.asyncio
     async def test_concurrent_operations(self):
         """Step 4: Test concurrent operations."""
-        from src.models.execution_logs import ExecutionLog
         import uuid
+
+        from src.models.execution_logs import ExecutionLog
 
         # Use a shared session_uuid for all concurrent operations
         session_uuid = uuid.uuid4()
@@ -160,8 +153,9 @@ class TestSQLAlchemyAsyncOperations:
     @pytest.mark.asyncio
     async def test_async_rollback_on_error(self):
         """Test that async operations rollback on error."""
-        from src.models.execution_logs import ExecutionLog
         import uuid
+
+        from src.models.execution_logs import ExecutionLog
 
         async with async_session_maker() as session:
             session_uuid = uuid.uuid4()
@@ -426,8 +420,9 @@ class TestAsyncFunctionNaming:
         Step 3: Verify consistent pattern across codebase.
         """
         import inspect
-        import src.core.database as db_module
+
         import src.core.cache as cache_module
+        import src.core.database as db_module
 
         # Check database module
         async_functions = []
@@ -460,6 +455,7 @@ class TestAsyncFunctionNaming:
     def test_async_functions_use_await(self):
         """Test that async functions properly use await."""
         import inspect
+
         import src.core.cache as cache_module
 
         # Check that async functions in cache module use await
@@ -491,8 +487,9 @@ class TestAsyncIntegration:
     @pytest.mark.asyncio
     async def test_database_and_cache_together(self):
         """Test using database and cache together."""
-        from src.models.execution_logs import ExecutionLog
         import uuid
+
+        from src.models.execution_logs import ExecutionLog
 
         # Initialize cache
         client = CacheClient()
@@ -537,8 +534,9 @@ class TestAsyncIntegration:
     @pytest.mark.asyncio
     async def test_concurrent_database_and_cache(self):
         """Test concurrent operations on both database and cache."""
-        from src.models.execution_logs import ExecutionLog
         import uuid
+
+        from src.models.execution_logs import ExecutionLog
 
         client = CacheClient()
         with patch.dict("os.environ", {"USE_MOCK_REDIS": "true"}):
@@ -586,8 +584,9 @@ class TestAsyncIntegration:
     @pytest.mark.asyncio
     async def test_async_error_handling(self):
         """Test error handling in async operations."""
-        from src.models.execution_logs import ExecutionLog
         import uuid
+
+        from src.models.execution_logs import ExecutionLog
 
         # Test database error handling
         session_uuid = uuid.uuid4()
@@ -615,8 +614,9 @@ class TestAsyncIntegration:
     @pytest.mark.asyncio
     async def test_async_transaction_isolation(self):
         """Test that async transactions are properly isolated."""
-        from src.models.execution_logs import ExecutionLog
         import uuid
+
+        from src.models.execution_logs import ExecutionLog
 
         session_uuid = uuid.uuid4()
         async with async_session_maker() as session1:

@@ -6,8 +6,8 @@ Tests the x402 payment flow through the HTTP API.
 """
 
 import asyncio
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -57,7 +57,7 @@ async def test_x402_payment_api():
 
                 # Test 3: Verify payment
                 if payment_id:
-                    print(f"\n[3/3] Testing payment verification...")
+                    print("\n[3/3] Testing payment verification...")
                     response = await client.get(
                         f"{base_url}/api/v1/payments/{payment_id}"
                     )
@@ -67,7 +67,7 @@ async def test_x402_payment_api():
                 print(f"  Error: {result.get('error', 'Unknown')}")
 
             # Test 4: Get payment statistics
-            print(f"\n[Bonus] Testing payment statistics...")
+            print("\n[Bonus] Testing payment statistics...")
             response = await client.get(f"{base_url}/api/v1/payments/stats")
             print(f"✓ Status: {response.status_code}")
             stats = response.json()
