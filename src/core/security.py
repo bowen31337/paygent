@@ -7,7 +7,7 @@ API keys, and passwords are never exposed in logs or error messages.
 
 import re
 import logging
-from typing import Any, Dict, Set, Optional, List
+from typing import Any, Optional, Set, Literal
 from functools import lru_cache
 
 logger = logging.getLogger(__name__)
@@ -37,7 +37,12 @@ class RedactingFormatter(logging.Formatter):
     with redacted placeholders before the log is written.
     """
 
-    def __init__(self, fmt=None, datefmt=None, style='%'):
+    def __init__(
+        self,
+        fmt: Optional[str] = None,
+        datefmt: Optional[str] = None,
+        style: Literal['%', '{', '$'] = '%'
+    ) -> None:
         """Initialize the redacting formatter."""
         super().__init__(fmt, datefmt, style)
 
@@ -61,7 +66,7 @@ class RedactingFormatter(logging.Formatter):
         return message
 
 
-def redact_dict(data: Dict[str, Any], additional_keys: list = None) -> Dict[str, Any]:
+def redact_dict(data: dict[str, Any], additional_keys: Optional[set[str]] = None) -> dict[str, Any]:
     """
     Redact sensitive values from a dictionary.
 
@@ -87,7 +92,7 @@ def redact_dict(data: Dict[str, Any], additional_keys: list = None) -> Dict[str,
     if additional_keys:
         sensitive_keys.update(additional_keys)
 
-    redacted = {}
+    redacted: dict[str, Any] = {}
     for key, value in data.items():
         key_lower = key.lower()
         if any(sensitive in key_lower for sensitive in sensitive_keys):
@@ -112,7 +117,12 @@ def redact_dict(data: Dict[str, Any], additional_keys: list = None) -> Dict[str,
     return redacted
 
 
-def safe_log_dict(logger: logging.Logger, level: int, data: Dict[str, Any], additional_keys: list = None):
+def safe_log_dict(
+    logger: logging.Logger,
+    level: int,
+    data: dict[str, Any],
+    additional_keys: Optional[set[str]] = None
+) -> None:
     """
     Safely log a dictionary with sensitive data redacted.
 
@@ -157,12 +167,15 @@ def redact_string(value: str) -> str:
     return value
 
 
-def configure_secure_logging():
+def configure_secure_logging() -> logging.Logger:
     """
     Configure the root logger to use secure redacting formatters.
 
     This should be called during application startup to ensure all logs
     have sensitive data redacted.
+
+    Returns:
+        The configured root logger
     """
     # Get root logger
     root_logger = logging.getLogger()
@@ -258,7 +271,7 @@ class ToolAllowlist:
         "withdraw_all",
     }
 
-    def __init__(self, allowed_tools: Optional[Set[str]] = None):
+    def __init__(self, allowed_tools: Optional[Set[str]] = None) -> None:
         """
         Initialize the tool allowlist.
 
@@ -295,7 +308,7 @@ class ToolAllowlist:
 
         return allowed
 
-    def validate_tool_call(self, tool_name: str, tool_args: Dict[str, Any]) -> None:
+    def validate_tool_call(self, tool_name: str, tool_args: dict[str, Any]) -> None:
         """
         Validate a tool call, raising an exception if not allowed.
 
@@ -372,7 +385,7 @@ def is_tool_allowed(tool_name: str) -> bool:
     return get_tool_allowlist().is_allowed(tool_name)
 
 
-def validate_tool_call(tool_name: str, tool_args: Dict[str, Any]) -> None:
+def validate_tool_call(tool_name: str, tool_args: dict[str, Any]) -> None:
     """
     Validate a tool call using the global allowlist.
 
