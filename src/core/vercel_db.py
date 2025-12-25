@@ -5,6 +5,7 @@ Handles Vercel Postgres integration for serverless deployment.
 """
 import os
 from collections.abc import AsyncGenerator
+from typing import Any
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
@@ -47,7 +48,7 @@ def get_database_url() -> str:
         return dev_database_url
 
 # Create async engine with appropriate settings for Vercel
-def _create_engine():
+def _create_engine() -> Any:
     """Create async engine with proper imports and error handling."""
     try:
         # Try PostgreSQL first
@@ -95,7 +96,7 @@ def _create_engine():
         raise
 
 # Create engine factory function
-def get_engine():
+def get_engine() -> Any:
     """Get database engine, recreating if needed."""
     return _create_engine()
 
@@ -125,7 +126,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             await session.close()
 
 
-async def close_db():
+async def close_db() -> None:
     """Close database engine."""
     await engine.dispose()
 
@@ -146,7 +147,7 @@ async def test_connection() -> bool:
 
 
 # For Alembic migrations
-def get_sync_engine():
+def get_sync_engine() -> Any:
     """Get synchronous engine for Alembic."""
     from sqlalchemy import create_engine
 
@@ -180,7 +181,7 @@ def get_sync_engine():
 
 
 # Database health check
-async def check_database_health() -> dict:
+async def check_database_health() -> dict[str, Any]:
     """
     Check database health and return status.
 

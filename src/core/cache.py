@@ -16,14 +16,14 @@ try:
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
-    aioredis = None
+    aioredis = None  # type: ignore[assignment]
 
 try:
     from fakeredis import FakeAsyncRedis
     FAKEREDIS_AVAILABLE = True
 except ImportError:
     FAKEREDIS_AVAILABLE = False
-    FakeAsyncRedis = None
+    FakeAsyncRedis = None  # type: ignore[assignment]
 
 from src.core.config import settings
 
@@ -34,53 +34,63 @@ logger = logging.getLogger(__name__)
 class CacheMetrics:
     """Track cache performance metrics."""
 
-    def __init__(self):
+    hits: int
+    misses: int
+    errors: int
+    total_get_time: float
+    total_set_time: float
+    total_delete_time: float
+    get_count: int
+    set_count: int
+    delete_count: int
+
+    def __init__(self) -> None:
         self.hits = 0
         self.misses = 0
         self.errors = 0
-        self.total_get_time = 0
-        self.total_set_time = 0
-        self.total_delete_time = 0
+        self.total_get_time = 0.0
+        self.total_set_time = 0.0
+        self.total_delete_time = 0.0
         self.get_count = 0
         self.set_count = 0
         self.delete_count = 0
 
-    def record_hit(self):
+    def record_hit(self) -> None:
         """Record a cache hit."""
         self.hits += 1
 
-    def record_miss(self):
+    def record_miss(self) -> None:
         """Record a cache miss."""
         self.misses += 1
 
-    def record_error(self):
+    def record_error(self) -> None:
         """Record a cache error."""
         self.errors += 1
 
-    def record_get_time(self, elapsed_ms: float, count: int = 1):
+    def record_get_time(self, elapsed_ms: float, count: int = 1) -> None:
         """Record GET operation time."""
         self.total_get_time += elapsed_ms
         self.get_count += count
 
-    def record_set_time(self, elapsed_ms: float, count: int = 1):
+    def record_set_time(self, elapsed_ms: float, count: int = 1) -> None:
         """Record SET operation time."""
         self.total_set_time += elapsed_ms
         self.set_count += count
 
-    def record_delete_time(self, elapsed_ms: float, count: int = 1):
+    def record_delete_time(self, elapsed_ms: float, count: int = 1) -> None:
         """Record DELETE operation time."""
         self.total_delete_time += elapsed_ms
         self.delete_count += count
 
-    def record_get(self, count: int = 1):
+    def record_get(self, count: int = 1) -> None:
         """Record GET operations."""
         self.get_count += count
 
-    def record_set(self, count: int = 1):
+    def record_set(self, count: int = 1) -> None:
         """Record SET operations."""
         self.set_count += count
 
-    def record_delete(self, count: int = 1):
+    def record_delete(self, count: int = 1) -> None:
         """Record DELETE operations."""
         self.delete_count += count
 

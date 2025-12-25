@@ -65,7 +65,7 @@ dependencies = [
     "cryptography>=46.0.3",
     "aiofiles>=25.1.0",
     "psutil>=7.2.0",
-    "fakeredis>=2.33.0",
+    "fakeredis==2.33.0",
 ]
 
 [project.optional-dependencies]
