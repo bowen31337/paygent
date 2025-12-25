@@ -108,23 +108,44 @@ class PaygentAgent:
         self.agent_executor = self._create_agent()
 
     def _initialize_llm(self):
-        """Initialize the LLM based on configuration."""
-        if "anthropic" in self.llm_model:
-            from langchain_anthropic import ChatAnthropic
+        """Initialize the LLM with automatic fallback.
 
-            return ChatAnthropic(
-                model="claude-sonnet-4",
-                temperature=0.1,
-                max_tokens=4000,
-                api_key=settings.anthropic_api_key,
-            )
-        else:
-            return ChatOpenAI(
-                model="gpt-4",
-                temperature=0.1,
-                max_tokens=4000,
-                api_key=settings.openai_api_key,
-            )
+        Tries to initialize Claude Sonnet 4 first, falls back to GPT-4 if unavailable.
+        """
+        # Try Anthropic Claude first
+        if "anthropic" in self.llm_model and settings.anthropic_api_key:
+            try:
+                from langchain_anthropic import ChatAnthropic
+
+                llm = ChatAnthropic(
+                    model="claude-sonnet-4",
+                    temperature=0.1,
+                    max_tokens=4000,
+                    api_key=settings.anthropic_api_key,
+                )
+                logger.info(f"Initialized Anthropic Claude Sonnet 4 for session {self.session_id}")
+                return llm
+            except Exception as e:
+                logger.warning(f"Failed to initialize Claude Sonnet 4: {e}. Trying fallback...")
+
+        # Fallback to OpenAI GPT-4
+        if settings.openai_api_key:
+            try:
+                llm = ChatOpenAI(
+                    model="gpt-4",
+                    temperature=0.1,
+                    max_tokens=4000,
+                    api_key=settings.openai_api_key,
+                )
+                logger.info(f"Initialized OpenAI GPT-4 (fallback) for session {self.session_id}")
+                return llm
+            except Exception as e:
+                logger.error(f"Failed to initialize GPT-4 fallback: {e}")
+
+        # If all else fails, raise an error
+        raise ValueError(
+            "Unable to initialize any LLM. Please configure ANTHROPIC_API_KEY or OPENAI_API_KEY."
+        )
 
     def _create_agent(self):
         """
@@ -182,35 +203,35 @@ Example commands you should handle:
 
 Always be helpful, accurate, and security-conscious."""
 
+        from langchain.agents import create_tool_calling_agent
+        from langchain_core.agents import AgentExecutor
+
         # Create agent prompt
-        ChatPromptTemplate.from_messages([
+        prompt = ChatPromptTemplate.from_messages([
             ("system", system_prompt),
             MessagesPlaceholder(variable_name="chat_history"),
             ("human", "{input}"),
             MessagesPlaceholder(variable_name="agent_scratchpad"),
         ])
 
-        # Create agent (disabled due to langchain compatibility issue)
-        # agent = create_agent(
-        #     llm=self.llm,
-        #     tools=self.tools,
-        #     prompt=prompt,
-        # )
-        #
-        # # Create agent executor
-        # agent_executor = AgentExecutor(
-        #     agent=agent,
-        #     tools=self.tools,
-        #     memory=self.memory,
-        #     verbose=True,
-        #     handle_parsing_errors=True,
-        #     max_iterations=10,
-        # )
-        #
-        # return agent_executor
+        # Create agent
+        agent = create_tool_calling_agent(
+            llm=self.llm,
+            tools=self.tools,
+            prompt=prompt,
+        )
 
-        # Return None for now - agent execution will return mock response
-        return None
+        # Create agent executor
+        agent_executor = AgentExecutor(
+            agent=agent,
+            tools=self.tools,
+            memory=self.memory,
+            verbose=True,
+            handle_parsing_errors=True,
+            max_iterations=10,
+        )
+
+        return agent_executor
 
     async def add_tool(self, tool) -> None:
         """Add a tool to the agent."""
@@ -245,15 +266,7 @@ Always be helpful, accurate, and security-conscious."""
                 "budget_limit_usd": budget_limit_usd,
             }
 
-            # Execute command (disabled - agent_executor is None)
-            if self.agent_executor is None:
-                return {
-                    "success": True,
-                    "result": f"Command received: {command} (agent execution temporarily disabled due to langchain compatibility issue)",
-                    "session_id": str(self.session_id),
-                    "total_cost_usd": 0.0,
-                }
-
+            # Execute command
             result = await self.agent_executor.ainvoke(input_data)
 
             # Update session
