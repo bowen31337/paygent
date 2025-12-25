@@ -38,7 +38,7 @@ class ExecutionLog(Base):
     result: Mapped[dict | None] = mapped_column(JSON)  # Final execution result
     total_cost: Mapped[float | None] = mapped_column(Float)  # Total LLM + transaction costs
     duration_ms: Mapped[int | None] = mapped_column(Integer)  # Execution duration in milliseconds
-    status: Mapped[str | None] = mapped_column(String(20))  # running, completed, failed, blocked
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="completed")  # running, completed, failed, blocked
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
 
     def __repr__(self) -> str:

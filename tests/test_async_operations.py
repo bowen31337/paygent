@@ -114,8 +114,7 @@ class TestSQLAlchemyAsyncOperations:
 
             # Cleanup
             for log in all_logs:
-                if log.session_id.startswith("test-session-"):
-                    await session.delete(log)
+                await session.delete(log)
             await session.commit()
 
     @pytest.mark.asyncio

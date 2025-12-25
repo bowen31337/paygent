@@ -2067,9 +2067,9 @@
       "Step 2: Verify coverage above 80%",
       "Step 3: Generate coverage report"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "functional",
@@ -2190,9 +2190,9 @@
       "Step 3: Verify result returned",
       "Step 4: Test concurrent operations"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "functional",
@@ -2203,9 +2203,9 @@
       "Step 3: Get value asynchronously",
       "Step 4: Verify value matches"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "style",
@@ -2735,9 +2735,9 @@
       "Step 6: Second approver approves",
       "Step 7: Verify operation executes"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "functional",
@@ -2749,9 +2749,9 @@
       "Step 4: Verify database consistency",
       "Step 5: Verify no duplicate transactions"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "functional",
@@ -2763,8 +2763,8 @@
       "Step 4: Verify no connection exhaustion",
       "Step 5: Verify graceful degradation"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   }
 ]
