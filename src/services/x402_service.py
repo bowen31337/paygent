@@ -9,9 +9,10 @@ import asyncio
 import logging
 from typing import Any
 
-from httpx import AsyncClient, Response
+from httpx import AsyncClient, Response, TimeoutException as HttpxTimeoutException
 
 from src.core.config import settings
+from src.core.errors import create_safe_error_message
 from src.services.metrics_service import metrics_collector
 
 logger = logging.getLogger(__name__)
@@ -78,6 +79,15 @@ class X402PaymentService:
                     "message": payment_result.get("message", "Payment execution failed"),
                 }
 
+        except HttpxTimeoutException as e:
+            logger.error(f"x402 payment timeout: {e}")
+            # Record failed payment metric
+            metrics_collector.record_payment(amount_usd=amount, success=False)
+            return {
+                "success": False,
+                "error": "timeout",
+                "message": "The payment service is taking too long to respond. This could be due to network issues or high service load. Please try again.",
+            }
         except Exception as e:
             logger.error(f"x402 payment execution failed: {e}")
             # Record failed payment metric
@@ -85,7 +95,7 @@ class X402PaymentService:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"x402 payment execution failed: {str(e)}",
+                "message": create_safe_error_message(e),
             }
 
     async def _make_payment_request(
@@ -156,7 +166,23 @@ class X402PaymentService:
                             "message": f"Service returned error: {response.status_code}",
                         }
 
+                except HttpxTimeoutException as e:
+                    # Handle timeout specifically with user-friendly message
+                    logger.warning(f"Timeout on attempt {attempt + 1}/{self.retry_attempts}: {e}")
+                    if attempt < self.retry_attempts - 1:
+                        # Exponential backoff for retries
+                        backoff_time = self.retry_delay * (2**attempt)
+                        logger.info(f"Retrying in {backoff_time}s...")
+                        await asyncio.sleep(backoff_time)
+                    else:
+                        # Final attempt failed - return timeout error
+                        return {
+                            "success": False,
+                            "error": "timeout",
+                            "message": "Service is taking too long to respond. Please try again later. The service may be experiencing high load or temporary network issues.",
+                        }
                 except Exception as e:
+                    # Handle other exceptions
                     logger.warning(f"Attempt {attempt + 1} failed: {e}")
                     if attempt < self.retry_attempts - 1:
                         await asyncio.sleep(self.retry_delay * (2**attempt))  # Exponential backoff

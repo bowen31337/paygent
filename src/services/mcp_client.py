@@ -13,8 +13,10 @@ from datetime import datetime
 from typing import Any
 
 import httpx
+from httpx import TimeoutException as HttpxTimeoutException
 
 from src.core.config import settings
+from src.core.errors import create_safe_error_message
 
 logger = logging.getLogger(__name__)
 
@@ -115,15 +117,18 @@ class MCPServerClient:
 
             return data
 
+        except HttpxTimeoutException as e:
+            logger.error(f"MCP server timeout error: {e}")
+            raise MCPServerError("The market data service is taking too long to respond. Please try again later.")
         except httpx.HTTPStatusError as e:
             logger.error(f"MCP server HTTP error: {e.response.status_code} - {e.response.text}")
             raise MCPServerError(f"HTTP {e.response.status_code}: {e.response.text}")
         except httpx.RequestError as e:
             logger.error(f"MCP server request error: {e}")
-            raise MCPServerError(f"Request failed: {e}")
+            raise MCPServerError(f"Request failed: {create_safe_error_message(e)}")
         except Exception as e:
             logger.error(f"MCP server unexpected error: {e}")
-            raise MCPServerError(f"Unexpected error: {e}")
+            raise MCPServerError(f"Unexpected error: {create_safe_error_message(e)}")
 
     async def get_price(self, symbol: str) -> PriceData:
         """
