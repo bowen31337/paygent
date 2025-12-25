@@ -8,13 +8,13 @@ for high-value operations requiring multiple approvals.
 import asyncio
 from datetime import datetime, timedelta
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import UUID, uuid4
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.models.approval_requests import ApprovalRequest
+from src.models.agent_sessions import ApprovalRequest
 from src.services.approval_service import ApprovalService
 
 
@@ -367,7 +367,7 @@ class TestMultiSigDatabaseIntegration:
     @pytest.mark.asyncio
     async def test_create_and_persist_request(self, mock_db):
         """Test creating and persisting an approval request."""
-        from src.models.approval_requests import ApprovalRequest
+        from src.models.agent_sessions import ApprovalRequest
 
         session_id = uuid4()
         approval_service = ApprovalService(mock_db)

@@ -50,7 +50,6 @@ class TestSQLAlchemyAsyncOperations:
     @pytest.mark.asyncio
     async def test_execute_async_query(self):
         """Step 2: Execute async query."""
-        # Import a model to test with
         from src.models.execution_logs import ExecutionLog
         import uuid
 
@@ -123,13 +122,15 @@ class TestSQLAlchemyAsyncOperations:
         from src.models.execution_logs import ExecutionLog
         import uuid
 
+        # Use a shared session_uuid for all concurrent operations
+        session_uuid = uuid.uuid4()
+
         async def create_log(index: int):
             """Create a log entry concurrently."""
             async with async_session_maker() as session:
                 log = ExecutionLog(
                     id=uuid.uuid4(),
-                    session_uuid = uuid.uuid4()
-                    session_id=uuid.uuid4(),
+                    session_id=session_uuid,
                     command=f"concurrent command {index}",
                     result={"concurrent": True, "index": index},
                 )
@@ -148,7 +149,7 @@ class TestSQLAlchemyAsyncOperations:
         # Cleanup
         async with async_session_maker() as session:
             stmt = select(ExecutionLog).where(
-                ExecutionLog.session_id.like("concurrent-test-%")
+                ExecutionLog.session_id == session_uuid
             )
             result = await session.execute(stmt)
             logs = result.scalars().all()
@@ -163,9 +164,9 @@ class TestSQLAlchemyAsyncOperations:
         import uuid
 
         async with async_session_maker() as session:
+            session_uuid = uuid.uuid4()
             log = ExecutionLog(
                 id=uuid.uuid4(),
-                session_uuid = uuid.uuid4()
                 session_id=session_uuid,
                 command="test",
                 result={"test": "data"},
@@ -182,13 +183,18 @@ class TestSQLAlchemyAsyncOperations:
                 await session.rollback()
                 # Rollback successful
 
-            # Verify rollback worked
-            stmt = select(ExecutionLog).where(ExecutionLog.session_id == "rollback-test")
+            # Verify rollback worked - query for the original session_id
+            stmt = select(ExecutionLog).where(ExecutionLog.session_id == session_uuid)
             result = await session.execute(stmt)
             logs = result.scalars().all()
 
             # Should have been rolled back or not committed
             assert len(logs) <= 1
+
+            # Cleanup if needed
+            for log in logs:
+                await session.delete(log)
+            await session.commit()
 
     @pytest.mark.asyncio
     async def test_get_db_dependency(self):
@@ -495,10 +501,10 @@ class TestAsyncIntegration:
 
             # Create log in database
             test_id = uuid.uuid4()
+            session_uuid = uuid.uuid4()
             async with async_session_maker() as session:
                 log = ExecutionLog(
                     id=test_id,
-                    session_uuid = uuid.uuid4()
                     session_id=session_uuid,
                     command="integration test",
                     result={"success": True},
@@ -538,13 +544,15 @@ class TestAsyncIntegration:
         with patch.dict("os.environ", {"USE_MOCK_REDIS": "true"}):
             await client.connect()
 
+            # Use a shared session_uuid for all operations
+            session_uuid = uuid.uuid4()
+
             async def create_and_cache(index: int):
                 """Create database record and cache result."""
                 async with async_session_maker() as session:
                     log = ExecutionLog(
                         id=uuid.uuid4(),
-                        session_uuid = uuid.uuid4()
-                        session_id=uuid.uuid4(),
+                        session_id=session_uuid,
                         command=f"command {index}",
                         result={"index": index},
                     )
@@ -565,7 +573,7 @@ class TestAsyncIntegration:
             # Cleanup
             async with async_session_maker() as session:
                 stmt = select(ExecutionLog).where(
-                    ExecutionLog.session_id.like("concurrent-integration-%")
+                    ExecutionLog.session_id == session_uuid
                 )
                 result = await session.execute(stmt)
                 logs = result.scalars().all()
@@ -582,10 +590,10 @@ class TestAsyncIntegration:
         import uuid
 
         # Test database error handling
+        session_uuid = uuid.uuid4()
         async with async_session_maker() as session:
             log = ExecutionLog(
                 id=uuid.uuid4(),
-                session_uuid = uuid.uuid4()
                 session_id=session_uuid,
                 command="test",
                 result={"test": "data"},
@@ -610,12 +618,12 @@ class TestAsyncIntegration:
         from src.models.execution_logs import ExecutionLog
         import uuid
 
+        session_uuid = uuid.uuid4()
         async with async_session_maker() as session1:
             async with async_session_maker() as session2:
                 # Create log in session 1
                 log1 = ExecutionLog(
                     id=uuid.uuid4(),
-                    session_uuid = uuid.uuid4()
                     session_id=session_uuid,
                     command="command 1",
                     result={},
@@ -626,7 +634,6 @@ class TestAsyncIntegration:
                 # Create log in session 2 (not committed yet)
                 log2 = ExecutionLog(
                     id=uuid.uuid4(),
-                    session_uuid = uuid.uuid4()
                     session_id=session_uuid,
                     command="command 2",
                     result={},
@@ -636,11 +643,12 @@ class TestAsyncIntegration:
 
                 # Session 1 should not see session 2's uncommitted data
                 stmt = select(ExecutionLog).where(
-                    ExecutionLog.session_id == "isolation-test-2"
+                    ExecutionLog.session_id == session_uuid
                 )
                 result = await session1.execute(stmt)
                 logs = result.scalars().all()
-                assert len(logs) == 0, "Session should not see uncommitted data"
+                # Should only see log1 (log2 not committed yet)
+                assert len(logs) == 1, f"Session should see 1 log, got {len(logs)}"
 
                 # Now commit session 2
                 await session2.commit()

@@ -171,7 +171,11 @@ class TestConcurrentRequests:
         agent = BasicPaygentAgent(db=mock_db, session_id=session_id)
 
         # Create mock tools
-        mock_tools = [MagicMock(__class__.__name__=f"MockTool{i}") for i in range(10)]
+        mock_tools = []
+        for i in range(10):
+            tool = MagicMock()
+            tool.__class__.__name__ = f"MockTool{i}"
+            mock_tools.append(tool)
 
         # Add all tools concurrently
         await asyncio.gather(
