@@ -1873,9 +1873,9 @@
       "Step 3: Verify attack is blocked",
       "Step 4: Verify transaction reverts"
     ],
-    "passes": false,
+    "passes": true,
     "is_dev_done": true,
-    "is_qa_passed": false
+    "is_qa_passed": true
   },
   {
     "category": "functional",
@@ -1886,9 +1886,9 @@
       "Step 3: Verify transfer succeeds",
       "Step 4: Verify SafeERC20 handles properly"
     ],
-    "passes": false,
+    "passes": true,
     "is_dev_done": true,
-    "is_qa_passed": false
+    "is_qa_passed": true
   },
   {
     "category": "functional",
