@@ -11,6 +11,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
  */
 contract PaymentRouter is ReentrancyGuard {
     using SafeERC20 for IERC20;
+
+    // State variables
     address public owner;
     address public feeCollector;
     uint256 public feePercentage; // Fee in basis points (100 = 1%)
@@ -39,6 +41,7 @@ contract PaymentRouter is ReentrancyGuard {
     event AgentPermissionUpdated(address indexed agent, bool allowed);
     event FeeCollectorUpdated(address indexed newCollector);
 
+    // Modifiers
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner can call this function");
         _;
@@ -63,6 +66,8 @@ contract PaymentRouter is ReentrancyGuard {
         // Owner is automatically allowed
         allowedAgents[msg.sender] = true;
     }
+
+    // ==================== External Functions ====================
 
     /**
      * @dev Updates the fee percentage
@@ -188,6 +193,8 @@ contract PaymentRouter is ReentrancyGuard {
 
         return true;
     }
+
+    // ==================== View Functions ====================
 
     /**
      * @dev Gets payment details for a given amount

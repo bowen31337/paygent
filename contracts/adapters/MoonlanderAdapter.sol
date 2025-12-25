@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
 /**
- * @title MoonlanderAdapter
- * @dev Adapter contract for Moonlander perpetual trading operations
+ * @title IMoonlanderRouter
+ * @dev Interface for Moonlander perpetual trading router
  */
 interface IMoonlanderRouter {
     function openPosition(
@@ -41,12 +41,18 @@ interface IERC20 {
     function balanceOf(address account) external view returns (uint256);
 }
 
+/**
+ * @title MoonlanderAdapter
+ * @dev Adapter contract for Moonlander perpetual trading operations
+ */
 contract MoonlanderAdapter {
+    // State variables
     address public tradingRouter;
     address public feeManager;
     uint256 public defaultLeverage;
     address public owner;
 
+    // Structs
     struct Position {
         bytes32 positionId;
         address baseToken;
@@ -75,13 +81,16 @@ contract MoonlanderAdapter {
         uint256 timestamp;
     }
 
+    // Mappings
     mapping(bytes32 => Position) public positions;
     mapping(address => bytes32[]) public traderPositions;
     mapping(bytes32 => Trade) public trades;
 
+    // Constants
     uint256 public constant MAX_LEVERAGE = 50; // 50x max leverage
     uint256 public constant MIN_LEVERAGE = 2;  // 2x min leverage
 
+    // Events
     event PositionOpened(
         bytes32 indexed positionId,
         address indexed trader,
@@ -103,11 +112,18 @@ contract MoonlanderAdapter {
     event TakeProfitSet(bytes32 indexed positionId, uint256 takeProfitPrice);
     event FundingRateUpdated(address indexed baseToken, address indexed quoteToken, int256 rate);
 
+    // Modifiers
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner can call this function");
         _;
     }
 
+    /**
+     * @dev Constructor
+     * @param _tradingRouter Moonlander router address
+     * @param _feeManager Fee manager address
+     * @param _defaultLeverage Default leverage for positions
+     */
     constructor(
         address _tradingRouter,
         address _feeManager,
@@ -119,6 +135,19 @@ contract MoonlanderAdapter {
         defaultLeverage = _defaultLeverage;
     }
 
+    // ==================== External Functions ====================
+
+    /**
+     * @dev Opens a new perpetual position
+     * @param baseToken Base token address
+     * @param quoteToken Quote token address
+     * @param isLong True for long position, false for short
+     * @param amount Position size
+     * @param leverage Leverage multiplier (0 for default)
+     * @param slippageTolerance Slippage tolerance in basis points
+     * @param deadline Timestamp deadline
+     * @return positionId Unique position identifier
+     */
     function openPosition(
         address baseToken,
         address quoteToken,
@@ -187,6 +216,14 @@ contract MoonlanderAdapter {
         return positionId;
     }
 
+    /**
+     * @dev Closes an existing position
+     * @param positionId Position to close
+     * @param slippageTolerance Slippage tolerance in basis points
+     * @param deadline Timestamp deadline
+     * @return profit Profit amount
+     * @return fee Fee amount
+     */
     function closePosition(
         bytes32 positionId,
         uint256 slippageTolerance,
@@ -211,6 +248,11 @@ contract MoonlanderAdapter {
         return (profit, fee);
     }
 
+    /**
+     * @dev Sets stop loss price for a position
+     * @param positionId Position identifier
+     * @param stopLossPrice Stop loss price
+     */
     function setStopLoss(
         bytes32 positionId,
         uint256 stopLossPrice
@@ -226,6 +268,11 @@ contract MoonlanderAdapter {
         emit StopLossSet(positionId, stopLossPrice);
     }
 
+    /**
+     * @dev Sets take profit price for a position
+     * @param positionId Position identifier
+     * @param takeProfitPrice Take profit price
+     */
     function setTakeProfit(
         bytes32 positionId,
         uint256 takeProfitPrice
@@ -241,6 +288,14 @@ contract MoonlanderAdapter {
         emit TakeProfitSet(positionId, takeProfitPrice);
     }
 
+    // ==================== View Functions ====================
+
+    /**
+     * @dev Gets funding rate for a token pair
+     * @param baseToken Base token address
+     * @param quoteToken Quote token address
+     * @return rate Funding rate
+     */
     function getFundingRate(
         address baseToken,
         address quoteToken
@@ -248,6 +303,22 @@ contract MoonlanderAdapter {
         return IMoonlanderRouter(tradingRouter).getFundingRate(baseToken, quoteToken);
     }
 
+    /**
+     * @dev Gets position details
+     * @param positionId Position identifier
+     * @return baseToken Base token
+     * @return quoteToken Quote token
+     * @return isLong Long/short direction
+     * @return amount Position size
+     * @return leverage Leverage multiplier
+     * @return entryPrice Entry price
+     * @return liquidationPrice Liquidation price
+     * @return stopLossPrice Stop loss price
+     * @return takeProfitPrice Take profit price
+     * @return openedAt Open timestamp
+     * @return closedAt Close timestamp
+     * @return active Active status
+     */
     function getPosition(
         bytes32 positionId
     ) external view returns (
@@ -281,16 +352,38 @@ contract MoonlanderAdapter {
         );
     }
 
+    /**
+     * @dev Gets all positions for a trader
+     * @param trader Trader address
+     * @return Array of position IDs
+     */
     function getTraderPositions(address trader) external view returns (bytes32[] memory) {
         return traderPositions[trader];
     }
 
+    // ==================== Public Functions ====================
+
+    /**
+     * @dev Gets current price for a token pair (mock implementation)
+     * @param baseToken Base token address
+     * @param quoteToken Quote token address
+     * @return Current price
+     */
     function getCurrentPrice(address baseToken, address quoteToken) public view returns (uint256) {
         // This would need integration with price oracle oracles
         // For now, return a mock implementation
         return 1000; // Mock price
     }
 
+    // ==================== Internal Functions ====================
+
+    /**
+     * @dev Calculates liquidation price
+     * @param entryPrice Entry price
+     * @param isLong Long/short direction
+     * @param leverage Leverage multiplier
+     * @return Liquidation price
+     */
     function calculateLiquidationPrice(
         uint256 entryPrice,
         bool isLong,
@@ -305,6 +398,12 @@ contract MoonlanderAdapter {
         }
     }
 
+    /**
+     * @dev Calculates trading fee
+     * @param amount Position size
+     * @param leverage Leverage multiplier
+     * @return Fee amount
+     */
     function calculateFee(uint256 amount, uint256 leverage) internal view returns (uint256) {
         // Fee calculation: 0.1% of position size
         return (amount * leverage * 1) / 1000;

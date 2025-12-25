@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
 /**
  * @title VVSAdapter
@@ -55,11 +55,13 @@ interface IERC20 {
 }
 
 contract VVSAdapter {
+    // State variables
     address public router;
     address public weth;
     address public factory;
     address public owner;
 
+    // Structs
     struct Swap {
         uint256 amountIn;
         uint256 amountOut;
@@ -77,9 +79,11 @@ contract VVSAdapter {
         address provider;
     }
 
+    // Mappings
     mapping(bytes32 => Swap) public swaps;
     mapping(bytes32 => LiquidityPosition) public liquidityPositions;
 
+    // Events
     event SwapExecuted(
         bytes32 indexed swapId,
         address indexed user,
@@ -103,11 +107,18 @@ contract VVSAdapter {
         uint256 amountB
     );
 
+    // Modifiers
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner can call this function");
         _;
     }
 
+    /**
+     * @dev Constructor
+     * @param _router VVS router address
+     * @param _weth WETH token address
+     * @param _factory VVS factory address
+     */
     constructor(
         address _router,
         address _weth,
@@ -119,6 +130,16 @@ contract VVSAdapter {
         factory = _factory;
     }
 
+    // ==================== External Functions ====================
+
+    /**
+     * @dev Executes a token swap
+     * @param path Array of token addresses (input -> output)
+     * @param amountIn Amount of input tokens
+     * @param amountOutMin Minimum expected output amount
+     * @param deadline Timestamp deadline for the swap
+     * @return swapId Unique identifier for the swap
+     */
     function swapTokens(
         address[] calldata path,
         uint256 amountIn,
@@ -154,6 +175,17 @@ contract VVSAdapter {
         return swapId;
     }
 
+    /**
+     * @dev Adds liquidity to a pool
+     * @param tokenA First token address
+     * @param tokenB Second token address
+     * @param amountADesired Desired amount of token A
+     * @param amountBDesired Desired amount of token B
+     * @param amountAMin Minimum amount of token A
+     * @param amountBMin Minimum amount of token B
+     * @param deadline Timestamp deadline
+     * @return positionId Unique identifier for the position
+     */
     function addLiquidity(
         address tokenA,
         address tokenB,
@@ -197,6 +229,16 @@ contract VVSAdapter {
         return positionId;
     }
 
+    /**
+     * @dev Removes liquidity from a pool
+     * @param tokenA First token address
+     * @param tokenB Second token address
+     * @param liquidity Amount of liquidity tokens to burn
+     * @param amountAMin Minimum amount of token A to receive
+     * @param amountBMin Minimum amount of token B to receive
+     * @param deadline Timestamp deadline
+     * @return positionId Unique identifier for the removal
+     */
     function removeLiquidity(
         address tokenA,
         address tokenB,
@@ -232,10 +274,25 @@ contract VVSAdapter {
         return positionId;
     }
 
+    // ==================== View Functions ====================
+
+    /**
+     * @dev Gets the pair address for two tokens
+     * @param tokenA First token address
+     * @param tokenB Second token address
+     * @return Pair contract address
+     */
     function getPair(address tokenA, address tokenB) external view returns (address) {
         return IUniswapV2Factory(factory).getPair(tokenA, tokenB);
     }
 
+    /**
+     * @dev Gets the reserves for a token pair
+     * @param tokenA First token address
+     * @param tokenB Second token address
+     * @return reserveA Reserve of token A
+     * @return reserveB Reserve of token B
+     */
     function getReserves(address tokenA, address tokenB) external view returns (uint256 reserveA, uint256 reserveB) {
         address pair = IUniswapV2Factory(factory).getPair(tokenA, tokenB);
         if (pair == address(0)) {
@@ -244,6 +301,12 @@ contract VVSAdapter {
         (reserveA, reserveB, ) = IUniswapV2Pair(pair).getReserves();
     }
 
+    /**
+     * @dev Estimates the output amount for a swap
+     * @param path Array of token addresses
+     * @param amountIn Input amount
+     * @return amounts Array of amounts for each step
+     */
     function estimateSwap(
         address[] calldata path,
         uint256 amountIn

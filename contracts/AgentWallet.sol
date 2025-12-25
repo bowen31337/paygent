@@ -12,6 +12,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
  */
 contract AgentWallet is ReentrancyGuard {
     using SafeERC20 for IERC20;
+
+    // State variables
     address public owner;
     uint256 public dailyLimit;
     uint256 public lastResetDate;
@@ -66,6 +68,8 @@ contract AgentWallet is ReentrancyGuard {
         emit DailyLimitSet(_dailyLimit);
         emit OperatorAdded(_owner);
     }
+
+    // ==================== External Functions ====================
 
     /**
      * @dev Adds an operator who can execute payments
@@ -164,18 +168,6 @@ contract AgentWallet is ReentrancyGuard {
     }
 
     /**
-     * @dev Gets the amount spent today by the caller
-     * @return Amount spent today
-     */
-    function getSpentToday() public view returns (uint256) {
-        uint256 today = getToday();
-        if (lastSpentDate[msg.sender] != today) {
-            return 0;
-        }
-        return dailySpent[msg.sender];
-    }
-
-    /**
      * @dev Gets the remaining daily allowance for the caller
      * @return Remaining allowance for today
      */
@@ -185,14 +177,6 @@ contract AgentWallet is ReentrancyGuard {
             return 0;
         }
         return dailyLimit - spent;
-    }
-
-    /**
-     * @dev Gets today's date as a uint256 (days since epoch)
-     * @return Today's date
-     */
-    function getToday() public view returns (uint256) {
-        return block.timestamp / 1 days;
     }
 
     /**
@@ -218,5 +202,27 @@ contract AgentWallet is ReentrancyGuard {
      */
     function isOperatorAddress(address _operator) external view returns (bool) {
         return isOperator[_operator];
+    }
+
+    // ==================== Public Functions ====================
+
+    /**
+     * @dev Gets the amount spent today by the caller
+     * @return Amount spent today
+     */
+    function getSpentToday() public view returns (uint256) {
+        uint256 today = getToday();
+        if (lastSpentDate[msg.sender] != today) {
+            return 0;
+        }
+        return dailySpent[msg.sender];
+    }
+
+    /**
+     * @dev Gets today's date as a uint256 (days since epoch)
+     * @return Today's date
+     */
+    function getToday() public view returns (uint256) {
+        return block.timestamp / 1 days;
     }
 }

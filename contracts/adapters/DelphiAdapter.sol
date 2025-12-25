@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
 /**
- * @title DelphiAdapter
- * @dev Adapter contract for Delphi prediction market operations
+ * @title IDelphiMarket
+ * @dev Interface for Delphi prediction market
  */
 interface IDelphiMarket {
     function placeBet(
@@ -33,13 +33,18 @@ interface IERC20 {
     function balanceOf(address account) external view returns (uint256);
 }
 
+/**
+ * @title DelphiAdapter
+ * @dev Adapter contract for Delphi prediction market operations
+ */
 contract DelphiAdapter {
+    // State variables
     address public marketsRegistry;
     address public feeCollector;
     uint256 public defaultFee; // Fee in basis points
-
     address public owner;
 
+    // Structs
     struct Bet {
         bytes32 betId;
         bytes32 marketId;
@@ -63,10 +68,12 @@ contract DelphiAdapter {
         uint256 totalVolume;
     }
 
+    // Mappings
     mapping(bytes32 => Bet) public bets;
     mapping(bytes32 => Market) public markets;
     mapping(address => bytes32[]) public betterBets;
 
+    // Events
     event BetPlaced(
         bytes32 indexed betId,
         bytes32 indexed marketId,
@@ -87,11 +94,18 @@ contract DelphiAdapter {
         uint256 winningOutcome
     );
 
+    // Modifiers
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner can call this function");
         _;
     }
 
+    /**
+     * @dev Constructor
+     * @param _marketsRegistry Markets registry address
+     * @param _feeCollector Fee collector address
+     * @param _defaultFee Default fee in basis points
+     */
     constructor(
         address _marketsRegistry,
         address _feeCollector,
@@ -103,6 +117,16 @@ contract DelphiAdapter {
         defaultFee = _defaultFee;
     }
 
+    // ==================== External Functions ====================
+
+    /**
+     * @dev Places a bet on a market
+     * @param marketId Market identifier
+     * @param outcome Outcome to bet on
+     * @param amount Bet amount
+     * @param odds Odds for the outcome
+     * @return betId Unique bet identifier
+     */
     function placeBet(
         bytes32 marketId,
         uint256 outcome,
@@ -149,6 +173,12 @@ contract DelphiAdapter {
         return betId;
     }
 
+    /**
+     * @dev Claims winnings from a winning bet
+     * @param betId Bet identifier
+     * @return payout Total payout amount
+     * @return profit Net profit amount
+     */
     function claimWinnings(bytes32 betId) external returns (uint256 payout, uint256 profit) {
         Bet storage bet = bets[betId];
         require(bet.better == msg.sender, "Not bet owner");
@@ -166,6 +196,20 @@ contract DelphiAdapter {
         return (payout, profit);
     }
 
+    // ==================== View Functions ====================
+
+    /**
+     * @dev Gets bet details
+     * @param betId Bet identifier
+     * @return marketId Market identifier
+     * @return outcome Bet outcome
+     * @return amount Bet amount
+     * @return odds Bet odds
+     * @return payout Payout amount
+     * @return claimed Claimed status
+     * @return better Better address
+     * @return placedAt Placement timestamp
+     */
     function getBet(bytes32 betId) external view returns (
         bytes32 marketId,
         uint256 outcome,
@@ -189,6 +233,12 @@ contract DelphiAdapter {
         );
     }
 
+    /**
+     * @dev Gets market outcome
+     * @param marketId Market identifier
+     * @return winningOutcome Winning outcome
+     * @return resolved Resolution status
+     */
     function getMarketOutcome(bytes32 marketId) external view returns (
         uint256 winningOutcome,
         bool resolved
@@ -196,10 +246,26 @@ contract DelphiAdapter {
         return IDelphiMarket(marketsRegistry).getMarketOutcome(marketId);
     }
 
+    /**
+     * @dev Gets all bets for a better
+     * @param better Better address
+     * @return Array of bet identifiers
+     */
     function getBetterBets(address better) external view returns (bytes32[] memory) {
         return betterBets[better];
     }
 
+    /**
+     * @dev Gets market details
+     * @param marketId Market identifier
+     * @return id Market identifier
+     * @return question Market question
+     * @return outcomes Array of outcomes
+     * @return endTime Market end time
+     * @return resolutionTime Resolution time
+     * @return active Active status
+     * @return totalVolume Total volume
+     */
     function getMarketDetails(bytes32 marketId) external view returns (
         bytes32 id,
         string memory question,
@@ -221,15 +287,29 @@ contract DelphiAdapter {
         );
     }
 
+    // ==================== Owner Functions ====================
+
+    /**
+     * @dev Updates the default fee
+     * @param newFee New fee in basis points
+     */
     function updateFee(uint256 newFee) external onlyOwner {
         require(newFee <= 1000, "Fee cannot exceed 10%"); // Max 10%
         defaultFee = newFee;
     }
 
+    /**
+     * @dev Updates the markets registry
+     * @param newRegistry New registry address
+     */
     function setMarketsRegistry(address newRegistry) external onlyOwner {
         marketsRegistry = newRegistry;
     }
 
+    /**
+     * @dev Updates the fee collector
+     * @param newCollector New collector address
+     */
     function setFeeCollector(address newCollector) external onlyOwner {
         feeCollector = newCollector;
     }

@@ -383,10 +383,10 @@ async def execute_approved_payment(
 class PaymentStatusResponse(BaseModel):
     """Response for payment status check."""
 
-    txHash: str
+    tx_hash: str
     confirmed: bool
     failed: bool
-    blockNumber: int | None = None
+    block_number: int | None = None
     timestamp: str | None = None
     error: str | None = None
 
@@ -428,15 +428,15 @@ async def get_payment_status(
         # Map our status to workflow status
         if status == "confirmed":
             return PaymentStatusResponse(
-                txHash=tx_hash,
+                tx_hash=tx_hash,
                 confirmed=True,
                 failed=False,
-                blockNumber=payment.get("block_number", 12345),  # Mock
+                block_number=payment.get("block_number", 12345),  # Mock
                 timestamp=payment.get("created_at"),
             )
         elif status == "failed":
             return PaymentStatusResponse(
-                txHash=tx_hash,
+                tx_hash=tx_hash,
                 confirmed=False,
                 failed=True,
                 error=payment.get("error_message", "Payment failed"),
@@ -444,7 +444,7 @@ async def get_payment_status(
             )
         else:  # pending
             return PaymentStatusResponse(
-                txHash=tx_hash,
+                tx_hash=tx_hash,
                 confirmed=False,
                 failed=False,
                 timestamp=payment.get("created_at"),
@@ -462,22 +462,22 @@ async def get_payment_status(
         last_char = tx_hash[-1]
         if last_char in '02468ace':
             return PaymentStatusResponse(
-                txHash=tx_hash,
+                tx_hash=tx_hash,
                 confirmed=True,
                 failed=False,
-                blockNumber=12345,
+                block_number=12345,
                 timestamp=datetime.utcnow().isoformat(),
             )
         elif last_char in '13579bdf':
             return PaymentStatusResponse(
-                txHash=tx_hash,
+                tx_hash=tx_hash,
                 confirmed=False,
                 failed=False,
                 timestamp=datetime.utcnow().isoformat(),
             )
         else:
             return PaymentStatusResponse(
-                txHash=tx_hash,
+                tx_hash=tx_hash,
                 confirmed=False,
                 failed=True,
                 error="Transaction not found",
@@ -485,7 +485,7 @@ async def get_payment_status(
     except Exception as e:
         logger.error(f"Error checking payment status: {e}")
         return PaymentStatusResponse(
-            txHash=tx_hash,
+            tx_hash=tx_hash,
             confirmed=False,
             failed=True,
             error=str(e),
@@ -496,28 +496,28 @@ class SubscriptionInfo(BaseModel):
     """Information about a subscription."""
 
     id: str
-    userId: str
-    serviceId: str
+    user_id: str
+    service_id: str
     amount: str
     token: str
-    renewalInterval: int  # days
-    nextRenewalDate: str
+    renewal_interval: int  # days
+    next_renewal_date: str
     status: str = Field(..., description="active, paused, or cancelled")
 
 
 class SubscriptionProgressRequest(BaseModel):
     """Request to save subscription renewal progress."""
 
-    subscriptionId: str
-    renewalCount: int
-    nextRenewalDate: str
+    subscription_id: str
+    renewal_count: int
+    next_renewal_date: str
 
 
 class SubscriptionSuccessRequest(BaseModel):
     """Request to mark renewal as successful."""
 
-    txHash: str
-    renewalDate: str
+    tx_hash: str
+    renewal_date: str
 
 
 class SubscriptionResponse(BaseModel):
@@ -532,14 +532,14 @@ class SubscriptionResponse(BaseModel):
 _mock_subscriptions: dict[str, dict] = {
     "sub-123": {
         "id": "sub-123",
-        "userId": "user-456",
-        "serviceId": "https://api.example.com",
+        "user_id": "user-456",
+        "service_id": "https://api.example.com",
         "amount": "10.0",
         "token": "USDC",
-        "renewalInterval": 30,
-        "nextRenewalDate": "2025-01-25T00:00:00Z",
+        "renewal_interval": 30,
+        "next_renewal_date": "2025-01-25T00:00:00Z",
         "status": "active",
-        "renewalCount": 0,
+        "renewal_count": 0,
     }
 }
 
@@ -604,15 +604,15 @@ async def save_subscription_progress(
         SubscriptionResponse: Success confirmation
     """
     logger.info(
-        f"Saving renewal progress for {request.subscriptionId}: "
-        f"count={request.renewalCount}, next={request.nextRenewalDate}"
+        f"Saving renewal progress for {request.subscription_id}: "
+        f"count={request.renewal_count}, next={request.next_renewal_date}"
     )
 
     # In production, update database
     # For demo, just log and return success
-    if request.subscriptionId in _mock_subscriptions:
-        _mock_subscriptions[request.subscriptionId]["renewalCount"] = request.renewalCount
-        _mock_subscriptions[request.subscriptionId]["nextRenewalDate"] = request.nextRenewalDate
+    if request.subscription_id in _mock_subscriptions:
+        _mock_subscriptions[request.subscription_id]["renewal_count"] = request.renewal_count
+        _mock_subscriptions[request.subscription_id]["next_renewal_date"] = request.next_renewal_date
 
     return SubscriptionResponse(
         success=True,
@@ -646,14 +646,14 @@ async def mark_renewal_successful(
     """
     logger.info(
         f"Renewal successful for {subscription_id}: "
-        f"txHash={request.txHash}, date={request.renewalDate}"
+        f"tx_hash={request.tx_hash}, date={request.renewal_date}"
     )
 
-    # In production, update database with txHash and renewal date
+    # In production, update database with tx_hash and renewal date
     # For demo, just log and return success
     if subscription_id in _mock_subscriptions:
-        _mock_subscriptions[subscription_id]["lastTxHash"] = request.txHash
-        _mock_subscriptions[subscription_id]["lastRenewalDate"] = request.renewalDate
+        _mock_subscriptions[subscription_id]["last_tx_hash"] = request.tx_hash
+        _mock_subscriptions[subscription_id]["last_renewal_date"] = request.renewal_date
 
     return SubscriptionResponse(
         success=True,

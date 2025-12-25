@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 class RenewalFailureRequest(BaseModel):
     """Request body for renewal failure notification."""
 
-    subscriptionId: str = Field(..., description="Subscription ID that failed")
+    subscription_id: str = Field(..., description="Subscription ID that failed")
     error: str = Field(..., description="Error message")
     timestamp: str = Field(..., description="ISO timestamp of failure")
 
@@ -32,7 +32,7 @@ class RenewalFailureResponse(BaseModel):
 
     success: bool
     message: str
-    subscriptionId: str
+    subscription_id: str
 
 
 class NotificationResponse(BaseModel):
@@ -71,24 +71,24 @@ async def send_renewal_failure_notification(
         alerting_service.send_alert(
             alert_type=AlertType.PAYMENT_FAILURE,
             severity=AlertSeverity.ERROR,
-            message=f"Subscription renewal failed for {request.subscriptionId}",
+            message=f"Subscription renewal failed for {request.subscription_id}",
             details={
-                "subscription_id": request.subscriptionId,
+                "subscription_id": request.subscription_id,
                 "error": request.error,
                 "timestamp": request.timestamp,
             },
-            correlation_id=f"renewal-{request.subscriptionId}",
+            correlation_id=f"renewal-{request.subscription_id}",
         )
 
         logger.error(
-            f"Subscription renewal failure: {request.subscriptionId}, "
+            f"Subscription renewal failure: {request.subscription_id}, "
             f"error: {request.error}"
         )
 
         return RenewalFailureResponse(
             success=True,
             message="Renewal failure notification sent successfully",
-            subscriptionId=request.subscriptionId,
+            subscription_id=request.subscription_id,
         )
 
     except Exception as e:
