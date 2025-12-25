@@ -58,22 +58,22 @@ class MCPServerClient:
         self.last_request_time = 0
         self.rate_limit_delay = 0.1  # 100ms between requests
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "MCPServerClient":
         """Async context manager entry."""
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         """Async context manager exit."""
         await self.close()
 
-    async def close(self):
+    async def close(self) -> None:
         """Close the HTTP session."""
         await self.session.aclose()
 
-    async def _rate_limit(self):
+    async def _rate_limit(self) -> None:
         """Enforce rate limiting between requests."""
-        current_time = time.time()
-        time_since_last = current_time - self.last_request_time
+        current_time: float = time.time()
+        time_since_last: float = current_time - self.last_request_time
 
         if time_since_last < self.rate_limit_delay:
             await asyncio.sleep(self.rate_limit_delay - time_since_last)

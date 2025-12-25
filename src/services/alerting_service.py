@@ -16,7 +16,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, Callable
 
 from src.core.config import settings
 
@@ -74,13 +74,13 @@ class AlertingService:
     when critical errors occur in the application.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the alerting service."""
-        self.alert_handlers: list[callable] = []
+        self.alert_handlers: list[Callable[[Alert], None]] = []
         self._setup_default_handlers()
         logger.info("AlertingService initialized")
 
-    def _setup_default_handlers(self):
+    def _setup_default_handlers(self) -> None:
         """Set up default alert handlers."""
         # Always add console logging handler
         self.alert_handlers.append(self._console_handler)
@@ -130,7 +130,7 @@ class AlertingService:
         except Exception as e:
             logger.error(f"Failed to send webhook alert: {e}")
 
-    def add_handler(self, handler: callable) -> None:
+    def add_handler(self, handler: Callable[[Alert], None]) -> None:
         """Add a custom alert handler."""
         self.alert_handlers.append(handler)
         logger.info(f"Added custom alert handler: {handler.__name__}")

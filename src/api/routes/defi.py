@@ -7,6 +7,7 @@ Provides endpoints for:
 """
 
 import logging
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -45,7 +46,7 @@ class SetRiskManagementRequest(BaseModel):
 
 
 @router.get("/moonlander/markets")
-async def get_moonlander_markets():
+async def get_moonlander_markets() -> dict[str, Any]:
     """
     Get list of available perpetual markets.
 
@@ -68,7 +69,7 @@ async def get_moonlander_markets():
 
 
 @router.get("/moonlander/funding-rate/{asset}")
-async def get_funding_rate(asset: str):
+async def get_funding_rate(asset: str) -> dict[str, Any]:
     """
     Get current funding rate for a market.
 
@@ -91,7 +92,7 @@ async def get_funding_rate(asset: str):
 
 
 @router.post("/moonlander/positions/open")
-async def open_position(request: OpenPositionRequest):
+async def open_position(request: OpenPositionRequest) -> dict[str, Any]:
     """
     Open a perpetual trading position.
 
@@ -119,7 +120,7 @@ async def open_position(request: OpenPositionRequest):
 
 
 @router.post("/moonlander/positions/{position_id}/close")
-async def close_position(position_id: str):
+async def close_position(position_id: str): -> dict[str, Any]:
     """
     Close a perpetual position.
 
@@ -144,7 +145,7 @@ async def close_position(position_id: str):
 
 
 @router.get("/moonlander/positions/{position_id}")
-async def get_position(position_id: str):
+async def get_position(position_id: str): -> dict[str, Any]:
     """
     Get details of a specific position.
 
@@ -165,7 +166,7 @@ async def get_position(position_id: str):
 
 
 @router.get("/moonlander/positions")
-async def list_positions(asset: str | None = Query(None, description="Filter by asset")):
+async def list_positions(asset: str | None = Query(None, description="Filter by asset")): -> dict[str, Any]:
     """
     List all open positions.
 
@@ -188,7 +189,7 @@ async def list_positions(asset: str | None = Query(None, description="Filter by 
 
 
 @router.post("/moonlander/positions/{position_id}/risk-management")
-async def set_risk_management(position_id: str, request: SetRiskManagementRequest):
+async def set_risk_management(position_id: str, request: SetRiskManagementRequest): -> dict[str, Any]:
     """
     Set stop-loss and/or take-profit for a position.
 
@@ -227,7 +228,7 @@ class PlaceBetRequest(BaseModel):
 
 
 @router.get("/delphi/markets")
-async def get_delphi_markets(
+async def get_delphi_markets( -> dict[str, Any]:
     category: str | None = Query(None, description="Filter by category"),
     status: str = Query("active", description="Market status"),
     limit: int = Query(50, ge=1, le=100, description="Max markets to return")
@@ -256,7 +257,7 @@ async def get_delphi_markets(
 
 
 @router.get("/delphi/markets/{market_id}")
-async def get_delphi_market(market_id: str):
+async def get_delphi_market(market_id: str): -> dict[str, Any]:
     """
     Get details of a specific prediction market.
 
@@ -277,7 +278,7 @@ async def get_delphi_market(market_id: str):
 
 
 @router.get("/delphi/markets/{market_id}/outcomes")
-async def get_market_outcomes(market_id: str):
+async def get_market_outcomes(market_id: str): -> dict[str, Any]:
     """
     Get current outcomes and odds for a market.
 
@@ -298,7 +299,7 @@ async def get_market_outcomes(market_id: str):
 
 
 @router.get("/delphi/markets/{market_id}/outcome")
-async def get_market_outcome(market_id: str):
+async def get_market_outcome(market_id: str): -> dict[str, Any]:
     """
     Get the outcome of a resolved market.
 
@@ -319,7 +320,7 @@ async def get_market_outcome(market_id: str):
 
 
 @router.post("/delphi/bets")
-async def place_bet(request: PlaceBetRequest):
+async def place_bet(request: PlaceBetRequest): -> dict[str, Any]:
     """
     Place a bet on a prediction market.
 
@@ -346,7 +347,7 @@ async def place_bet(request: PlaceBetRequest):
 
 
 @router.post("/delphi/bets/{bet_id}/claim")
-async def claim_winnings(bet_id: str):
+async def claim_winnings(bet_id: str): -> dict[str, Any]:
     """
     Claim winnings from a resolved bet.
 
@@ -372,7 +373,7 @@ async def claim_winnings(bet_id: str):
 
 
 @router.get("/delphi/bets/{bet_id}")
-async def get_bet(bet_id: str):
+async def get_bet(bet_id: str): -> dict[str, Any]:
     """
     Get details of a specific bet.
 
@@ -393,7 +394,7 @@ async def get_bet(bet_id: str):
 
 
 @router.get("/delphi/bets")
-async def list_bets(
+async def list_bets( -> dict[str, Any]:
     market_id: str | None = Query(None, description="Filter by market ID"),
     status: str | None = Query(None, description="Filter by status")
 ):
