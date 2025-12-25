@@ -2361,9 +2361,9 @@
       "Step 4: Verify example commands provided",
       "Step 5: Verify configuration section present"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "style",
@@ -2387,9 +2387,9 @@
       "Step 3: Verify consistent types (feat, fix, docs, etc.)",
       "Step 4: Verify messages are descriptive"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "style",
@@ -2427,9 +2427,9 @@
       "Step 3: Verify purpose is clear",
       "Step 4: Verify key exports documented"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "style",
@@ -2440,9 +2440,9 @@
       "Step 3: Verify test function names are descriptive",
       "Step 4: Verify test class naming if used"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "style",
@@ -2467,9 +2467,9 @@
       "Step 3: Verify dependency descriptions in docs",
       "Step 4: Verify proper async handling"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "style",
@@ -2480,9 +2480,9 @@
       "Step 3: Verify inheritance from appropriate base",
       "Step 4: Verify docstrings explain conditions"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "style",
@@ -2495,9 +2495,9 @@
       "Step 5: Verify 4xx for client errors",
       "Step 6: Verify 5xx for server errors"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "style",
@@ -2508,9 +2508,9 @@
       "Step 3: Verify table and column in name",
       "Step 4: Verify consistent naming pattern"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "style",
@@ -2520,9 +2520,9 @@
       "Step 2: Verify version is documented",
       "Step 3: Verify breaking changes would increment version"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "style",
@@ -2532,9 +2532,9 @@
       "Step 2: Verify naming indicates async behavior",
       "Step 3: Verify consistent pattern across codebase"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "style",
@@ -2545,9 +2545,9 @@
       "Step 3: Verify consistent TTL management",
       "Step 4: Verify key documentation"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "style",
@@ -2558,9 +2558,9 @@
       "Step 3: Verify max 3 indexed fields per event",
       "Step 4: Verify event naming follows conventions"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "style",
@@ -2571,9 +2571,9 @@
       "Step 3: Verify slim or alpine base used",
       "Step 4: Verify multi-stage build for smaller image"
     ],
-    "passes": false,
-    "is_dev_done": false,
-    "is_qa_passed": false
+    "passes": true,
+    "is_dev_done": true,
+    "is_qa_passed": true
   },
   {
     "category": "style",
