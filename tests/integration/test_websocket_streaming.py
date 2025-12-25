@@ -17,7 +17,8 @@ from fastapi.websockets import WebSocketDisconnect
 
 from src.main import app
 from src.core.database import async_session_maker
-from src.models.agent_sessions import AgentSession, ExecutionLog
+from src.models.agent_sessions import AgentSession
+from src.models.execution_logs import ExecutionLog
 from src.models.payments import Payment
 from src.services.agent_service import AgentService
 

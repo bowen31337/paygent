@@ -58,10 +58,18 @@ class ServiceSubscription(Base):
     service_id: Mapped[UUID] = mapped_column(ForeignKey("services.id"))
     status: Mapped[str] = mapped_column(String(20), default="active")  # active, cancelled, expired
     expires_at: Mapped[datetime | None] = mapped_column(DateTime)
+    # Payment details for subscription
+    amount: Mapped[float | None] = mapped_column(Float)
+    token: Mapped[str | None] = mapped_column(String(20))
+    renewal_interval_days: Mapped[int | None] = mapped_column(Integer, default=30)
+    last_renewal_date: Mapped[datetime | None] = mapped_column(DateTime)
+    last_tx_hash: Mapped[str | None] = mapped_column(String(100))
+    renewal_count: Mapped[int | None] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
 
     def __repr__(self) -> str:
-        return f"<ServiceSubscription(id={self.id}, status='{self.status}')>"
+        return f"<ServiceSubscription(id={self.id}, status='{self.status}', expires={self.expires_at})>"
 
 
 class AgentMemory(Base):

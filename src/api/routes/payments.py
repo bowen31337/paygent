@@ -17,6 +17,7 @@ from src.core.config import settings
 from src.core.database import get_db
 from src.services.payment_service import PaymentService
 from src.services.service_registry import ServiceRegistryService
+from src.services.subscription_service import SubscriptionService
 from src.services.x402_service import X402PaymentService
 
 router = APIRouter()
@@ -595,23 +596,6 @@ class SubscriptionResponse(BaseModel):
     message: str
 
 
-# Mock subscription storage for demo purposes
-# In production, this would be in a database
-_mock_subscriptions: dict[str, dict] = {
-    "sub-123": {
-        "id": "sub-123",
-        "user_id": "user-456",
-        "service_id": "https://api.example.com",
-        "amount": "10.0",
-        "token": "USDC",
-        "renewal_interval": 30,
-        "next_renewal_date": "2025-01-25T00:00:00Z",
-        "status": "active",
-        "renewal_count": 0,
-    }
-}
-
-
 @router.get(
     "/subscription/{subscription_id}",
     response_model=SubscriptionInfo,
@@ -635,9 +619,17 @@ async def get_subscription(
     Returns:
         SubscriptionInfo: Subscription details
     """
-    # In production, query from database
-    # For demo, return mock data
-    subscription = _mock_subscriptions.get(subscription_id)
+    subscription_service = SubscriptionService(db)
+
+    try:
+        sub_id = UUID(subscription_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid subscription ID format: {subscription_id}",
+        )
+
+    subscription = await subscription_service.get_subscription(sub_id)
 
     if not subscription:
         raise HTTPException(
@@ -645,7 +637,27 @@ async def get_subscription(
             detail=f"Subscription {subscription_id} not found",
         )
 
-    return SubscriptionInfo(**subscription)
+    # Get service details for endpoint
+    from sqlalchemy import select
+    from src.models.services import Service
+
+    stmt = select(Service).where(Service.id == subscription.service_id)
+    result = await db.execute(stmt)
+    service = result.scalar_one_or_none()
+
+    # Calculate next renewal date based on expires_at
+    next_renewal_date = subscription.expires_at.isoformat() if subscription.expires_at else None
+
+    return SubscriptionInfo(
+        id=str(subscription.id),
+        user_id=str(subscription.session_id),
+        service_id=service.endpoint if service else str(subscription.service_id),
+        amount=str(subscription.amount) if subscription.amount else "0.0",
+        token=subscription.token or "USDC",
+        renewal_interval=subscription.renewal_interval_days or 30,
+        next_renewal_date=next_renewal_date,
+        status=subscription.status,
+    )
 
 
 @router.post(
@@ -676,11 +688,9 @@ async def save_subscription_progress(
         f"count={request.renewal_count}, next={request.next_renewal_date}"
     )
 
-    # In production, update database
-    # For demo, just log and return success
-    if request.subscription_id in _mock_subscriptions:
-        _mock_subscriptions[request.subscription_id]["renewal_count"] = request.renewal_count
-        _mock_subscriptions[request.subscription_id]["next_renewal_date"] = request.next_renewal_date
+    # In production, this would update a renewal history table
+    # For now, we just log and return success
+    # The actual subscription expiration is updated in mark_renewal_successful
 
     return SubscriptionResponse(
         success=True,
@@ -712,19 +722,188 @@ async def mark_renewal_successful(
     Returns:
         SubscriptionResponse: Success confirmation
     """
+    subscription_service = SubscriptionService(db)
+
+    try:
+        sub_id = UUID(subscription_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid subscription ID format: {subscription_id}",
+        )
+
     logger.info(
         f"Renewal successful for {subscription_id}: "
         f"tx_hash={request.tx_hash}, date={request.renewal_date}"
     )
 
-    # In production, update database with tx_hash and renewal date
-    # For demo, just log and return success
-    if subscription_id in _mock_subscriptions:
-        _mock_subscriptions[subscription_id]["last_tx_hash"] = request.tx_hash
-        _mock_subscriptions[subscription_id]["last_renewal_date"] = request.renewal_date
+    # Renew the subscription (extends expiration date)
+    success = await subscription_service.renew_subscription(sub_id, request.tx_hash)
+
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Failed to renew subscription {subscription_id}",
+        )
 
     return SubscriptionResponse(
         success=True,
         message="Renewal marked as successful",
     )
+
+
+@router.post(
+    "/subscription",
+    response_model=SubscriptionResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create subscription",
+    description="Create a new subscription for a service.",
+)
+async def create_subscription(
+    session_id: str,
+    service_id: str,
+    amount: float | None = None,
+    token: str | None = None,
+    renewal_interval_days: int = 30,
+    db: AsyncSession = Depends(get_db),
+) -> SubscriptionResponse:
+    """
+    Create a new subscription for a session.
+
+    Args:
+        session_id: Agent session ID
+        service_id: Service ID to subscribe to
+        amount: Payment amount for subscription
+        token: Token symbol for payment
+        renewal_interval_days: Renewal interval in days (default: 30)
+        db: Database session
+
+    Returns:
+        SubscriptionResponse: Success confirmation with subscription ID
+    """
+    subscription_service = SubscriptionService(db)
+
+    try:
+        sess_id = UUID(session_id)
+        serv_id = UUID(service_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid session_id or service_id format",
+        )
+
+    subscription = await subscription_service.create_subscription(
+        sess_id, serv_id, amount, token, renewal_interval_days
+    )
+
+    if not subscription:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create subscription",
+        )
+
+    return SubscriptionResponse(
+        success=True,
+        message=f"Subscription created successfully: {subscription.id}",
+    )
+
+
+@router.get(
+    "/subscription/session/{session_id}",
+    response_model=list[SubscriptionInfo],
+    summary="Get session subscriptions",
+    description="Get all subscriptions for a session.",
+)
+async def get_session_subscriptions(
+    session_id: str,
+    include_expired: bool = False,
+    db: AsyncSession = Depends(get_db),
+) -> list[SubscriptionInfo]:
+    """
+    Get all subscriptions for a session.
+
+    Args:
+        session_id: Agent session ID
+        include_expired: Whether to include expired subscriptions
+        db: Database session
+
+    Returns:
+        List of subscription information
+    """
+    subscription_service = SubscriptionService(db)
+
+    try:
+        sess_id = UUID(session_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid session_id format",
+        )
+
+    subscriptions = await subscription_service.get_session_subscriptions(
+        sess_id, include_expired=include_expired
+    )
+
+    # Get service details for each subscription
+    from sqlalchemy import select
+    from src.models.services import Service
+
+    result = []
+    for subscription in subscriptions:
+        stmt = select(Service).where(Service.id == subscription.service_id)
+        db_result = await db.execute(stmt)
+        service = db_result.scalar_one_or_none()
+
+        next_renewal_date = subscription.expires_at.isoformat() if subscription.expires_at else None
+
+        result.append(
+            SubscriptionInfo(
+                id=str(subscription.id),
+                user_id=str(subscription.session_id),
+                service_id=service.endpoint if service else str(subscription.service_id),
+                amount=str(subscription.amount) if subscription.amount else "0.0",
+                token=subscription.token or "USDC",
+                renewal_interval=subscription.renewal_interval_days or 30,
+                next_renewal_date=next_renewal_date,
+                status=subscription.status,
+            )
+        )
+
+    return result
+
+
+@router.get(
+    "/subscription/{session_id}/{service_id}/active",
+    response_model=bool,
+    summary="Check subscription active",
+    description="Check if a subscription is active for a session and service.",
+)
+async def check_subscription_active(
+    session_id: str,
+    service_id: str,
+    db: AsyncSession = Depends(get_db),
+) -> bool:
+    """
+    Check if a subscription is active for a session and service.
+
+    Args:
+        session_id: Agent session ID
+        service_id: Service ID
+        db: Database session
+
+    Returns:
+        True if active subscription exists
+    """
+    subscription_service = SubscriptionService(db)
+
+    try:
+        sess_id = UUID(session_id)
+        serv_id = UUID(service_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid session_id or service_id format",
+        )
+
+    return await subscription_service.is_subscription_active(sess_id, serv_id)
 

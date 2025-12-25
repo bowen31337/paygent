@@ -16,7 +16,8 @@ from sqlalchemy.orm import sessionmaker
 
 from src.agents.agent_executor_enhanced import AgentExecutorEnhanced
 from src.agents.planner import CommandPlanner, ExecutionPlan, PlanStep
-from src.models.agent_sessions import ExecutionLog, AgentSession, AgentMemory
+from src.models.agent_sessions import AgentSession, AgentMemory
+from src.models.execution_logs import ExecutionLog
 
 
 class TestComplexMultiStepWorkflows:

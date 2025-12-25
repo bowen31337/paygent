@@ -7,7 +7,8 @@ from httpx import AsyncClient, ASGITransport
 from src.main import app
 from sqlalchemy import select
 from src.core.database import get_db
-from src.models.agent_sessions import ExecutionLog
+from src.models.agent_sessions import 
+from src.models.execution_logs import ExecutionLog
 
 async def test():
     async with AsyncClient(transport=ASGITransport(app=app), base_url='http://test') as client:

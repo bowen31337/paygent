@@ -19,7 +19,8 @@ class TestSQLInjectionPrevention:
     async def test_sql_injection_in_command(self, db_session: AsyncSession):
         """Test that SQL injection in agent command is prevented."""
         from src.services.execution_log_service import ExecutionLogService
-        from src.models.agent_sessions import ExecutionLog, AgentSession
+        from src.models.agent_sessions import 
+from src.models.execution_logs import ExecutionLog, AgentSession
         from uuid import uuid4
         from datetime import datetime
 
@@ -133,7 +134,8 @@ class TestSQLInjectionPrevention:
     @pytest.mark.asyncio
     async def test_union_based_injection_prevented(self, db_session: AsyncSession):
         """Test that UNION-based injection is prevented."""
-        from src.models.agent_sessions import AgentSession, ExecutionLog
+        from src.models.agent_sessions import AgentSession, 
+from src.models.execution_logs import ExecutionLog
         from sqlalchemy import select
         from uuid import uuid4
 

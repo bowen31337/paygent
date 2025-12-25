@@ -11,7 +11,6 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.agents.agent_executor_enhanced import execute_agent_command_enhanced
 from src.models.agent_sessions import AgentSession
 from src.models.execution_logs import ExecutionLog
 
@@ -43,6 +42,9 @@ class AgentService:
             Dict containing execution result
         """
         try:
+            # Import here to avoid circular dependency
+            from src.agents.agent_executor_enhanced import execute_agent_command_enhanced
+
             # Get or create session
             session = await self.get_or_create_session(session_id)
 

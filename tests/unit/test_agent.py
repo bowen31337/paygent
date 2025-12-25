@@ -205,7 +205,8 @@ class TestAgentExecute:
     async def test_execute_command_stores_in_database(self, db_session):
         """Test that execute command stores session and log in database."""
         from sqlalchemy import select
-        from src.models.agent_sessions import AgentSession, ExecutionLog
+        from src.models.agent_sessions import AgentSession, 
+from src.models.execution_logs import ExecutionLog
 
         # Override the get_db dependency to use our test db_session
         async def override_get_db():
