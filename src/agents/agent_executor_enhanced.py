@@ -8,6 +8,7 @@ This module provides comprehensive agent execution with:
 - Tool call tracking
 """
 
+import asyncio
 import json
 import logging
 import time
@@ -209,7 +210,8 @@ class AgentExecutorEnhanced:
     async def execute_command(
         self,
         command: str,
-        budget_limit_usd: Optional[float] = None
+        budget_limit_usd: Optional[float] = None,
+        timeout_seconds: float = 30.0
     ) -> Dict[str, Any]:
         """
         Execute a natural language command with full logging and planning.
@@ -217,12 +219,17 @@ class AgentExecutorEnhanced:
         Args:
             command: Natural language command to execute
             budget_limit_usd: Optional budget limit in USD
+            timeout_seconds: Maximum execution time in seconds (default: 30s for simple operations)
 
         Returns:
             Dict containing execution result
+
+        Raises:
+            asyncio.TimeoutError: If execution exceeds timeout
         """
         start_time = time.time()
         logger.info(f"Session {self.session_id}: Executing command - {command}")
+        logger.info(f"Timeout set to {timeout_seconds}s for this execution")
 
         # Load existing memory for this session
         await self.load_memory()
@@ -291,42 +298,61 @@ class AgentExecutorEnhanced:
             plan = self._generate_execution_plan(parsed, command)
             execution_log.plan = plan
 
-            # Step 4: Execute based on intent
-            if parsed.intent == "payment":
-                result = await self._execute_payment_with_logging(
-                    parsed, budget_limit_usd
+            # Step 4: Execute based on intent with timeout enforcement
+            # For simple operations (balance_check, service_discovery), use shorter timeout
+            execution_timeout = timeout_seconds
+            if parsed.intent in ["balance_check", "service_discovery"]:
+                execution_timeout = min(timeout_seconds, 10.0)  # 10s max for simple queries
+                logger.info(f"Using {execution_timeout}s timeout for simple {parsed.intent} operation")
+
+            try:
+                # Execute with timeout
+                async def execute_with_timeout():
+                    if parsed.intent == "payment":
+                        return await self._execute_payment_with_logging(
+                            parsed, budget_limit_usd
+                        )
+                    elif parsed.intent == "swap":
+                        return await self._execute_swap_with_logging(
+                            parsed, budget_limit_usd
+                        )
+                    elif parsed.intent == "perpetual_trade":
+                        return await self._execute_perpetual_trade_with_logging(
+                            parsed, budget_limit_usd
+                        )
+                    elif parsed.intent == "balance_check":
+                        return await self._execute_balance_check_with_logging(parsed)
+                    elif parsed.intent == "service_discovery":
+                        return await self._execute_service_discovery_with_logging(parsed)
+                    else:
+                        # Unknown intent - return helpful error
+                        return {
+                            "success": False,
+                            "error": "Could not understand command intent. Please rephrase.",
+                            "suggestions": [
+                                "Pay 0.10 USDC to API service",
+                                "Check my wallet balance",
+                                "Swap 10 CRO for USDC",
+                                "Open a 100 USDC long position on BTC with 10x leverage",
+                                "Find available services"
+                            ],
+                            "parsed_intent": parsed.intent,
+                            "confidence": parsed.confidence
+                        }
+
+                result = await asyncio.wait_for(
+                    execute_with_timeout(),
+                    timeout=execution_timeout
                 )
 
-            elif parsed.intent == "swap":
-                result = await self._execute_swap_with_logging(
-                    parsed, budget_limit_usd
-                )
-
-            elif parsed.intent == "perpetual_trade":
-                result = await self._execute_perpetual_trade_with_logging(
-                    parsed, budget_limit_usd
-                )
-
-            elif parsed.intent == "balance_check":
-                result = await self._execute_balance_check_with_logging(parsed)
-
-            elif parsed.intent == "service_discovery":
-                result = await self._execute_service_discovery_with_logging(parsed)
-
-            else:
-                # Unknown intent - return helpful error
+            except asyncio.TimeoutError:
+                # Handle timeout
+                logger.error(f"Command execution exceeded {execution_timeout}s timeout")
                 result = {
                     "success": False,
-                    "error": "Could not understand command intent. Please rephrase.",
-                    "suggestions": [
-                        "Pay 0.10 USDC to API service",
-                        "Check my wallet balance",
-                        "Swap 10 CRO for USDC",
-                        "Open a 100 USDC long position on BTC with 10x leverage",
-                        "Find available services"
-                    ],
-                    "parsed_intent": parsed.intent,
-                    "confidence": parsed.confidence
+                    "error": f"Operation timed out after {execution_timeout:.1f} seconds. Please try a simpler command or contact support.",
+                    "timeout_seconds": execution_timeout,
+                    "timeout_exceeded": True,
                 }
 
             # Calculate duration
@@ -914,7 +940,8 @@ async def execute_agent_command_enhanced(
     command: str,
     session_id: UUID,
     db: AsyncSession,
-    budget_limit_usd: Optional[float] = None
+    budget_limit_usd: Optional[float] = None,
+    timeout_seconds: float = 30.0
 ) -> Dict[str, Any]:
     """
     Convenience function to execute an agent command with enhanced logging.
@@ -924,13 +951,14 @@ async def execute_agent_command_enhanced(
         session_id: Session ID
         db: Database session
         budget_limit_usd: Optional budget limit
+        timeout_seconds: Maximum execution time in seconds (default: 30s)
 
     Returns:
         Execution result
     """
     start_time = time.time()
     executor = AgentExecutorEnhanced(session_id, db)
-    result = await executor.execute_command(command, budget_limit_usd)
+    result = await executor.execute_command(command, budget_limit_usd, timeout_seconds)
 
     # Record metrics
     duration_seconds = time.time() - start_time

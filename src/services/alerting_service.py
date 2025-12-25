@@ -106,10 +106,29 @@ class AlertingService:
 
     async def _webhook_handler(self, alert: Alert) -> None:
         """Handle alerts by sending to webhook."""
-        # This is a placeholder - actual implementation would use httpx/aiohttp
-        # to send POST request to the webhook URL
-        logger.info(f"Would send webhook alert to {settings.alert_webhook_url}")
-        logger.info(f"Alert payload: {json.dumps(alert.to_dict())}")
+        if not settings.alert_webhook_url:
+            logger.warning("Alert webhook URL not configured, skipping webhook alert")
+            return
+
+        try:
+            import httpx
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    settings.alert_webhook_url,
+                    json=alert.to_dict(),
+                    headers={"Content-Type": "application/json"},
+                    timeout=5.0
+                )
+                if response.status_code == 200:
+                    logger.info(f"Successfully sent webhook alert to {settings.alert_webhook_url}")
+                else:
+                    logger.warning(f"Webhook alert returned status {response.status_code}")
+        except ImportError:
+            logger.warning("httpx not available, webhook alert simulated")
+            logger.info(f"Would send webhook alert to {settings.alert_webhook_url}")
+            logger.info(f"Alert payload: {json.dumps(alert.to_dict())}")
+        except Exception as e:
+            logger.error(f"Failed to send webhook alert: {e}")
 
     def add_handler(self, handler: callable) -> None:
         """Add a custom alert handler."""
@@ -149,9 +168,14 @@ class AlertingService:
                 # Check if handler is async
                 import asyncio
                 if asyncio.iscoroutinefunction(handler):
-                    # For async handlers, we just log that they would be called
-                    # In production, you'd want to properly await these
-                    logger.debug(f"Async handler {handler.__name__} would be called")
+                    # For async handlers, schedule them in background
+                    # We use create_task but don't await - fire and forget
+                    try:
+                        loop = asyncio.get_running_loop()
+                        loop.create_task(handler(alert))
+                    except RuntimeError:
+                        # No running loop, just skip async handlers
+                        logger.debug(f"Cannot call async handler {handler.__name__} - no running loop")
                 else:
                     handler(alert)
             except Exception as e:
@@ -221,6 +245,68 @@ class AlertingService:
             correlation_id=correlation_id,
         )
 
+    async def send_alert_async(
+        self,
+        alert_type: AlertType,
+        severity: AlertSeverity,
+        message: str,
+        details: Optional[Dict[str, Any]] = None,
+        correlation_id: Optional[str] = None
+    ) -> None:
+        """
+        Send an alert through all registered handlers (async version).
+
+        Args:
+            alert_type: Type of alert
+            severity: Severity level
+            message: Alert message
+            details: Additional context/details
+            correlation_id: ID for tracking related events
+        """
+        alert = Alert(
+            alert_type=alert_type,
+            severity=severity,
+            message=message,
+            timestamp=datetime.utcnow().isoformat(),
+            details=details,
+            correlation_id=correlation_id,
+        )
+
+        # Dispatch to all handlers
+        for handler in self.alert_handlers:
+            try:
+                import asyncio
+                if asyncio.iscoroutinefunction(handler):
+                    await handler(alert)
+                else:
+                    handler(alert)
+            except Exception as e:
+                logger.error(f"Alert handler {handler.__name__} failed: {e}")
+
+    def add_synchronous_webhook_handler(self, mock_response: Optional[int] = None) -> None:
+        """
+        Add a synchronous webhook handler for testing purposes.
+
+        Args:
+            mock_response: Optional mock HTTP status code to return
+        """
+        def sync_webhook_handler(alert: Alert) -> None:
+            """Synchronous webhook handler for testing."""
+            if not settings.alert_webhook_url:
+                logger.warning("Alert webhook URL not configured")
+                return
+
+            # For testing, we can mock the response
+            if mock_response:
+                logger.info(f"Mock webhook alert sent to {settings.alert_webhook_url} with response {mock_response}")
+                logger.info(f"Alert payload: {json.dumps(alert.to_dict())}")
+            else:
+                # In a real scenario, this would use requests
+                logger.info(f"Webhook alert would be sent to {settings.alert_webhook_url}")
+                logger.info(f"Alert payload: {json.dumps(alert.to_dict())}")
+
+        self.add_handler(sync_webhook_handler)
+
 
 # Global alerting service instance
 alerting_service = AlertingService()
@@ -280,3 +366,48 @@ def send_error_alert(
         details=details,
         correlation_id=correlation_id,
     )
+
+
+async def send_alert_async(
+    alert_type: AlertType,
+    severity: AlertSeverity,
+    message: str,
+    details: Optional[Dict[str, Any]] = None,
+    correlation_id: Optional[str] = None
+) -> None:
+    """Send an alert asynchronously."""
+    await alerting_service.send_alert_async(
+        alert_type=alert_type,
+        severity=severity,
+        message=message,
+        details=details,
+        correlation_id=correlation_id,
+    )
+
+
+async def send_critical_alert_async(
+    alert_type: AlertType,
+    message: str,
+    details: Optional[Dict[str, Any]] = None,
+    correlation_id: Optional[str] = None
+) -> None:
+    """Send a critical alert asynchronously."""
+    await alerting_service.send_alert_async(
+        alert_type=alert_type,
+        severity=AlertSeverity.CRITICAL,
+        message=message,
+        details=details,
+        correlation_id=correlation_id,
+    )
+
+
+# Test utilities
+def get_alerting_service() -> AlertingService:
+    """Get the global alerting service instance."""
+    return alerting_service
+
+
+def reset_alerting_service() -> None:
+    """Reset the alerting service (for testing)."""
+    global alerting_service
+    alerting_service = AlertingService()
