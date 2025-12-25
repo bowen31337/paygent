@@ -35,30 +35,37 @@ class CommandParser:
     # Patterns for different command types
     PATTERNS = {
         "payment": [
-            r"pay\s+([\d.]+)\s+(\w+)\s+to\s+(.+)$",  # Capture everything after "to"
-            r"pay\s+([\d.]+)\s+(\w+)\s+for\s+(.+)$",  # Alternative: "for" instead of "to"
-            r"transfer\s+([\d.]+)\s+(\w+)\s+to\s+(.+)$",
-            r"send\s+([\d.]+)\s+(\w+)\s+to\s+(.+)$",
+            r"pay\s+([\d.]+(?:e[+-]?\d+)?)\s+([\w-]+)\s+to\s+(.+)$",
+            r"pay\s+([\d.]+(?:e[+-]?\d+)?)\s+([\w-]+)\s+for\s+(.+)$",
+            r"transfer\s+([\d.]+(?:e[+-]?\d+)?)\s+([\w-]+)\s+to\s+(.+)$",
+            r"send\s+([\d.]+(?:e[+-]?\d+)?)\s+([\w-]+)\s+to\s+(.+)$",
         ],
         "swap": [
-            r"swap\s+([\d.]+)\s+(\w+)\s+(?:for|to)\s+(\w+)",
-            r"exchange\s+([\d.]+)\s+(\w+)\s+(?:for|to)\s+(\w+)",
-            r"trade\s+([\d.]+)\s+(\w+)\s+(?:for|to)\s+(\w+)",
+            r"swap\s+([\d.]+(?:e[+-]?\d+)?)\s+([\w-]+)\s+(?:for|to)\s+([\w-]+)",
+            r"exchange\s+([\d.]+(?:e[+-]?\d+)?)\s+([\w-]+)\s+(?:for|to)\s+([\w-]+)",
+            r"trade\s+([\d.]+(?:e[+-]?\d+)?)\s+([\w-]+)\s+(?:for|to)\s+([\w-]+)",
         ],
         "perpetual_trade": [
-            r"(?:open|long|short)\s+(?:a\s+)?([\d.]+)\s+(\w+)\s+(long|short)\s+(?:position\s+)?(?:on\s+)?(\w+)",
-            r"(?:open|long|short)\s+(?:a\s+)?([\d.]+)\s+(\w+)\s+(?:position\s+)?(?:on\s+)?(\w+)",
-            r"(?:open|long|short)\s+(?:a\s+)?([\d.]+)\s+(\w+)\s+(?:position\s+)?(?:on\s+)?(\w+)\s+with\s+([\d.]+)x\s+leverage",
+            # Pattern 0: "open a 10x long position on BTC/USDC" -> [leverage, direction, market]
+            r"(?:open|long|short)\s+(?:a\s+)?([\d.]+)x\s+(long|short)\s+position\s+on\s+([\w/]+)",
+            # Pattern 1: "open a 100 USDC long position on BTC" -> [amount, token, direction, market]
+            r"(?:open|long|short)\s+(?:a\s+)?([\d.]+(?:e[+-]?\d+)?)\s+([\w-]+)\s+(long|short)\s+(?:position\s+)?(?:on\s+)?([\w/]+)",
+            # Pattern 2: "open a 100 USDC long position on BTC with 10x leverage" -> [amount, token, market, leverage]
+            r"(?:open|long|short)\s+(?:a\s+)?([\d.]+(?:e[+-]?\d+)?)\s+([\w-]+)\s+(?:position\s+)?(?:on\s+)?([\w/]+)\s+with\s+([\d.]+)x\s+leverage",
+            # Pattern 3: "short 5x BTC/USDT" -> [leverage, market]
+            r"(?:short|long)\s+([\d.]+)x\s+([\w/]+)",
+            # Pattern 4: "long 200 USDC BTC" -> [amount, token, market]
+            r"(?:long|short)\s+([\d.]+(?:e[+-]?\d+)?)\s+([\w-]+)\s+([\w/]+)",
         ],
         "balance_check": [
             r"(?:check|show|get|what(?:'s| is))\s+(?:my\s+)?(?:wallet\s+)?balance",
-            r"how\s+much\s+(\w+)\s+do\s+i\s+have",
-            r"(?:check|show|get)\s+(\w+)\s+balance",
+            r"how\s+much\s+([\w-]+)\s+do\s+i\s+have",
+            r"(?:check|show|get)\s+my\s+([\w-]+)\s+balance",
         ],
         "service_discovery": [
-            r"(?:find|search|discover|list)\s+(?:for\s+)?services?",
+            r"(?:find|search|discover|list)\s+for\s+([\w\s]+?)\s+(?:services?|protocols?)",
+            r"(?:find|search|discover|list)\s+([\w\s]+?)\s+(?:services?|protocols?)",
             r"what\s+services?\s+(?:are\s+)?available",
-            r"find\s+(\w+)\s+services?",
         ],
     }
 
@@ -116,13 +123,21 @@ class CommandParser:
     ) -> ParsedCommand:
         """Extract parameters from regex match."""
         groups = match.groups()
+        raw_lower = raw_command.lower()
 
         if intent == "payment":
             # Pattern: pay 0.10 USDC to service
             recipient = groups[2]
+            # Extract action from the command
+            action = "pay"  # default
+            if raw_lower.startswith("transfer"):
+                action = "transfer"
+            elif raw_lower.startswith("send"):
+                action = "send"
+
             return ParsedCommand(
                 intent="payment",
-                action="pay",
+                action=action,
                 parameters={
                     "amount": float(groups[0]),
                     "token": groups[1].upper(),
@@ -134,9 +149,16 @@ class CommandParser:
 
         elif intent == "swap":
             # Pattern: swap 10 CRO for USDC
+            # Extract action from the command
+            action = "swap"  # default
+            if raw_lower.startswith("exchange"):
+                action = "exchange"
+            elif raw_lower.startswith("trade"):
+                action = "trade"
+
             return ParsedCommand(
                 intent="swap",
-                action="swap",
+                action=action,
                 parameters={
                     "from_token": groups[1].upper(),
                     "to_token": groups[2].upper(),
@@ -147,16 +169,14 @@ class CommandParser:
             )
 
         elif intent == "perpetual_trade":
-            # Pattern: open 100 USDC long position on BTC with 10x leverage
-            # Groups vary by pattern:
-            # - Pattern 1: [0]=amount, [1]=token, [2]=direction, [3]=symbol, [4]=leverage
-            # - Pattern 2: [0]=amount, [1]=token, [2]=symbol
-            # - Pattern 3: [0]=amount, [1]=token, [2]=symbol, [3]=leverage
-            amount = float(groups[0])
-            token = groups[1].upper()
+            # Determine action from first word
+            first_word = raw_lower.split()[0]
+            if first_word in ["open", "long", "short"]:
+                action = first_word
+            else:
+                action = "open"
 
-            # Determine direction from raw command (since it's in non-capturing group)
-            raw_lower = raw_command.lower()
+            # Determine direction
             if "short" in raw_lower:
                 direction = "short"
             elif "long" in raw_lower:
@@ -164,37 +184,61 @@ class CommandParser:
             else:
                 direction = "long"  # Default
 
-            # Determine symbol and leverage based on pattern
-            if len(groups) >= 4 and groups[3]:
-                # Pattern 1 or 3: has symbol at index 2 or 3
-                if groups[2] and groups[2].upper() in ["BTC", "ETH", "CRO"]:
-                    symbol = groups[2].upper()
-                    leverage = float(groups[3]) if groups[3] else 10.0
-                else:
-                    symbol = groups[3].upper()
-                    leverage = 10.0
-            elif len(groups) >= 3:
-                # Pattern 2: symbol at index 2
-                symbol = groups[2].upper()
-                leverage = 10.0
-            else:
-                symbol = "BTC"
-                leverage = 10.0
+            # Default values
+            amount = 100.0
+            token = "USDC"
+            leverage = "10"
+            market = "BTC"
 
-            # Check for leverage in raw command
-            import re
-            leverage_match = re.search(r"([\d.]+)x\s+leverage", raw_lower)
-            if leverage_match:
-                leverage = float(leverage_match.group(1))
+            # Determine which pattern matched by number of groups
+            num_groups = len(groups)
+
+            if num_groups == 3:
+                # Pattern 0: [leverage, direction, market] - "open a 10x long position on BTC/USDC"
+                # Pattern 4: [amount, token, market] - "long 200 USDC BTC"
+                if 'x' in raw_lower and groups[0] and groups[0].replace('.', '').isdigit():
+                    # Pattern 0
+                    leverage = groups[0]
+                    direction = groups[1].lower()
+                    market = groups[2]
+                else:
+                    # Pattern 4
+                    amount = float(groups[0])
+                    token = groups[1].upper()
+                    market = groups[2]
+
+            elif num_groups == 4:
+                # Pattern 1: [amount, token, direction, market] - "open a 100 USDC long position on BTC"
+                # Pattern 2: [amount, token, market, leverage] - "open a 100 USDC long position on BTC with 10x leverage"
+                if 'leverage' in raw_lower:
+                    # Pattern 2
+                    amount = float(groups[0])
+                    token = groups[1].upper()
+                    market = groups[2]
+                    leverage = groups[3]
+                else:
+                    # Pattern 1
+                    amount = float(groups[0])
+                    token = groups[1].upper()
+                    direction = groups[2].lower()
+                    market = groups[3]
+
+            elif num_groups == 2:
+                # Pattern 3: [leverage, market] - "short 5x BTC/USDT"
+                leverage = groups[0]
+                market = groups[1]
+
+            # Normalize market format (ensure uppercase)
+            market = market.upper()
 
             return ParsedCommand(
                 intent="perpetual_trade",
-                action="open",
+                action=action,
                 parameters={
                     "amount": amount,
                     "token": token,
                     "direction": direction,
-                    "symbol": symbol,
+                    "market": market,
                     "leverage": leverage,
                 },
                 confidence=0.95,
@@ -203,12 +247,22 @@ class CommandParser:
 
         elif intent == "balance_check":
             # Pattern: check balance
-            tokens = [g.upper() for g in groups if g] if groups else ["CRO", "USDC"]
+            # Check for specific token in command - first check regex groups, then search
+            token = "all"
+            if groups:
+                # Pattern like "check my CRO balance" or "how much USDC do I have"
+                token = groups[0].upper()
+            else:
+                # Try to extract from command
+                token_match = re.search(r"\b(CRO|USDC|USDT|ETH|BTC)\b", raw_command, re.IGNORECASE)
+                if token_match:
+                    token = token_match.group(1).upper()
+
             return ParsedCommand(
                 intent="balance_check",
                 action="check",
                 parameters={
-                    "tokens": tokens,
+                    "token": token,
                 },
                 confidence=0.90,
                 raw_command=raw_command,
@@ -217,9 +271,23 @@ class CommandParser:
         elif intent == "service_discovery":
             # Pattern: find services
             category = groups[0] if groups else None
+
+            # Extract action from command
+            action = "find"
+            if raw_lower.startswith("search"):
+                action = "search"
+            elif raw_lower.startswith("discover"):
+                action = "discover"
+            elif raw_lower.startswith("list"):
+                action = "list"
+
+            # Clean up category (remove trailing whitespace)
+            if category:
+                category = category.strip()
+
             return ParsedCommand(
                 intent="service_discovery",
-                action="discover",
+                action=action,
                 parameters={
                     "category": category.lower() if category else None,
                 },
@@ -284,7 +352,7 @@ class CommandParser:
         command_lower = command.lower()
 
         # Extract amounts (e.g., "0.10", "100")
-        amounts = re.findall(r"([\d.]+)\s*(\w+)", command)
+        amounts = re.findall(r"([\d.]+)\s*([\w-]+)", command)
         if amounts:
             if intent == "payment":
                 parameters["amount"] = float(amounts[0][0])
@@ -376,6 +444,7 @@ def test_parser() -> None:
         parsed = parser.parse(cmd)
         print(f"\nCommand: {cmd}")
         print(f"  Intent: {parsed.intent}")
+        print(f"  Action: {parsed.action}")
         print(f"  Confidence: {parsed.confidence:.2f}")
         print(f"  Parameters: {parsed.parameters}")
 

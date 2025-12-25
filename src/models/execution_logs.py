@@ -37,12 +37,18 @@ class ExecutionLog(Base):
     plan: Mapped[dict | None] = mapped_column(JSON)  # Agent's execution plan (write_todos)
     tool_calls: Mapped[list | None] = mapped_column(JSON)  # List of tool invocations
     result: Mapped[dict | None] = mapped_column(JSON)  # Final execution result
-    total_cost_usd: Mapped[float | None] = mapped_column(Float)  # Total LLM + transaction costs
+    total_cost: Mapped[float | None] = mapped_column(Float)  # Total LLM + transaction costs
     duration_ms: Mapped[int | None] = mapped_column(Integer)  # Execution duration in milliseconds
+    status: Mapped[str | None] = mapped_column(String(20))  # running, completed, failed, blocked
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
 
     def __repr__(self) -> str:
         return f"<ExecutionLog(id={self.id}, command='{self.command[:50]}...', duration_ms={self.duration_ms})>"
+
+    @property
+    def total_cost_usd(self) -> float | None:
+        """Alias for total_cost for backward compatibility."""
+        return self.total_cost
 
 
 class ToolCall(Base):

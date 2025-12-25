@@ -135,7 +135,8 @@ class AgentExecutorEnhanced:
                 extra_data=metadata or {},
             )
             self.db.add(memory_entry)
-            await self.db.commit()
+            # Don't commit immediately - let the caller decide when to commit for better performance
+            # await self.db.commit()
 
             # Also update in-memory cache
             self.memory.append({
@@ -392,6 +393,9 @@ class AgentExecutorEnhanced:
                     "total_cost_usd": result.get("total_cost_usd", 0.0),
                 }
             )
+
+            # Commit all memory operations together for better performance
+            await self.db.commit()
 
             # Add metadata to result
             result["session_id"] = str(self.session_id)

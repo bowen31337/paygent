@@ -35,6 +35,13 @@ class SafeException(Exception):
     """Base exception for safe errors that can be shown to users."""
 
     def __init__(self, message: str, detail: str | None = None):
+        """
+        Initialize the safe exception.
+
+        Args:
+            message: User-friendly error message
+            detail: Optional additional details
+        """
         self.message = message
         self.detail = detail
         super().__init__(message)
@@ -68,6 +75,13 @@ class PaygentError(Exception):
     """Base exception for Paygent application errors."""
 
     def __init__(self, message: str, details: dict[str, Any] | None = None):
+        """
+        Initialize the Paygent error.
+
+        Args:
+            message: Error message
+            details: Optional additional error details
+        """
         self.message = message
         self.details = details or {}
         super().__init__(message)

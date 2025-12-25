@@ -21,6 +21,12 @@ class AgentService:
     """Service for managing agent execution and state."""
 
     def __init__(self, db: AsyncSession = None):
+        """
+        Initialize the agent service.
+
+        Args:
+            db: Optional database session for agent operations
+        """
         self.db = db
         self.active_executions: dict[str, asyncio.Task] = {}
 

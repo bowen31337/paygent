@@ -29,6 +29,12 @@ class DelphiPredictorCallbackHandler(BaseCallbackHandler):
     """Callback handler for Delphi predictor subagent events."""
 
     def __init__(self, session_id: UUID):
+        """
+        Initialize the callback handler.
+
+        Args:
+            session_id: Unique identifier for the subagent session
+        """
         self.session_id = session_id
         self.events = []
 
@@ -500,6 +506,12 @@ class GetDelphiMarketsTool:
     description = "Get list of available prediction markets on Delphi"
 
     def __init__(self, delphi_connector: DelphiConnector):
+        """
+        Initialize the get markets tool.
+
+        Args:
+            delphi_connector: Delphi connector instance for market operations
+        """
         self.delphi_connector = delphi_connector
 
     def run(
@@ -532,6 +544,12 @@ class PlacePredictionBetTool:
     description = "Place a bet on a Delphi prediction market"
 
     def __init__(self, delphi_connector: DelphiConnector):
+        """
+        Initialize the place bet tool.
+
+        Args:
+            delphi_connector: Delphi connector instance for bet operations
+        """
         self.delphi_connector = delphi_connector
 
     def run(
@@ -581,6 +599,12 @@ class ClaimPredictionWinningsTool:
     description = "Claim winnings from a resolved Delphi prediction bet"
 
     def __init__(self, delphi_connector: DelphiConnector):
+        """
+        Initialize the claim winnings tool.
+
+        Args:
+            delphi_connector: Delphi connector instance for claim operations
+        """
         self.delphi_connector = delphi_connector
 
     def run(
@@ -619,6 +643,12 @@ class GetPredictionBetTool:
     description = "Get details of a specific prediction bet"
 
     def __init__(self, delphi_connector: DelphiConnector):
+        """
+        Initialize the get bet tool.
+
+        Args:
+            delphi_connector: Delphi connector instance for bet operations
+        """
         self.delphi_connector = delphi_connector
 
     def run(
@@ -658,6 +688,12 @@ class GetMarketOutcomesTool:
     description = "Get current outcomes and odds for a Delphi prediction market"
 
     def __init__(self, delphi_connector: DelphiConnector):
+        """
+        Initialize the get outcomes tool.
+
+        Args:
+            delphi_connector: Delphi connector instance for market operations
+        """
         self.delphi_connector = delphi_connector
 
     def run(

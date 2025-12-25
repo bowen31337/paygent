@@ -26,6 +26,12 @@ class VVSTraderCallbackHandler(BaseCallbackHandler):
     """Callback handler for VVS trader subagent events."""
 
     def __init__(self, session_id: UUID):
+        """
+        Initialize the callback handler.
+
+        Args:
+            session_id: Unique identifier for the subagent session
+        """
         self.session_id = session_id
         self.events = []
 

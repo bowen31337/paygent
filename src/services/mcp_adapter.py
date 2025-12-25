@@ -90,10 +90,11 @@ class CryptoComMCPAdapter:
                     name: str = "get_crypto_price"
                     description: str = "Get current price for a cryptocurrency trading pair"
                     args_schema: type[BaseModel] = GetPriceInput
+                    mcp_client: MCPServerClient
 
                     def __init__(self, mcp_client: MCPServerClient, **kwargs):
                         super().__init__(**kwargs)
-                        self.mcp_client = mcp_client
+                        object.__setattr__(self, 'mcp_client', mcp_client)
 
                     async def _arun(self, symbol: str) -> Dict[str, Any]:
                         """Async implementation of price retrieval."""
@@ -126,10 +127,11 @@ class CryptoComMCPAdapter:
                     name: str = "get_crypto_prices"
                     description: str = "Get prices for multiple cryptocurrency trading pairs"
                     args_schema: type[BaseModel] = GetPricesInput
+                    mcp_client: MCPServerClient
 
                     def __init__(self, mcp_client: MCPServerClient, **kwargs):
                         super().__init__(**kwargs)
-                        self.mcp_client = mcp_client
+                        object.__setattr__(self, 'mcp_client', mcp_client)
 
                     async def _arun(self, symbols: List[str]) -> Dict[str, Any]:
                         """Async implementation of multiple price retrieval."""
@@ -164,10 +166,11 @@ class CryptoComMCPAdapter:
                 class GetMarketStatusTool(BaseTool):
                     name: str = "get_market_status"
                     description: str = "Get current market status and server information"
+                    mcp_client: MCPServerClient
 
                     def __init__(self, mcp_client: MCPServerClient, **kwargs):
                         super().__init__(**kwargs)
-                        self.mcp_client = mcp_client
+                        object.__setattr__(self, 'mcp_client', mcp_client)
 
                     async def _arun(self) -> Dict[str, Any]:
                         """Async implementation of market status retrieval."""

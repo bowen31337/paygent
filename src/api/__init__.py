@@ -17,6 +17,7 @@ from src.api.routes import (
     notifications,
     payments,
     services,
+    simple_agent,
     wallet,
     websocket,
 )
@@ -25,6 +26,7 @@ router = APIRouter()
 
 # Include all route modules
 router.include_router(agent.router, prefix="/agent", tags=["Agent"])
+router.include_router(simple_agent.router, prefix="/simple-agent", tags=["Simple Agent"])
 router.include_router(services.router, prefix="/services", tags=["Services"])
 router.include_router(payments.router, prefix="/payments", tags=["Payments"])
 router.include_router(wallet.router, prefix="/wallet", tags=["Wallet"])

@@ -27,6 +27,14 @@ except ImportError:
         """Compatibility wrapper for langchain 1.x memory."""
 
         def __init__(self, memory_key: str = "chat_history", return_messages: bool = True, session_id: str = ""):
+            """
+            Initialize the memory wrapper.
+
+            Args:
+                memory_key: Key for storing chat history
+                return_messages: Whether to return messages
+                session_id: Session identifier for memory isolation
+            """
             self.memory_key = memory_key
             self.return_messages = return_messages
             self.session_id = session_id
@@ -62,6 +70,12 @@ class AgentCallbackHandler(BaseCallbackHandler):
     """Custom callback handler for agent execution events."""
 
     def __init__(self, session_id: UUID):
+        """
+        Initialize the callback handler.
+
+        Args:
+            session_id: Unique identifier for the agent session
+        """
         self.session_id = session_id
         self.events = []
 

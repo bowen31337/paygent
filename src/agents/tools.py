@@ -36,10 +36,34 @@ class X402PaymentTool(BaseTool):
         "Use this when you need to pay for a service that returns HTTP 402 Payment Required."
     )
     args_schema: type[BaseModel] = X402PaymentInput  # type: ignore[assignment]
+    payment_service: X402PaymentService
 
     def __init__(self, payment_service: X402PaymentService):
-        super().__init__()
-        self.payment_service = payment_service
+        """
+        Initialize the x402 payment tool.
+
+        Args:
+            payment_service: Service for executing x402 payments
+        """
+        super().__init__(payment_service=payment_service)
+
+    def _run(
+        self, service_url: str, amount: float, token: str, description: str | None = None
+    ) -> dict[str, Any]:
+        """
+        Execute an x402 payment (synchronous wrapper).
+
+        Args:
+            service_url: URL of the service to pay
+            amount: Amount to pay
+            token: Token symbol
+            description: Optional description
+
+        Returns:
+            Dict containing payment result
+        """
+        import asyncio
+        return asyncio.run(self._arun(service_url, amount, token, description))
 
     async def _arun(
         self, service_url: str, amount: float, token: str, description: str | None = None
@@ -103,8 +127,31 @@ class DiscoverServicesTool(BaseTool):
     args_schema: type[BaseModel] = DiscoverServicesInput  # type: ignore[assignment]
 
     def __init__(self, service_registry: ServiceRegistryService):
+        """
+        Initialize the service discovery tool.
+
+        Args:
+            service_registry: Service for discovering and managing services
+        """
         super().__init__()
         self.service_registry = service_registry
+
+    def _run(
+        self, query: str, category: str | None = None, max_results: int = 10
+    ) -> dict[str, Any]:
+        """
+        Discover services based on search criteria (synchronous wrapper).
+
+        Args:
+            query: Search query
+            category: Optional service category
+            max_results: Maximum number of results
+
+        Returns:
+            Dict containing discovered services
+        """
+        import asyncio
+        return asyncio.run(self._arun(query, category, max_results))
 
     async def _arun(
         self, query: str, category: str | None = None, max_results: int = 10
@@ -174,8 +221,27 @@ class CheckBalanceTool(BaseTool):
     args_schema: type[BaseModel] = CheckBalanceInput  # type: ignore[assignment]
 
     def __init__(self, db: AsyncSession):
+        """
+        Initialize the balance check tool.
+
+        Args:
+            db: Database session for wallet operations
+        """
         super().__init__()
         self.db = db
+
+    def _run(self, wallet_address: str | None = None) -> dict[str, Any]:
+        """
+        Check token balances (synchronous wrapper).
+
+        Args:
+            wallet_address: Optional wallet address (uses agent wallet if not provided)
+
+        Returns:
+            Dict containing balance information
+        """
+        import asyncio
+        return asyncio.run(self._arun(wallet_address))
 
     async def _arun(self, wallet_address: str | None = None) -> dict[str, Any]:
         """
@@ -235,8 +301,32 @@ class TransferTokensTool(BaseTool):
     args_schema: type[BaseModel] = TransferTokensInput  # type: ignore[assignment]
 
     def __init__(self, db: AsyncSession):
+        """
+        Initialize the token transfer tool.
+
+        Args:
+            db: Database session for transfer operations
+        """
         super().__init__()
         self.db = db
+
+    def _run(
+        self, recipient: str, amount: float, token: str, description: str | None = None
+    ) -> dict[str, Any]:
+        """
+        Transfer tokens to another wallet (synchronous wrapper).
+
+        Args:
+            recipient: Recipient wallet address
+            amount: Amount to transfer
+            token: Token symbol
+            description: Optional transfer description
+
+        Returns:
+            Dict containing transfer result
+        """
+        import asyncio
+        return asyncio.run(self._arun(recipient, amount, token, description))
 
     async def _arun(
         self, recipient: str, amount: float, token: str, description: str | None = None
@@ -295,8 +385,31 @@ class GetApprovalTool(BaseTool):
     args_schema: type[BaseModel] = GetApprovalInput  # type: ignore[assignment]
 
     def __init__(self, db: AsyncSession):
+        """
+        Initialize the approval request tool.
+
+        Args:
+            db: Database session for approval operations
+        """
         super().__init__()
         self.db = db
+
+    def _run(
+        self, action: str, amount_usd: float | None = None, details: str | None = None
+    ) -> dict[str, Any]:
+        """
+        Request human approval for an action (synchronous wrapper).
+
+        Args:
+            action: Action that requires approval
+            amount_usd: Optional amount in USD
+            details: Additional details
+
+        Returns:
+            Dict containing approval status
+        """
+        import asyncio
+        return asyncio.run(self._arun(action, amount_usd, details))
 
     async def _arun(
         self, action: str, amount_usd: float | None = None, details: str | None = None

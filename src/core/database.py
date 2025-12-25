@@ -34,12 +34,20 @@ if db_url.startswith("postgresql://"):
 elif db_url.startswith("sqlite://"):
     db_url = db_url.replace("sqlite://", "sqlite+aiosqlite://")
 
+# SQLite-specific connection arguments for better concurrency
+sqlite_args = {
+    "check_same_thread": False,
+    "uri": True,
+} if "sqlite" in db_url else {}
+
+# Async engines use NullPool by default - QueuePool is not compatible with async
+# Use NullPool for all async database connections
 engine = create_async_engine(
     db_url,
     echo=settings.debug,
-    poolclass=NullPool if settings.is_production else None,
+    poolclass=NullPool,
     pool_pre_ping=True,
-    connect_args={"check_same_thread": False} if "sqlite" in db_url else {},
+    connect_args=sqlite_args,
 )
 
 # Create async session factory

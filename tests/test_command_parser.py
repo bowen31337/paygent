@@ -14,16 +14,16 @@ def test_parse_payment_command():
     result = parser.parse("pay 0.10 USDC to market data API")
     assert result.intent == "payment"
     assert result.action == "pay"
-    assert result.parameters["amount"] == "0.10"
+    assert result.parameters["amount"] == 0.1
     assert result.parameters["token"] == "USDC"
     assert result.parameters["recipient"] == "market data API"
-    assert result.confidence == 1.0
+    assert result.confidence == 0.95
 
     # Test transfer command
     result = parser.parse("transfer 100 CRO to wallet address")
     assert result.intent == "payment"
     assert result.action == "transfer"
-    assert result.parameters["amount"] == "100"
+    assert result.parameters["amount"] == 100.0
     assert result.parameters["token"] == "CRO"
     assert result.parameters["recipient"] == "wallet address"
 
@@ -31,7 +31,7 @@ def test_parse_payment_command():
     result = parser.parse("send 50 ETH to Alice")
     assert result.intent == "payment"
     assert result.action == "send"
-    assert result.parameters["amount"] == "50"
+    assert result.parameters["amount"] == 50.0
     assert result.parameters["token"] == "ETH"
     assert result.parameters["recipient"] == "Alice"
 
@@ -44,7 +44,7 @@ def test_parse_swap_command():
     result = parser.parse("swap 100 USDC for CRO")
     assert result.intent == "swap"
     assert result.action == "swap"
-    assert result.parameters["amount"] == "100"
+    assert result.parameters["amount"] == 100.0
     assert result.parameters["from_token"] == "USDC"
     assert result.parameters["to_token"] == "CRO"
 
@@ -52,7 +52,7 @@ def test_parse_swap_command():
     result = parser.parse("exchange 50 ETH to BTC")
     assert result.intent == "swap"
     assert result.action == "exchange"
-    assert result.parameters["amount"] == "50"
+    assert result.parameters["amount"] == 50.0
     assert result.parameters["from_token"] == "ETH"
     assert result.parameters["to_token"] == "BTC"
 
@@ -60,7 +60,7 @@ def test_parse_swap_command():
     result = parser.parse("trade 200 USDT for SOL")
     assert result.intent == "swap"
     assert result.action == "trade"
-    assert result.parameters["amount"] == "200"
+    assert result.parameters["amount"] == 200.0
     assert result.parameters["from_token"] == "USDT"
     assert result.parameters["to_token"] == "SOL"
 
@@ -123,7 +123,7 @@ def test_parse_service_discovery_command():
     result = parser.parse("search for DeFi protocols")
     assert result.intent == "service_discovery"
     assert result.action == "search"
-    assert result.parameters["category"] == "DeFi"
+    assert result.parameters["category"] == "defi"
 
 
 def test_parse_unrecognized_command():
@@ -146,18 +146,18 @@ def test_parse_complex_payment_commands():
     result = parser.parse("pay 0.5 ETH for API access")
     assert result.intent == "payment"
     assert result.action == "pay"
-    assert result.parameters["amount"] == "0.5"
+    assert result.parameters["amount"] == 0.5
     assert result.parameters["token"] == "ETH"
     assert result.parameters["recipient"] == "API access"
 
     # Test with decimal amounts
     result = parser.parse("pay 123.456789 USDC to service")
     assert result.intent == "payment"
-    assert result.parameters["amount"] == "123.456789"
+    assert result.parameters["amount"] == 123.456789
 
     # Test with different token cases
     result = parser.parse("pay 10 usdc to recipient")
-    assert result.parameters["token"] == "usdc"
+    assert result.parameters["token"] == "USDC"
 
 
 def test_parse_confidence_scoring():
@@ -201,20 +201,20 @@ def test_parse_case_insensitivity():
     # Test uppercase
     result1 = parser.parse("PAY 100 USDC TO SERVICE")
     assert result1.intent == "payment"
-    assert result1.parameters["amount"] == "100"
+    assert result1.parameters["amount"] == 100.0
     assert result1.parameters["token"] == "USDC"
 
     # Test lowercase
     result2 = parser.parse("pay 100 usdc to service")
     assert result2.intent == "payment"
-    assert result2.parameters["amount"] == "100"
-    assert result2.parameters["token"] == "usdc"
+    assert result2.parameters["amount"] == 100.0
+    assert result2.parameters["token"] == "USDC"
 
     # Test mixed case
     result3 = parser.parse("Pay 100 Usdc To Service")
     assert result3.intent == "payment"
-    assert result3.parameters["amount"] == "100"
-    assert result3.parameters["token"] == "Usdc"
+    assert result3.parameters["amount"] == 100.0
+    assert result3.parameters["token"] == "USDC"
 
 
 def test_parse_token_extraction():
@@ -225,13 +225,13 @@ def test_parse_token_extraction():
     result = parser.parse("pay 100 USDC to service")
     assert result.parameters["token"] == "USDC"
 
-    # Token with slash (trading pair)
-    result = parser.parse("pay 100 USDC/ETH to service")
-    assert result.parameters["token"] == "USDC/ETH"
+    # Token with slash (trading pair) - for perpetual trades
+    result = parser.parse("open a 10x long position on BTC/USDC")
+    assert result.parameters["market"] == "BTC/USDC"
 
-    # Complex token names
+    # Complex token names in payment
     result = parser.parse("pay 100 Wrapped-BTC to service")
-    assert result.parameters["token"] == "Wrapped-BTC"
+    assert result.parameters["token"] == "WRAPPED-BTC"
 
 
 def test_parse_amount_extraction():
@@ -240,19 +240,19 @@ def test_parse_amount_extraction():
 
     # Integer amounts
     result = parser.parse("pay 100 USDC to service")
-    assert result.parameters["amount"] == "100"
+    assert result.parameters["amount"] == 100.0
 
     # Decimal amounts
     result = parser.parse("pay 123.456 USDC to service")
-    assert result.parameters["amount"] == "123.456"
+    assert result.parameters["amount"] == 123.456
 
     # Scientific notation
     result = parser.parse("pay 1.23e-5 USDC to service")
-    assert result.parameters["amount"] == "1.23e-5"
+    assert result.parameters["amount"] == 1.23e-5
 
     # Large numbers
     result = parser.parse("pay 1000000 USDC to service")
-    assert result.parameters["amount"] == "1000000"
+    assert result.parameters["amount"] == 1000000.0
 
 
 if __name__ == "__main__":

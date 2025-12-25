@@ -26,6 +26,12 @@ class ApprovalService:
     """Service for managing approval requests and decisions."""
 
     def __init__(self, session: AsyncSession):
+        """
+        Initialize the approval service.
+
+        Args:
+            session: Database session for approval operations
+        """
         self.session = session
 
     async def create_approval_request(
@@ -176,6 +182,12 @@ class BudgetLimitService:
     """Service for managing budget limits and spending controls."""
 
     def __init__(self, session: AsyncSession):
+        """
+        Initialize the budget limit service.
+
+        Args:
+            session: Database session for budget operations
+        """
         self.session = session
 
     async def get_session_budget(self, session_id: UUID) -> dict[str, Any]:

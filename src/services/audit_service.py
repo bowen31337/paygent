@@ -72,6 +72,7 @@ class AuditService:
         log_id: UUID,
         tool_calls: list[dict[str, Any]] | None = None,
         result: dict[str, Any] | None = None,
+        total_cost: float | None = None,
         total_cost_usd: float | None = None,
         duration_ms: int | None = None,
     ) -> ExecutionLog:
@@ -82,7 +83,8 @@ class AuditService:
             log_id: Execution log ID
             tool_calls: List of tool calls made during execution
             result: Final execution result
-            total_cost_usd: Total cost in USD
+            total_cost: Total cost in USD (preferred)
+            total_cost_usd: Alias for total_cost (for backward compatibility)
             duration_ms: Execution duration in milliseconds
 
         Returns:
@@ -98,13 +100,16 @@ class AuditService:
             if not log:
                 raise ValueError(f"Execution log {log_id} not found")
 
+            # Handle both parameter names for backward compatibility
+            effective_total_cost = total_cost if total_cost is not None else total_cost_usd
+
             # Update fields
             if tool_calls is not None:
                 log.tool_calls = tool_calls
             if result is not None:
                 log.result = result
-            if total_cost_usd is not None:
-                log.total_cost_usd = total_cost_usd
+            if effective_total_cost is not None:
+                log.total_cost = effective_total_cost
             if duration_ms is not None:
                 log.duration_ms = duration_ms
 
@@ -194,7 +199,7 @@ class AuditService:
                 "plan": log.plan,
                 "tool_calls": log.tool_calls,
                 "result": log.result,
-                "total_cost_usd": log.total_cost_usd,
+                "total_cost_usd": log.total_cost,
                 "duration_ms": log.duration_ms,
                 "created_at": log.created_at.isoformat(),
             }
@@ -244,7 +249,7 @@ class AuditService:
                     "id": str(log.id),
                     "command": log.command,
                     "result": log.result,
-                    "total_cost_usd": log.total_cost_usd,
+                    "total_cost_usd": log.total_cost,
                     "duration_ms": log.duration_ms,
                     "created_at": log.created_at.isoformat(),
                 })

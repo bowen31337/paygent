@@ -1,23 +1,27 @@
 """
-Simple Agent Implementation for Paygent.
+Basic Agent Implementation for Paygent.
 
 This module provides a basic agent implementation that works without
-the problematic langchain dependencies, focusing on core functionality.
+the problematic langchain dependencies by using a simple command parser
+and mock LLM responses for demonstration purposes.
 """
 
 import logging
+import uuid
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
+import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.config import settings
+from src.models.agent_sessions import AgentSession
 from src.services.session_service import SessionService
 
 logger = logging.getLogger(__name__)
 
 
-class SimpleAgentCallbackHandler:
+class BasicAgentCallbackHandler:
     """Simple callback handler for agent events."""
 
     def __init__(self, session_id: UUID):
@@ -59,27 +63,28 @@ class SimpleAgentCallbackHandler:
         logger.info(f"Session {self.session_id}: Thinking - {event}")
 
 
-class SimplePaygentAgent:
+class BasicPaygentAgent:
     """
-    Simple AI Agent for Paygent.
+    Basic AI Agent for Paygent.
 
-    A basic implementation that provides core payment orchestration functionality
-    without relying on problematic langchain dependencies.
+    A simplified implementation that provides core payment orchestration functionality
+    without relying on problematic langchain dependencies. Uses mock LLM responses
+    for demonstration and can be extended with real LLM integration later.
     """
 
     def __init__(
         self,
         db: AsyncSession,
         session_id: UUID,
-        llm_model: str = "anthropic/claude-sonnet-4",
+        llm_model: str = "mock",
     ):
         """
-        Initialize the simple Paygent agent.
+        Initialize the basic Paygent agent.
 
         Args:
             db: Database session
             session_id: Session ID for this execution
-            llm_model: LLM model to use (anthropic/claude-sonnet-4 or openai/gpt-4)
+            llm_model: LLM model to use (mock for now)
         """
         self.db = db
         self.session_id = session_id
@@ -87,12 +92,12 @@ class SimplePaygentAgent:
         self.llm_model = llm_model
 
         # Initialize callbacks
-        self.callback_handler = SimpleAgentCallbackHandler(session_id)
+        self.callback_handler = BasicAgentCallbackHandler(session_id)
 
         # Initialize tools (will be populated as we implement them)
         self.tools = []
 
-        logger.info(f"Simple Paygent Agent initialized for session {session_id}")
+        logger.info(f"Basic Paygent Agent initialized for session {session_id}")
 
     async def add_tool(self, tool) -> None:
         """Add a tool to the agent."""
@@ -103,7 +108,7 @@ class SimplePaygentAgent:
         self, command: str, budget_limit_usd: float | None = None
     ) -> dict[str, Any]:
         """
-        Execute a natural language command.
+        Execute a natural language command using mock LLM responses.
 
         Args:
             command: Natural language command to execute
@@ -126,6 +131,8 @@ class SimplePaygentAgent:
                 return await self._handle_list_tools()
             elif action["action_type"] == "simple_response":
                 return await self._handle_simple_response(command)
+            elif action["action_type"] == "mock_llm_response":
+                return await self._handle_mock_llm_response(command)
             else:
                 return await self._handle_unknown_command(command)
 
@@ -167,6 +174,12 @@ class SimplePaygentAgent:
         ]):
             return {"action_type": "list_tools"}
 
+        # Mock LLM response commands
+        elif any(keyword in command_lower for keyword in [
+            "pay", "payment", "swap", "trade", "execute", "send", "transfer"
+        ]):
+            return {"action_type": "mock_llm_response", "original_command": command}
+
         # Simple conversational commands
         elif any(keyword in command_lower for keyword in [
             "hello", "hi", "hey", "greetings", "test"
@@ -186,7 +199,7 @@ class SimplePaygentAgent:
             "result": {
                 "message": "Agent is healthy and ready to assist with payments",
                 "session_id": str(self.session_id),
-                "agent_type": "Simple Paygent Agent",
+                "agent_type": "Basic Paygent Agent",
                 "llm_model": self.llm_model,
                 "tools_count": len(self.tools),
                 "timestamp": "2025-12-25T13:35:00Z",
@@ -292,6 +305,87 @@ class SimplePaygentAgent:
             "total_cost_usd": 0.0,
         }
 
+    async def _handle_mock_llm_response(self, command: str) -> dict[str, Any]:
+        """Handle commands that would require LLM processing with mock responses."""
+        self.callback_handler.on_thinking(f"Processing payment command: {command}")
+
+        # Generate mock LLM response based on command type
+        if "pay" in command.lower() and "usdc" in command.lower():
+            response = {
+                "message": "I need to execute a payment for you. Let me check the details...",
+                "action_required": "x402_payment",
+                "payment_details": {
+                    "amount": "0.10",
+                    "token": "USDC",
+                    "recipient": "market_data_api",
+                    "description": "Access to market data API",
+                },
+                "next_steps": [
+                    "1. Verify payment details",
+                    "2. Check service availability",
+                    "3. Execute x402 payment",
+                    "4. Return data access confirmation"
+                ]
+            }
+        elif "swap" in command.lower() and "usdc" in command.lower():
+            response = {
+                "message": "I will help you execute a token swap. Let me analyze the market...",
+                "action_required": "vvs_swap",
+                "swap_details": {
+                    "from_token": "USDC",
+                    "to_token": "CRO",
+                    "amount": "100",
+                    "expected_rate": "1.2",
+                    "slippage_tolerance": "1.0%",
+                    "exchange": "VVS Finance",
+                },
+                "next_steps": [
+                    "1. Get current market prices",
+                    "2. Calculate optimal swap amount with slippage",
+                    "3. Execute swap on VVS Finance",
+                    "4. Verify transaction completion"
+                ]
+            }
+        elif "check" in command.lower() and "price" in command.lower():
+            response = {
+                "message": "Let me get the current cryptocurrency prices for you...",
+                "action_required": "get_crypto_price",
+                "price_details": {
+                    "BTC": "$45,000.00",
+                    "ETH": "$2,800.00",
+                    "CRO": "$0.09",
+                    "USDC": "$1.00",
+                },
+                "next_steps": [
+                    "1. Retrieved current market prices",
+                    "2. Prices are from Cronos network",
+                    "3. All prices are in USD"
+                ]
+            }
+        else:
+            response = {
+                "message": f"I can help with that payment operation: '{command}'",
+                "action_required": "general_payment",
+                "details": {
+                    "command_parsed": command,
+                    "operation_type": "payment_orchestration",
+                },
+                "next_steps": [
+                    "1. Analyze the payment request",
+                    "2. Determine appropriate payment method",
+                    "3. Execute the payment operation",
+                    "4. Confirm completion"
+                ]
+            }
+
+        return {
+            "success": True,
+            "result": response,
+            "session_id": str(self.session_id),
+            "total_cost_usd": 0.0,
+            "note": "This is a mock LLM response - real implementation would use Claude/GPT-4"
+        }
+
     async def _handle_unknown_command(self, command: str) -> dict[str, Any]:
         """Handle unknown commands."""
         self.callback_handler.on_thinking(f"Unknown command, providing guidance: {command}")
@@ -305,6 +399,7 @@ class SimplePaygentAgent:
                     "Ask about available tools: 'What can you do?'",
                     "Request a health check: 'Are you alive?'",
                     "Ask about payments: 'How do I make a payment?'",
+                    "Try a specific command: 'Pay 0.10 USDC to access the market data API'",
                 ],
                 "session_id": str(self.session_id),
             },
@@ -325,17 +420,41 @@ class SimplePaygentAgent:
             "config": session.config,
             "created_at": session.created_at.isoformat(),
             "last_active": session.last_active.isoformat(),
-            "agent_type": "Simple Paygent Agent",
+            "agent_type": "Basic Paygent Agent",
             "tools_count": len(self.tools),
         }
 
     async def get_execution_summary(self) -> dict[str, Any]:
         """Get execution summary for this agent."""
         return {
-            "agent_type": "Simple Paygent Agent",
+            "agent_type": "Basic Paygent Agent",
             "session_id": str(self.session_id),
             "llm_model": self.llm_model,
             "tools_count": len(self.tools),
             "callback_events_count": len(self.callback_handler.events),
             "last_updated": "2025-12-25T13:35:00Z",
         }
+
+    async def execute_llm_call(self, prompt: str) -> str:
+        """
+        Execute a mock LLM call.
+
+        Args:
+            prompt: The prompt to send to the LLM
+
+        Returns:
+            Mock LLM response
+        """
+        # For now, return mock responses based on prompt content
+        prompt_lower = prompt.lower()
+
+        if "health" in prompt_lower:
+            return "The agent is healthy and ready to assist with payments."
+        elif "balance" in prompt_lower:
+            return "Current wallet balance: CRO: 100.00, USDC: 500.00, USDT: 250.00"
+        elif "tools" in prompt_lower:
+            return "Available tools: x402_payment, discover_services, check_balance, transfer_tokens, get_approval, get_crypto_price"
+        elif any(keyword in prompt_lower for keyword in ["pay", "payment"]):
+            return "I will help execute this payment. Please confirm the details: amount, recipient, and purpose."
+        else:
+            return f"Mock LLM response for: {prompt}"

@@ -80,6 +80,12 @@ class PerformanceRegistry:
     """Registry for tracking performance metrics."""
 
     def __init__(self, max_history: int = 10000):
+        """
+        Initialize the performance registry.
+
+        Args:
+            max_history: Maximum number of historical values to keep
+        """
         self.max_history = max_history
         self._metrics: dict[str, list[MetricValue]] = defaultdict(list)
         self._counters: dict[str, int] = defaultdict(int)
@@ -197,6 +203,14 @@ class Timer:
     """Context manager for timing operations."""
 
     def __init__(self, registry: PerformanceRegistry, name: str, labels: dict[str, str] | None = None):
+        """
+        Initialize the timer.
+
+        Args:
+            registry: Performance registry to record metrics
+            name: Name of the metric to track
+            labels: Optional labels for the metric
+        """
         self.registry = registry
         self.name = name
         self.labels = labels
@@ -216,6 +230,12 @@ class PerformanceMonitor:
     """Main performance monitoring system."""
 
     def __init__(self, registry: PerformanceRegistry | None = None):
+        """
+        Initialize the performance monitor.
+
+        Args:
+            registry: Optional performance registry (creates new one if not provided)
+        """
         self.registry = registry or PerformanceRegistry()
         self._running = False
         self._monitor_task: asyncio.Task | None = None
