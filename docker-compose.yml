@@ -1,0 +1,125 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: paygent-postgres
+    environment:
+      POSTGRES_DB: paygent
+      POSTGRES_USER: paygent
+      POSTGRES_PASSWORD: paygent_dev_password
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paygent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - paygent-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: paygent-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - paygent-network
+
+  # FastAPI Application
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: paygent-api
+    environment:
+      # Database
+      DATABASE_URL: postgresql://paygent:paygent_dev_password@postgres:5432/paygent
+      # Redis
+      REDIS_URL: redis://redis:6379
+      # Cronos Blockchain
+      CRONOS_RPC_URL: https://evm-t3.cronos.org
+      CRONOS_CHAIN_ID: "338"
+      # x402 Facilitator
+      X402_FACILITATOR_URL: https://x402-facilitator.cronos.org
+      # API Keys (set in .env or override here)
+      # ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      # OPENAI_API_KEY: ${OPENAI_API_KEY}
+      # Application
+      APP_ENV: development
+      LOG_LEVEL: INFO
+      # CORS
+      CORS_ORIGINS: http://localhost:3000,http://localhost:8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+      - ./paygent.db:/app/paygent.db
+    networks:
+      - paygent-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Adminer (Database Management UI) - Optional
+  adminer:
+    image: adminer:latest
+    container_name: paygent-adminer
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DESIGN: nette
+    depends_on:
+      - postgres
+    networks:
+      - paygent-network
+    profiles:
+      - tools
+
+  # Redis Commander (Redis Management UI) - Optional
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: paygent-redis-commander
+    ports:
+      - "8081:8081"
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    depends_on:
+      - redis
+    networks:
+      - paygent-network
+    profiles:
+      - tools
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  paygent-network:
+    driver: bridge
