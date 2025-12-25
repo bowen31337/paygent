@@ -19,8 +19,7 @@ class TestSQLInjectionPrevention:
     async def test_sql_injection_in_command(self, db_session: AsyncSession):
         """Test that SQL injection in agent command is prevented."""
         from src.services.execution_log_service import ExecutionLogService
-        from src.models.agent_sessions import 
-from src.models.execution_logs import ExecutionLog, AgentSession
+        from src.models.execution_logs import ExecutionLog, AgentSession
         from uuid import uuid4
         from datetime import datetime
 

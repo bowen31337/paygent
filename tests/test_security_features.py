@@ -54,8 +54,8 @@ class TestAgentCommandTiming:
         async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
         # Create all required tables
-        from src.models.agent_sessions import 
-from src.models.execution_logs import ExecutionLog, AgentSession, AgentMemory
+        from src.models.agent_sessions import AgentSession, AgentMemory
+        from src.models.execution_logs import ExecutionLog
         async with engine.begin() as conn:
             await conn.run_sync(AgentSession.__table__.create)
             await conn.run_sync(ExecutionLog.__table__.create)
@@ -90,8 +90,8 @@ from src.models.execution_logs import ExecutionLog, AgentSession, AgentMemory
         async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
         # Create tables
-        from src.models.agent_sessions import 
-from src.models.execution_logs import ExecutionLog, AgentSession, AgentMemory
+        from src.models.agent_sessions import AgentSession, AgentMemory
+        from src.models.execution_logs import ExecutionLog
         async with engine.begin() as conn:
             await conn.run_sync(AgentSession.__table__.create)
             await conn.run_sync(ExecutionLog.__table__.create)
@@ -188,8 +188,8 @@ class TestToolAllowlistSecurity:
         async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
         # Create tables
-        from src.models.agent_sessions import 
-from src.models.execution_logs import ExecutionLog, AgentSession, AgentMemory
+        from src.models.agent_sessions import AgentSession, AgentMemory
+        from src.models.execution_logs import ExecutionLog
         async with engine.begin() as conn:
             await conn.run_sync(AgentSession.__table__.create)
             await conn.run_sync(ExecutionLog.__table__.create)
@@ -296,8 +296,8 @@ class TestExecutionCostTracking:
         async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
         # Create tables
-        from src.models.agent_sessions import 
-from src.models.execution_logs import ExecutionLog, AgentSession, AgentMemory
+        from src.models.agent_sessions import AgentSession, AgentMemory
+        from src.models.execution_logs import ExecutionLog
         async with engine.begin() as conn:
             await conn.run_sync(AgentSession.__table__.create)
             await conn.run_sync(ExecutionLog.__table__.create)
@@ -329,8 +329,8 @@ from src.models.execution_logs import ExecutionLog, AgentSession, AgentMemory
         async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
         # Import models and create tables
-        from src.models.agent_sessions import 
-from src.models.execution_logs import ExecutionLog, AgentSession, AgentMemory
+        from src.models.agent_sessions import AgentSession, AgentMemory
+        from src.models.execution_logs import ExecutionLog
 
         async with engine.begin() as conn:
             await conn.run_sync(AgentSession.__table__.create)
@@ -410,8 +410,8 @@ class TestErrorAlerting:
         async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
         # Create tables
-        from src.models.agent_sessions import 
-from src.models.execution_logs import ExecutionLog, AgentSession, AgentMemory
+        from src.models.agent_sessions import AgentSession, AgentMemory
+        from src.models.execution_logs import ExecutionLog
         async with engine.begin() as conn:
             await conn.run_sync(AgentSession.__table__.create)
             await conn.run_sync(ExecutionLog.__table__.create)
@@ -459,8 +459,8 @@ class TestIntegrationSecurityFeatures:
         async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
         # Create tables
-        from src.models.agent_sessions import 
-from src.models.execution_logs import ExecutionLog, AgentSession, AgentMemory
+        from src.models.agent_sessions import AgentSession, AgentMemory
+        from src.models.execution_logs import ExecutionLog
         async with engine.begin() as conn:
             await conn.run_sync(AgentSession.__table__.create)
             await conn.run_sync(ExecutionLog.__table__.create)
