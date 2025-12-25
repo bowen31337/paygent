@@ -2132,7 +2132,7 @@
       "Step 5: Verify command succeeds"
     ],
     "passes": false,
-    "is_dev_done": false,
+    "is_dev_done": true,
     "is_qa_passed": false
   },
   {
@@ -2173,7 +2173,8 @@
     ],
     "passes": true,
     "is_dev_done": true,
-    "is_qa_passed": false
+    "is_qa_passed": true,
+    "notes": " | QA VERIFIED: All 4 tests passing - payment data creation, signing, nonce increments, and signature verification all working correctly."
   },
   {
     "category": "functional",
@@ -2673,9 +2674,10 @@
       "Step 4: Verify renewal is triggered",
       "Step 5: Verify service access continues"
     ],
-    "passes": true,
-    "is_dev_done": true,
-    "is_qa_passed": false
+    "passes": false,
+    "is_dev_done": false,
+    "is_qa_passed": false,
+    "notes": "DEV NOT DONE: Subscription model and renewal logic not yet implemented"
   },
   {
     "category": "functional",
@@ -2751,3 +2753,4 @@
     "is_dev_done": false,
     "is_qa_passed": false
   }
+]
