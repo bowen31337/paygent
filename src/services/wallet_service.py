@@ -7,14 +7,13 @@ spending allowances, and executing token transfers via the AgentWallet contract.
 
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
-from uuid import UUID
+from typing import Any
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.models.payments import Payment
 from src.core.config import settings
+from src.models.payments import Payment
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +21,7 @@ logger = logging.getLogger(__name__)
 class WalletService:
     """Service for wallet management operations."""
 
-    def __init__(self, db: AsyncSession, wallet_address: Optional[str] = None):
+    def __init__(self, db: AsyncSession, wallet_address: str | None = None):
         """
         Initialize the wallet service.
 
@@ -36,8 +35,8 @@ class WalletService:
 
     async def check_balance(
         self,
-        tokens: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        tokens: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Check wallet token balances.
 
@@ -106,7 +105,7 @@ class WalletService:
                 "message": f"Failed to check balance: {str(e)}",
             }
 
-    async def get_allowance(self) -> Dict[str, Any]:
+    async def get_allowance(self) -> dict[str, Any]:
         """
         Get remaining daily spending allowance.
 
@@ -164,7 +163,7 @@ class WalletService:
         recipient: str,
         amount: float,
         token: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Execute a token transfer.
 
@@ -277,7 +276,7 @@ class WalletService:
         self,
         offset: int = 0,
         limit: int = 20,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get wallet transaction history.
 

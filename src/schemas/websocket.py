@@ -5,7 +5,7 @@ Defines the data structures for WebSocket messages and events used in
 agent execution streaming and HITL workflows.
 """
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -14,14 +14,14 @@ from pydantic import BaseModel, Field
 class WebSocketMessage(BaseModel):
     """Base WebSocket message structure."""
     type: str = Field(..., description="Message type")
-    data: Dict[str, Any] = Field(..., description="Message data")
+    data: dict[str, Any] = Field(..., description="Message data")
 
 
 # Message Types for Client -> Server
 class ExecuteMessage(BaseModel):
     """Execute agent command message."""
     command: str = Field(..., description="Natural language command to execute")
-    plan: Optional[List[Dict[str, Any]]] = Field(None, description="Optional execution plan")
+    plan: list[dict[str, Any]] | None = Field(None, description="Optional execution plan")
 
 
 class ApproveMessage(BaseModel):
@@ -37,7 +37,7 @@ class RejectMessage(BaseModel):
 class EditMessage(BaseModel):
     """Edit and approve approval request message."""
     request_id: UUID = Field(..., description="Approval request ID")
-    edited_args: Dict[str, Any] = Field(..., description="Edited tool arguments")
+    edited_args: dict[str, Any] = Field(..., description="Edited tool arguments")
 
 
 class CancelMessage(BaseModel):
@@ -49,56 +49,56 @@ class CancelMessage(BaseModel):
 class WebSocketEvent(BaseModel):
     """Base WebSocket event structure."""
     type: str = Field(..., description="Event type")
-    data: Dict[str, Any] = Field(..., description="Event data")
-    timestamp: Optional[datetime] = Field(default_factory=datetime.utcnow, description="Event timestamp")
+    data: dict[str, Any] = Field(..., description="Event data")
+    timestamp: datetime | None = Field(default_factory=datetime.utcnow, description="Event timestamp")
 
 
 class ThinkingEvent(WebSocketEvent):
     """Agent is processing/thinking."""
     type: str = "thinking"
-    data: Dict[str, Any] = Field(..., description="Thinking event data")
+    data: dict[str, Any] = Field(..., description="Thinking event data")
 
 
 class ToolCallEvent(WebSocketEvent):
     """Agent called a tool."""
     type: str = "tool_call"
-    data: Dict[str, Any] = Field(..., description="Tool call data")
+    data: dict[str, Any] = Field(..., description="Tool call data")
 
 
 class ToolResultEvent(WebSocketEvent):
     """Agent received tool result."""
     type: str = "tool_result"
-    data: Dict[str, Any] = Field(..., description="Tool result data")
+    data: dict[str, Any] = Field(..., description="Tool result data")
 
 
 class ApprovalRequiredEvent(WebSocketEvent):
     """Approval required for operation."""
     type: str = "approval_required"
-    data: Dict[str, Any] = Field(..., description="Approval request data")
+    data: dict[str, Any] = Field(..., description="Approval request data")
 
 
 class CompleteEvent(WebSocketEvent):
     """Execution completed."""
     type: str = "complete"
-    data: Dict[str, Any] = Field(..., description="Completion data")
+    data: dict[str, Any] = Field(..., description="Completion data")
 
 
 class ErrorEvent(WebSocketEvent):
     """Error occurred."""
     type: str = "error"
-    data: Dict[str, Any] = Field(..., description="Error data")
+    data: dict[str, Any] = Field(..., description="Error data")
 
 
 class SubagentStartEvent(WebSocketEvent):
     """Subagent started."""
     type: str = "subagent_start"
-    data: Dict[str, Any] = Field(..., description="Subagent start data")
+    data: dict[str, Any] = Field(..., description="Subagent start data")
 
 
 class SubagentEndEvent(WebSocketEvent):
     """Subagent completed."""
     type: str = "subagent_end"
-    data: Dict[str, Any] = Field(..., description="Subagent end data")
+    data: dict[str, Any] = Field(..., description="Subagent end data")
 
 
 # Event Data Schemas
@@ -106,17 +106,17 @@ class ThinkingEventData(BaseModel):
     """Data for thinking events."""
     session_id: str
     command: str
-    step: Optional[int] = None
-    total_steps: Optional[int] = None
-    thought_process: Optional[str] = None
+    step: int | None = None
+    total_steps: int | None = None
+    thought_process: str | None = None
 
 
 class ToolCallEventData(BaseModel):
     """Data for tool call events."""
     session_id: str
     tool_name: str
-    tool_args: Dict[str, Any]
-    tool_id: Optional[str] = None
+    tool_args: dict[str, Any]
+    tool_id: str | None = None
 
 
 class ToolResultEventData(BaseModel):
@@ -125,7 +125,7 @@ class ToolResultEventData(BaseModel):
     tool_id: str
     result: Any
     success: bool
-    error: Optional[str] = None
+    error: str | None = None
 
 
 class ApprovalRequiredEventData(BaseModel):
@@ -133,11 +133,11 @@ class ApprovalRequiredEventData(BaseModel):
     session_id: str
     request_id: UUID
     tool_name: str
-    tool_args: Dict[str, Any]
+    tool_args: dict[str, Any]
     reason: str
-    amount: Optional[str] = None
-    currency: Optional[str] = None
-    estimated_cost: Optional[str] = None
+    amount: str | None = None
+    currency: str | None = None
+    estimated_cost: str | None = None
 
 
 class CompleteEventData(BaseModel):
@@ -146,18 +146,18 @@ class CompleteEventData(BaseModel):
     execution_id: UUID
     result: Any
     success: bool
-    total_cost: Optional[str] = None
-    duration_ms: Optional[int] = None
-    tool_calls: Optional[List[Dict[str, Any]]] = None
+    total_cost: str | None = None
+    duration_ms: int | None = None
+    tool_calls: list[dict[str, Any]] | None = None
 
 
 class ErrorEventData(BaseModel):
     """Data for error events."""
-    session_id: Optional[str] = None
-    execution_id: Optional[UUID] = None
+    session_id: str | None = None
+    execution_id: UUID | None = None
     message: str
-    error_type: Optional[str] = None
-    details: Optional[Dict[str, Any]] = None
+    error_type: str | None = None
+    details: dict[str, Any] | None = None
 
 
 class SubagentStartEventData(BaseModel):
@@ -175,8 +175,8 @@ class SubagentEndEventData(BaseModel):
     subagent_id: str
     result: Any
     success: bool
-    duration_ms: Optional[int] = None
-    error: Optional[str] = None
+    duration_ms: int | None = None
+    error: str | None = None
 
 
 # Convenience functions for creating events
@@ -192,7 +192,7 @@ def create_thinking_event(session_id: str, command: str, step: int = None, total
     return ThinkingEvent(type="thinking", data=data.model_dump(mode='json'))
 
 
-def create_tool_call_event(session_id: str, tool_name: str, tool_args: Dict[str, Any], tool_id: str = None) -> ToolCallEvent:
+def create_tool_call_event(session_id: str, tool_name: str, tool_args: dict[str, Any], tool_id: str = None) -> ToolCallEvent:
     """Create a tool call event."""
     data = ToolCallEventData(
         session_id=session_id,
@@ -219,7 +219,7 @@ def create_approval_required_event(
     session_id: str,
     request_id: UUID,
     tool_name: str,
-    tool_args: Dict[str, Any],
+    tool_args: dict[str, Any],
     reason: str,
     amount: str = None,
     currency: str = None,
@@ -246,7 +246,7 @@ def create_complete_event(
     success: bool,
     total_cost: str = None,
     duration_ms: int = None,
-    tool_calls: List[Dict[str, Any]] = None
+    tool_calls: list[dict[str, Any]] = None
 ) -> CompleteEvent:
     """Create a complete event."""
     data = CompleteEventData(
@@ -266,7 +266,7 @@ def create_error_event(
     session_id: str = None,
     execution_id: UUID = None,
     error_type: str = None,
-    details: Dict[str, Any] = None
+    details: dict[str, Any] = None
 ) -> ErrorEvent:
     """Create an error event."""
     data = ErrorEventData(

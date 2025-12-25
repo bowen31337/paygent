@@ -6,7 +6,7 @@ a centralized settings object for the entire application.
 """
 
 from functools import lru_cache
-from typing import Optional, List
+
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
@@ -28,11 +28,11 @@ class Settings(BaseSettings):
     jwt_secret: str = Field(default="development-secret-change-in-production")
     jwt_algorithm: str = "HS256"
     jwt_expiration_hours: int = 24
-    cors_origins: List[str] = Field(default_factory=lambda: ["http://localhost:3000", "http://localhost:8000"])
+    cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000", "http://localhost:8000"])
 
     @field_validator("cors_origins", mode="before")
     @classmethod
-    def parse_cors_origins(cls, v: str | List[str]) -> List[str]:
+    def parse_cors_origins(cls, v: str | list[str]) -> list[str]:
         if isinstance(v, str):
             if not v.strip():
                 return ["http://localhost:3000", "http://localhost:8000"]
@@ -40,8 +40,8 @@ class Settings(BaseSettings):
         return v
 
     # LLM Configuration
-    anthropic_api_key: Optional[str] = Field(default=None, description="Anthropic API key for Claude")
-    openai_api_key: Optional[str] = Field(default=None, description="OpenAI API key for fallback")
+    anthropic_api_key: str | None = Field(default=None, description="Anthropic API key for Claude")
+    openai_api_key: str | None = Field(default=None, description="OpenAI API key for fallback")
     default_model: str = "claude-sonnet-4-20250514"
     fallback_model: str = "gpt-4"
 
@@ -63,7 +63,7 @@ class Settings(BaseSettings):
     x402_retry_delay_ms: int = 1000
 
     # Wallet Configuration (development only - use HSM in production)
-    agent_wallet_private_key: Optional[str] = Field(
+    agent_wallet_private_key: str | None = Field(
         default=None,
         description="Agent wallet private key (development only)"
     )
@@ -78,7 +78,7 @@ class Settings(BaseSettings):
 
     # Database Configuration
     # Vercel Postgres (production)
-    postgres_url: Optional[str] = Field(default=None, description="Vercel Postgres connection URL")
+    postgres_url: str | None = Field(default=None, description="Vercel Postgres connection URL")
     # Local development - uses SQLite in-memory by default for easy testing
     database_url: str = Field(
         default="sqlite:///:memory:",
@@ -87,9 +87,9 @@ class Settings(BaseSettings):
 
     # Redis/KV Configuration
     # Vercel KV (production)
-    kv_url: Optional[str] = Field(default=None, description="Vercel KV connection URL")
-    kv_rest_api_url: Optional[str] = None
-    kv_rest_api_token: Optional[str] = None
+    kv_url: str | None = Field(default=None, description="Vercel KV connection URL")
+    kv_rest_api_url: str | None = None
+    kv_rest_api_token: str | None = None
     # Local development - optional, will gracefully disable cache if not available
     redis_url: str = Field(
         default="redis://localhost:6379",
@@ -97,10 +97,10 @@ class Settings(BaseSettings):
     )
 
     # Vercel Blob (production)
-    blob_read_write_token: Optional[str] = None
+    blob_read_write_token: str | None = None
 
     # Crypto.com Integration
-    crypto_com_api_key: Optional[str] = None
+    crypto_com_api_key: str | None = None
     crypto_com_mcp_url: str = "https://mcp.crypto.com"
 
     # Rate Limiting
@@ -117,7 +117,7 @@ class Settings(BaseSettings):
     log_format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
     # Alerting
-    alert_webhook_url: Optional[str] = Field(
+    alert_webhook_url: str | None = Field(
         default=None,
         description="Webhook URL for critical alert notifications"
     )

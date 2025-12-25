@@ -4,11 +4,12 @@ Agent session models.
 This module defines the SQLAlchemy models for agent sessions and execution tracking.
 """
 
-from sqlalchemy import Column, String, Float, Integer, ForeignKey, DateTime, JSON, func
-from sqlalchemy.orm import Mapped, mapped_column
-from typing import Optional, Any
 from datetime import datetime
+from typing import Any
 from uuid import UUID
+
+from sqlalchemy import JSON, DateTime, Float, ForeignKey, Integer, String, func
+from sqlalchemy.orm import Mapped, mapped_column
 
 from src.core.database import Base
 
@@ -20,8 +21,8 @@ class AgentSession(Base):
 
     id: Mapped[UUID] = mapped_column(primary_key=True)
     user_id: Mapped[UUID] = mapped_column(nullable=False)
-    wallet_address: Mapped[Optional[str]] = mapped_column(String(42))
-    config: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON)  # budget limits, approval thresholds, etc.
+    wallet_address: Mapped[str | None] = mapped_column(String(42))
+    config: Mapped[dict[str, Any] | None] = mapped_column(JSON)  # budget limits, approval thresholds, etc.
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
     last_active: Mapped[datetime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
 
@@ -37,11 +38,11 @@ class ExecutionLog(Base):
     id: Mapped[UUID] = mapped_column(primary_key=True)
     session_id: Mapped[UUID] = mapped_column(ForeignKey("agent_sessions.id"))
     command: Mapped[str] = mapped_column(String, nullable=False)
-    plan: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON)  # write_todos plan structure
-    tool_calls: Mapped[Optional[list[dict[str, Any]]]] = mapped_column(JSON)  # array of tool invocations
-    result: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON)  # final execution result
-    total_cost: Mapped[Optional[float]] = mapped_column(Float)
-    duration_ms: Mapped[Optional[int]] = mapped_column(Integer)
+    plan: Mapped[dict[str, Any] | None] = mapped_column(JSON)  # write_todos plan structure
+    tool_calls: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON)  # array of tool invocations
+    result: Mapped[dict[str, Any] | None] = mapped_column(JSON)  # final execution result
+    total_cost: Mapped[float | None] = mapped_column(Float)
+    duration_ms: Mapped[int | None] = mapped_column(Integer)
     status: Mapped[str] = mapped_column(String(20), default="running")  # running, completed, failed
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
 
@@ -58,9 +59,9 @@ class ApprovalRequest(Base):
     session_id: Mapped[UUID] = mapped_column(ForeignKey("agent_sessions.id"))
     tool_name: Mapped[str] = mapped_column(String(100), nullable=False)
     tool_args: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
-    decision: Mapped[Optional[str]] = mapped_column(String(20))  # pending, approved, rejected, edited
-    edited_args: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON)
-    decision_made_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    decision: Mapped[str | None] = mapped_column(String(20))  # pending, approved, rejected, edited
+    edited_args: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+    decision_made_at: Mapped[datetime | None] = mapped_column(DateTime)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
 
     def __repr__(self) -> str:
@@ -76,7 +77,7 @@ class ServiceSubscription(Base):
     session_id: Mapped[UUID] = mapped_column(ForeignKey("agent_sessions.id"))
     service_id: Mapped[UUID] = mapped_column(ForeignKey("services.id"))
     status: Mapped[str] = mapped_column(String(20), default="active")  # active, cancelled, expired
-    expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
 
     def __repr__(self) -> str:
@@ -93,7 +94,7 @@ class AgentMemory(Base):
     message_type: Mapped[str] = mapped_column(String(20), nullable=False)  # human, ai, system
     content: Mapped[str] = mapped_column(String, nullable=False)
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=func.now())
-    extra_data: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON, name="metadata")  # Renamed to avoid SQLAlchemy conflict
+    extra_data: Mapped[dict[str, Any] | None] = mapped_column(JSON, name="metadata")  # Renamed to avoid SQLAlchemy conflict
 
     def __repr__(self) -> str:
         return f"<AgentMemory(id={self.id}, session={self.session_id}, type='{self.message_type}')>"

@@ -13,10 +13,10 @@ to integrate with actual Moonlander smart contracts.
 """
 
 import logging
-from typing import Dict, Any, Optional, List
-from decimal import Decimal
-from datetime import datetime, timedelta
 import random
+from datetime import datetime, timedelta
+from decimal import Decimal
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -46,12 +46,12 @@ class MoonlanderConnector:
         "CRO": 0.075,
     }
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the Moonlander connector."""
-        self.positions: Dict[str, Dict[str, Any]] = {}
+        self.positions: dict[str, dict[str, Any]] = {}
         logger.info("Moonlander connector initialized")
 
-    def get_markets(self) -> List[Dict[str, Any]]:
+    def get_markets(self) -> list[dict[str, Any]]:
         """
         Get list of available perpetual markets.
 
@@ -102,7 +102,7 @@ class MoonlanderConnector:
 
         return markets
 
-    def get_funding_rate(self, asset: str) -> Dict[str, Any]:
+    def get_funding_rate(self, asset: str) -> dict[str, Any]:
         """
         Get current funding rate for a market.
 
@@ -144,8 +144,8 @@ class MoonlanderConnector:
         side: str,  # 'long' or 'short'
         size: float,
         leverage: int,
-        price: Optional[float] = None
-    ) -> Dict[str, Any]:
+        price: float | None = None
+    ) -> dict[str, Any]:
         """
         Open a perpetual position.
 
@@ -172,7 +172,7 @@ class MoonlanderConnector:
 
         # Calculate position size
         collateral = Decimal(str(size)) / Decimal(str(leverage))
-        position_size = collateral * Decimal(str(leverage))
+        collateral * Decimal(str(leverage))
 
         # Generate position ID
         position_id = self._generate_position_id()
@@ -216,7 +216,7 @@ class MoonlanderConnector:
             "position": position,
         }
 
-    def close_position(self, position_id: str) -> Dict[str, Any]:
+    def close_position(self, position_id: str) -> dict[str, Any]:
         """
         Close a perpetual position.
 
@@ -268,9 +268,9 @@ class MoonlanderConnector:
     def set_risk_management(
         self,
         position_id: str,
-        stop_loss: Optional[float] = None,
-        take_profit: Optional[float] = None
-    ) -> Dict[str, Any]:
+        stop_loss: float | None = None,
+        take_profit: float | None = None
+    ) -> dict[str, Any]:
         """
         Set stop-loss and/or take-profit for a position.
 
@@ -305,7 +305,7 @@ class MoonlanderConnector:
             "take_profit": position["take_profit"],
         }
 
-    def get_position(self, position_id: str) -> Dict[str, Any]:
+    def get_position(self, position_id: str) -> dict[str, Any]:
         """
         Get details of an open position.
 
@@ -337,7 +337,7 @@ class MoonlanderConnector:
 
         return position
 
-    def list_positions(self, asset: Optional[str] = None) -> List[Dict[str, Any]]:
+    def list_positions(self, asset: str | None = None) -> list[dict[str, Any]]:
         """
         List all open positions.
 

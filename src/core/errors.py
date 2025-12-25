@@ -8,8 +8,9 @@ implementation details in production environments.
 import logging
 import re
 import traceback
-from typing import Any, Dict, Optional
-from fastapi import HTTPException, status
+from typing import Any
+
+from fastapi import HTTPException
 from fastapi.requests import Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -17,11 +18,8 @@ from pydantic import BaseModel
 from src.core.config import settings
 from src.core.security import sanitize
 from src.services.alerting_service import (
-    alerting_service,
     AlertType,
-    AlertSeverity,
     send_critical_alert,
-    send_error_alert,
 )
 
 logger = logging.getLogger(__name__)
@@ -30,13 +28,13 @@ logger = logging.getLogger(__name__)
 class ErrorResponse(BaseModel):
     """Standardized error response model."""
     error: str
-    detail: Optional[str] = None
+    detail: str | None = None
 
 
 class SafeException(Exception):
     """Base exception for safe errors that can be shown to users."""
 
-    def __init__(self, message: str, detail: Optional[str] = None):
+    def __init__(self, message: str, detail: str | None = None):
         self.message = message
         self.detail = detail
         super().__init__(message)
@@ -69,7 +67,7 @@ class DailyLimitExceededError(SafeException):
 class PaygentError(Exception):
     """Base exception for Paygent application errors."""
 
-    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+    def __init__(self, message: str, details: dict[str, Any] | None = None):
         self.message = message
         self.details = details or {}
         super().__init__(message)
@@ -114,7 +112,7 @@ def create_safe_error_message(
 
 
 def create_error_response(
-    status_code: int, message: str, detail: Optional[str] = None
+    status_code: int, message: str, detail: str | None = None
 ) -> JSONResponse:
     """
     Create a standardized JSON error response.
@@ -254,18 +252,11 @@ def validate_command_input(command: str) -> str:
     for pattern in dangerous_patterns:
         if pattern in command:
             raise ValueError(
-                f"Command contains invalid characters. "
-                f"Please provide a natural language command without special characters."
+                "Command contains invalid characters. "
+                "Please provide a natural language command without special characters."
             )
 
     # Check for SQL injection patterns - be very conservative for natural language
-    sql_injection_patterns = [
-        "'",      # Single quote
-        '"',      # Double quote
-        "--",     # SQL comment
-        "/*",     # SQL block comment start
-        "*/",     # SQL block comment end
-    ]
 
     # Check for obvious SQL injection patterns (quotes with SQL keywords)
     if re.search(r'["\']\s*(union|select|insert|update|delete|drop|create|alter|exec|execute)\s+["\']', command_lower):
@@ -319,7 +310,7 @@ def validate_command_input(command: str) -> str:
     return command.strip()
 
 
-def sanitize_dict_for_logging(data: Dict[str, Any]) -> Dict[str, Any]:
+def sanitize_dict_for_logging(data: dict[str, Any]) -> dict[str, Any]:
     """
     Sanitize a dictionary for logging by removing sensitive fields.
 

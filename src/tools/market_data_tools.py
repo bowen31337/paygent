@@ -7,14 +7,12 @@ via the Crypto.com Market Data MCP Server.
 
 import asyncio
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 
-from src.services.mcp_client import (
-    MCPServerClient, MCPServerError, get_mcp_client, PriceData
-)
+from src.services.mcp_client import MCPServerError, PriceData, get_mcp_client
 
 logger = logging.getLogger(__name__)
 

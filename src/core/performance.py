@@ -4,12 +4,13 @@ Performance optimization report and improvements for Paygent API.
 This module provides performance optimizations to help meet the 200ms p95 response time target.
 """
 
+import asyncio
 import logging
 import time
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, Optional, Dict, List, Union
-from concurrent.futures import ThreadPoolExecutor
-import asyncio
+from typing import Any
+
 from sqlalchemy import select
 
 from src.core.cache import cache_result
@@ -24,8 +25,8 @@ class PerformanceOptimizer:
 
     def __init__(self):
         self.cache_service = CacheService()
-        self.response_times: List[float] = []
-        self.slow_requests: List[Dict[str, Any]] = []
+        self.response_times: list[float] = []
+        self.slow_requests: list[dict[str, Any]] = []
 
     def track_response_time(self, endpoint: str, duration_ms: float):
         """Track response time for performance analysis."""
@@ -42,7 +43,7 @@ class PerformanceOptimizer:
             # Log slow requests
             logger.warning(f"Slow request detected: {endpoint} took {duration_ms:.2f}ms")
 
-    def get_performance_stats(self) -> Dict[str, float]:
+    def get_performance_stats(self) -> dict[str, float]:
         """Get performance statistics."""
         if not self.response_times:
             return {
@@ -72,7 +73,7 @@ class PerformanceOptimizer:
             "slow_requests_count": len(self.slow_requests)
         }
 
-    def get_slow_requests_report(self) -> List[Dict[str, Any]]:
+    def get_slow_requests_report(self) -> list[dict[str, Any]]:
         """Get report of slow requests."""
         return self.slow_requests[-10:]  # Last 10 slow requests
 
@@ -110,9 +111,9 @@ def fast_cache(ttl: int = 60):
 
 
 async def bulk_operation_executor(
-    operations: List[Callable],
+    operations: list[Callable],
     max_concurrent: int = 5
-) -> List[Any]:
+) -> list[Any]:
     """
     Execute multiple operations concurrently with rate limiting.
     """
@@ -149,7 +150,7 @@ class DatabaseOptimizer:
     async def batch_select(
         db_session,
         model_class,
-        ids: List[int],
+        ids: list[int],
         batch_size: int = 50
     ):
         """Perform batch selects to reduce query count."""
@@ -166,7 +167,7 @@ class ResponseOptimizer:
     """Response optimization utilities."""
 
     @staticmethod
-    def optimize_response_data(data: Union[Dict, List], max_depth: int = 3) -> Union[Dict, List]:
+    def optimize_response_data(data: dict | list, max_depth: int = 3) -> dict | list:
         """Limit response data depth to reduce payload size."""
         if isinstance(data, dict):
             if max_depth <= 0:
@@ -186,7 +187,7 @@ class ResponseOptimizer:
             return data
 
     @staticmethod
-    def compress_response_if_large(data: Union[Dict, List], size_limit: int = 1024) -> Union[Dict, List]:
+    def compress_response_if_large(data: dict | list, size_limit: int = 1024) -> dict | list:
         """Compress response data if it exceeds size limit."""
         import json
         try:
@@ -232,7 +233,7 @@ async def performance_middleware(request, call_next):
             logger.warning(f"Slow API request: {endpoint} took {duration_ms:.2f}ms")
 
 
-def get_performance_recommendations() -> List[str]:
+def get_performance_recommendations() -> list[str]:
     """Get performance optimization recommendations."""
     return [
         "✅ Caching implemented for service discovery (5min TTL)",

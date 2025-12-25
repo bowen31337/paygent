@@ -7,12 +7,10 @@ import json
 import logging
 import os
 import time
-import asyncio
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 from urllib.parse import urlparse
 
 import redis.asyncio as redis
-from redis.asyncio.connection import ConnectionPool
 
 # Import the base cache interface
 from src.core.cache import CacheInterface, CacheMetrics
@@ -29,7 +27,7 @@ class VercelKVCache(CacheInterface):
 
     def __init__(self):
         self.metrics = CacheMetrics()
-        self.redis_client: Optional[redis.Redis] = None
+        self.redis_client: redis.Redis | None = None
         self._is_connected = False
 
     async def initialize(self) -> bool:
@@ -55,7 +53,7 @@ class VercelKVCache(CacheInterface):
                 port=url.port or 6379,
                 password=url.password,
                 db=int(url.path[1:]) if url.path else 0,
-                ssl=True if url.scheme == "rediss" else False,
+                ssl=url.scheme == "rediss",
                 ssl_cert_reqs=None,  # Vercel KV doesn't require cert verification
                 decode_responses=True,  # Automatically decode byte responses to strings
                 health_check_interval=30,  # Health check every 30 seconds
@@ -76,7 +74,7 @@ class VercelKVCache(CacheInterface):
             logger.error(f"✗ Vercel KV cache initialization failed: {e}")
             return False
 
-    def _get_redis_url(self) -> Optional[str]:
+    def _get_redis_url(self) -> str | None:
         """
         Get Redis URL from Vercel environment variables.
 
@@ -121,7 +119,7 @@ class VercelKVCache(CacheInterface):
         logger.debug("No Vercel KV environment variables found")
         return None
 
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         """
         Get value from cache with metrics tracking.
 
@@ -166,7 +164,7 @@ class VercelKVCache(CacheInterface):
         self,
         key: str,
         value: Any,
-        ttl_seconds: Optional[int] = None,
+        ttl_seconds: int | None = None,
     ) -> bool:
         """
         Set value in cache with optional TTL.
@@ -238,7 +236,7 @@ class VercelKVCache(CacheInterface):
             elapsed = (time.time() - start_time) * 1000
             self.metrics.record_delete_time(elapsed)
 
-    async def get_many(self, keys: List[str]) -> Dict[str, Any]:
+    async def get_many(self, keys: list[str]) -> dict[str, Any]:
         """
         Get multiple values from cache.
 
@@ -258,7 +256,7 @@ class VercelKVCache(CacheInterface):
             # Use MGET for efficient bulk retrieval
             values = await self.redis_client.mget(keys)
 
-            for key, value in zip(keys, values):
+            for key, value in zip(keys, values, strict=False):
                 if value is not None:
                     try:
                         parsed_value = json.loads(value)
@@ -283,8 +281,8 @@ class VercelKVCache(CacheInterface):
 
     async def set_many(
         self,
-        key_value_pairs: Dict[str, Any],
-        ttl_seconds: Optional[int] = None,
+        key_value_pairs: dict[str, Any],
+        ttl_seconds: int | None = None,
     ) -> bool:
         """
         Set multiple key-value pairs in cache.
@@ -313,7 +311,7 @@ class VercelKVCache(CacheInterface):
             # Set TTLs if specified
             if ttl_seconds:
                 pipeline = self.redis_client.pipeline()
-                for key in key_value_pairs.keys():
+                for key in key_value_pairs:
                     pipeline.expire(key, ttl_seconds)
                 await pipeline.execute()
 
@@ -331,7 +329,7 @@ class VercelKVCache(CacheInterface):
             elapsed = (time.time() - start_time) * 1000
             self.metrics.record_set_time(elapsed, count=len(key_value_pairs))
 
-    async def delete_many(self, keys: List[str]) -> int:
+    async def delete_many(self, keys: list[str]) -> int:
         """
         Delete multiple keys from cache.
 
@@ -364,7 +362,7 @@ class VercelKVCache(CacheInterface):
             elapsed = (time.time() - start_time) * 1000
             self.metrics.record_delete_time(elapsed, count=len(keys))
 
-    async def keys(self, pattern: str = "*") -> List[str]:
+    async def keys(self, pattern: str = "*") -> list[str]:
         """
         Get all keys matching pattern.
 
@@ -414,11 +412,11 @@ class VercelKVCache(CacheInterface):
                 self.redis_client = None
                 self._is_connected = False
 
-    def get_metrics(self) -> Dict[str, Union[int, float]]:
+    def get_metrics(self) -> dict[str, int | float]:
         """Get cache performance metrics."""
         return self.metrics.get_metrics()
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         """Get cache connection and configuration info."""
         try:
             if self._is_connected and self.redis_client:

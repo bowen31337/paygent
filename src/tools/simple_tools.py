@@ -5,10 +5,10 @@ These are basic tool implementations for the agent to use.
 """
 
 import logging
-from typing import Optional, Dict, Any
+from typing import Any
 
 from src.connectors.vvs import VVSFinanceConnector
-from src.core.security import get_tool_allowlist, ToolAllowlistError
+from src.core.security import get_tool_allowlist
 
 logger = logging.getLogger(__name__)
 
@@ -19,11 +19,11 @@ class SimpleTool:
     name: str = "base_tool"
     description: str = "Base tool description"
 
-    def run(self, **kwargs) -> Dict[str, Any]:
+    def run(self, **kwargs: Any) -> dict[str, Any]:
         """Execute the tool."""
         raise NotImplementedError
 
-    def validate_allowlist(self, **kwargs) -> None:
+    def validate_allowlist(self, **kwargs: Any) -> None:
         """
         Validate that this tool is allowed by the tool allowlist.
 
@@ -40,11 +40,11 @@ class CheckBalanceTool(SimpleTool):
     name = "check_balance"
     description = "Check the balance of tokens in a wallet"
 
-    def run(
+    def run(  # type: ignore[override]
         self,
-        wallet_address: Optional[str] = None,
-        tokens: list = None
-    ) -> Dict[str, Any]:
+        wallet_address: str | None = None,
+        tokens: list[str] | None = None
+    ) -> dict[str, Any]:
         """Execute balance check."""
         logger.info(f"Checking balance for: {wallet_address or 'default wallet'}")
 
@@ -69,12 +69,12 @@ class X402PaymentTool(SimpleTool):
     name = "x402_payment"
     description = "Execute an x402 payment to access a paid service"
 
-    def run(
+    def run(  # type: ignore[override]
         self,
         service_url: str,
         amount: float,
         token: str = "USDC"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute x402 payment."""
         logger.info(f"Executing x402 payment: {amount} {token} to {service_url}")
 
@@ -97,14 +97,14 @@ class SwapTokensTool(SimpleTool):
     name = "swap_tokens"
     description = "Swap tokens on VVS Finance DEX with slippage protection"
 
-    def run(
+    def run(  # type: ignore[override]
         self,
         from_token: str,
         to_token: str,
         amount: float,
         slippage_tolerance_percent: float = 1.0,
-        deadline: Optional[int] = None
-    ) -> Dict[str, Any]:
+        deadline: int | None = None
+    ) -> dict[str, Any]:
         """Execute token swap using VVS Finance connector."""
         logger.info(f"Swapping {amount} {from_token} to {to_token}")
 
@@ -126,13 +126,13 @@ class VVSQuoteTool(SimpleTool):
     name = "vvs_quote"
     description = "Get price quote for token swap on VVS Finance"
 
-    def run(
+    def run(  # type: ignore[override]
         self,
         from_token: str,
         to_token: str,
         amount: float,
         slippage_tolerance_percent: float = 1.0
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get swap quote."""
         logger.info(f"Getting quote for {amount} {from_token} -> {to_token}")
 
@@ -153,16 +153,16 @@ class VVSLiquidityTool(SimpleTool):
     name = "vvs_liquidity"
     description = "Add or remove liquidity from VVS Finance pools"
 
-    def run(
+    def run(  # type: ignore[override]
         self,
         action: str,  # "add" or "remove"
         token_a: str,
         token_b: str,
-        amount_a: Optional[float] = None,
-        amount_b: Optional[float] = None,
-        lp_amount: Optional[float] = None,
+        amount_a: float | None = None,
+        amount_b: float | None = None,
+        lp_amount: float | None = None,
         slippage_tolerance_percent: float = 1.0
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Manage liquidity position."""
         vvs = VVSFinanceConnector()
 
@@ -196,13 +196,13 @@ class VVSFarmingTool(SimpleTool):
     name = "vvs_farm"
     description = "Stake LP tokens in VVS Finance yield farms"
 
-    def run(
+    def run(  # type: ignore[override]
         self,
         token_a: str,
         token_b: str,
         amount: float,
-        farm_id: Optional[str] = None
-    ) -> Dict[str, Any]:
+        farm_id: str | None = None
+    ) -> dict[str, Any]:
         """Stake LP tokens in farm."""
         logger.info(f"Farming: staking {amount} {token_a}-{token_b} LP tokens")
 
@@ -221,16 +221,16 @@ class DiscoverServicesTool(SimpleTool):
     name = "discover_services"
     description = "Discover available services that accept x402 payments"
 
-    def run(
+    def run(  # type: ignore[override]
         self,
-        category: Optional[str] = None,
-        max_price_usd: Optional[float] = None,
-        mcp_compatible: bool = True
-    ) -> Dict[str, Any]:
+        category: str | None = None,
+        max_price_usd: float | None = None,
+        mcp_compatible: bool = True  # noqa: ARG002
+    ) -> dict[str, Any]:
         """Discover services."""
         logger.info(f"Discovering services: category={category}")
 
-        mock_services = [
+        mock_services: list[dict[str, Any]] = [
             {
                 "id": "market-data-btc",
                 "name": "Market Data API (Updated)",
@@ -260,7 +260,7 @@ class DiscoverServicesTool(SimpleTool):
         }
 
 
-def get_all_tools() -> Dict[str, SimpleTool]:
+def get_all_tools() -> dict[str, SimpleTool]:
     """Get all available tools as a dict."""
     return {
         "check_balance": CheckBalanceTool(),

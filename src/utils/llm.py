@@ -5,11 +5,10 @@ Provides factory functions for creating LLM instances.
 """
 
 import logging
-from typing import Optional
 
 from langchain_anthropic import ChatAnthropic
-from langchain_openai import ChatOpenAI
 from langchain_core.language_models.chat_base import BaseChatModel
+from langchain_openai import ChatOpenAI
 
 from src.core.config import settings
 
@@ -20,7 +19,7 @@ def get_llm_client(
     model: str = "anthropic/claude-sonnet-4",
     temperature: float = 0.1,
     max_tokens: int = 4000,
-    api_key: Optional[str] = None,
+    api_key: str | None = None,
 ) -> BaseChatModel:
     """
     Get an LLM client instance.

@@ -6,16 +6,16 @@ This module provides services for managing approval requests, decisions, and not
 
 import asyncio
 import logging
+from collections.abc import AsyncGenerator
 from datetime import datetime, timedelta
-from typing import List, Optional, Dict, Any, AsyncGenerator
+from typing import Any
 from uuid import UUID, uuid4
 
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
-from src.core.database import Base, async_session_maker
-from src.models.agent_sessions import ApprovalRequest, AgentSession
+from src.core.database import async_session_maker
+from src.models.agent_sessions import AgentSession, ApprovalRequest
 from src.models.payments import Payment
 from src.services.metrics_service import metrics_collector
 
@@ -32,9 +32,9 @@ class ApprovalService:
         self,
         session_id: UUID,
         tool_name: str,
-        tool_args: Dict[str, Any],
-        amount: Optional[float] = None,
-        token: Optional[str] = None,
+        tool_args: dict[str, Any],
+        amount: float | None = None,
+        token: str | None = None,
     ) -> ApprovalRequest:
         """Create a new approval request."""
         # Note: amount and token are not stored in the model, but can be included in tool_args
@@ -56,7 +56,7 @@ class ApprovalService:
 
         return approval_request
 
-    async def get_pending_approvals(self, session_id: Optional[UUID] = None) -> List[ApprovalRequest]:
+    async def get_pending_approvals(self, session_id: UUID | None = None) -> list[ApprovalRequest]:
         """Get all pending approval requests."""
         query = select(ApprovalRequest).where(ApprovalRequest.decision == "pending")
 
@@ -68,15 +68,15 @@ class ApprovalService:
         result = await self.session.execute(query)
         return result.scalars().all()
 
-    async def get_approval_request(self, approval_id: UUID) -> Optional[ApprovalRequest]:
+    async def get_approval_request(self, approval_id: UUID) -> ApprovalRequest | None:
         """Get an approval request by ID."""
         query = select(ApprovalRequest).where(ApprovalRequest.id == approval_id)
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
 
     async def approve_request(
-        self, approval_id: UUID, edited_args: Optional[Dict[str, Any]] = None
-    ) -> Optional[ApprovalRequest]:
+        self, approval_id: UUID, edited_args: dict[str, Any] | None = None
+    ) -> ApprovalRequest | None:
         """Approve an approval request."""
         query = (
             update(ApprovalRequest)
@@ -100,7 +100,7 @@ class ApprovalService:
 
         return None
 
-    async def reject_request(self, approval_id: UUID) -> Optional[ApprovalRequest]:
+    async def reject_request(self, approval_id: UUID) -> ApprovalRequest | None:
         """Reject an approval request."""
         query = (
             update(ApprovalRequest)
@@ -122,7 +122,7 @@ class ApprovalService:
 
     async def get_session_approvals(
         self, session_id: UUID, limit: int = 50, offset: int = 0
-    ) -> List[ApprovalRequest]:
+    ) -> list[ApprovalRequest]:
         """Get approval requests for a session."""
         query = (
             select(ApprovalRequest)
@@ -160,7 +160,7 @@ class ApprovalService:
         return len(expired_requests)
 
     async def stream_pending_approvals(
-        self, session_id: Optional[UUID] = None
+        self, session_id: UUID | None = None
     ) -> AsyncGenerator[ApprovalRequest, None]:
         """Stream pending approval requests in real-time."""
         while True:
@@ -178,7 +178,7 @@ class BudgetLimitService:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_session_budget(self, session_id: UUID) -> Dict[str, Any]:
+    async def get_session_budget(self, session_id: UUID) -> dict[str, Any]:
         """Get session budget configuration."""
         session = await self._get_session(session_id)
         if not session:
@@ -246,7 +246,7 @@ class BudgetLimitService:
 
         return True
 
-    async def _get_session(self, session_id: UUID) -> Optional[AgentSession]:
+    async def _get_session(self, session_id: UUID) -> AgentSession | None:
         """Get agent session by ID."""
         query = select(AgentSession).where(AgentSession.id == session_id)
         result = await self.session.execute(query)

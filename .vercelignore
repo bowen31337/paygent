@@ -1,0 +1,89 @@
+# Vercel deployment ignore file
+# Files and directories that should not be deployed to Vercel
+
+# Development
+.env
+.env.local
+.env.*.local
+*.log
+
+# Testing
+.pytest_cache
+.coverage
+htmlcov
+tests/
+test_*.py
+*_test.py
+
+# Documentation
+docs/
+*.md
+LICENSE
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Node.js (contracts/)
+node_modules/
+contracts/node_modules/
+contracts/package-lock.json
+contracts/yarn.lock
+contracts/pnpm-lock.yaml
+
+# Python virtual environments
+.venv/
+.venv_new/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Lock files (uv manages dependencies)
+uv.lock
+
+# Database files (local development)
+*.db
+*.sqlite
+*.sqlite3
+
+# Session reports
+SESSION_REPORT*.md
+SESSION_SUMMARY.md
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Build artifacts that shouldn't be deployed
+reports/
+logs/
+.locks/

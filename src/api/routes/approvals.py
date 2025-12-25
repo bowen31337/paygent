@@ -5,13 +5,12 @@ This module provides endpoints for managing human-in-the-loop approval
 requests for sensitive agent operations.
 """
 
-from typing import Optional
-from uuid import UUID
 from datetime import datetime
-from sqlalchemy import select
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
@@ -28,9 +27,9 @@ class ApprovalRequest(BaseModel):
     tool_name: str
     tool_args: dict
     decision: str = Field(..., description="pending, approved, rejected, or edited")
-    edited_args: Optional[dict] = None
+    edited_args: dict | None = None
     created_at: str
-    decision_made_at: Optional[str] = None
+    decision_made_at: str | None = None
 
 
 class ApprovalListResponse(BaseModel):
@@ -50,7 +49,7 @@ class ApproveRequest(BaseModel):
 class RejectRequest(BaseModel):
     """Request body for rejecting a request."""
 
-    reason: Optional[str] = Field(default=None, max_length=500)
+    reason: str | None = Field(default=None, max_length=500)
 
 
 class EditApproveRequest(BaseModel):
@@ -74,7 +73,7 @@ class ApprovalResponse(BaseModel):
     description="Get all pending approval requests.",
 )
 async def list_pending_approvals(
-    session_id: Optional[UUID] = None,
+    session_id: UUID | None = None,
     db: AsyncSession = Depends(get_db),
 ) -> ApprovalListResponse:
     """
@@ -291,5 +290,5 @@ async def edit_and_approve(
     return ApprovalResponse(
         request_id=request_id,
         decision="edited",
-        message=f"Request edited and approved. Agent will resume with modified arguments.",
+        message="Request edited and approved. Agent will resume with modified arguments.",
     )

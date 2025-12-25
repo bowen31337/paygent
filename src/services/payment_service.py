@@ -7,10 +7,10 @@ generating payment statistics, and managing payment records.
 
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict, Optional
+from typing import Any
 from uuid import UUID
 
-from sqlalchemy import select, func, case
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.payments import Payment
@@ -32,13 +32,13 @@ class PaymentService:
 
     async def get_payment_history(
         self,
-        wallet_address: Optional[str] = None,
-        status: Optional[str] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
+        wallet_address: str | None = None,
+        status: str | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
         offset: int = 0,
         limit: int = 20,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get payment history with filtering and pagination.
 
@@ -121,7 +121,7 @@ class PaymentService:
     async def get_payment(
         self,
         payment_id: UUID,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get details of a specific payment.
 
@@ -167,11 +167,60 @@ class PaymentService:
                 "message": f"Failed to get payment: {str(e)}",
             }
 
+    async def get_payment_by_tx_hash(
+        self,
+        tx_hash: str,
+    ) -> dict[str, Any]:
+        """
+        Get payment details by transaction hash.
+
+        Args:
+            tx_hash: Transaction hash
+
+        Returns:
+            Dict containing payment details or error
+        """
+        try:
+            result = await self.db.execute(
+                select(Payment).where(Payment.tx_hash == tx_hash)
+            )
+            payment = result.scalar_one_or_none()
+
+            if not payment:
+                return {
+                    "success": False,
+                    "error": "payment_not_found",
+                    "message": f"Payment with tx_hash {tx_hash} not found",
+                }
+
+            return {
+                "success": True,
+                "payment": {
+                    "id": str(payment.id),
+                    "agent_wallet": payment.agent_wallet,
+                    "service_id": str(payment.service_id) if payment.service_id else None,
+                    "recipient": payment.recipient,
+                    "amount": payment.amount,
+                    "token": payment.token,
+                    "tx_hash": payment.tx_hash,
+                    "status": payment.status,
+                    "created_at": payment.created_at.isoformat(),
+                }
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to get payment by tx_hash: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "message": f"Failed to get payment by tx_hash: {str(e)}",
+            }
+
     async def get_payment_stats(
         self,
-        wallet_address: Optional[str] = None,
+        wallet_address: str | None = None,
         days: int = 30,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get payment statistics.
 
@@ -261,8 +310,8 @@ class PaymentService:
         recipient: str,
         amount: float,
         token: str,
-        service_id: Optional[UUID] = None,
-        tx_hash: Optional[str] = None,
+        service_id: UUID | None = None,
+        tx_hash: str | None = None,
         status: str = "pending",
     ) -> Payment:
         """
@@ -300,8 +349,8 @@ class PaymentService:
         self,
         payment_id: UUID,
         status: str,
-        tx_hash: Optional[str] = None,
-    ) -> Optional[Payment]:
+        tx_hash: str | None = None,
+    ) -> Payment | None:
         """
         Update payment status.
 

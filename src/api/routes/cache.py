@@ -7,13 +7,12 @@ including set, get, delete operations, and metrics retrieval.
 
 import asyncio
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
+from pydantic import BaseModel, Field
 
 from src.core.cache import cache_client, vercel_cache_client
-from src.core.vercel_kv import VercelKVCache
-from pydantic import BaseModel, Field
 
 router = APIRouter()
 
@@ -23,7 +22,7 @@ class CacheSetRequest(BaseModel):
 
     key: str = Field(..., description="Cache key")
     value: Any = Field(..., description="Value to cache (will be JSON serialized)")
-    ttl_seconds: Optional[int] = Field(
+    ttl_seconds: int | None = Field(
         None, description="Time to live in seconds (optional)"
     )
 
@@ -34,7 +33,7 @@ class CacheSetResponse(BaseModel):
     success: bool
     message: str
     key: str
-    ttl_seconds: Optional[int]
+    ttl_seconds: int | None
     backend: str
 
 
@@ -43,7 +42,7 @@ class CacheGetResponse(BaseModel):
 
     found: bool
     key: str
-    value: Optional[Any]
+    value: Any | None
     backend: str
 
 
@@ -61,8 +60,8 @@ class CacheMetricsResponse(BaseModel):
 
     backend: str
     connected: bool
-    metrics: Dict[str, Any]
-    info: Dict[str, Any]
+    metrics: dict[str, Any]
+    info: dict[str, Any]
 
 
 @router.post(
@@ -156,7 +155,7 @@ async def test_cache_get(key: str) -> CacheGetResponse:
             value = await vercel_cache_client.get(key)
             found = value is not None
             backend = "vercel_kv"
-        except Exception as e:
+        except Exception:
             pass
 
     # Fallback to standard Redis
@@ -165,7 +164,7 @@ async def test_cache_get(key: str) -> CacheGetResponse:
             value = await cache_client.get(key)
             found = value is not None
             backend = "redis"
-        except Exception as e:
+        except Exception:
             pass
 
     return CacheGetResponse(found=found, key=key, value=value, backend=backend)

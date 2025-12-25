@@ -5,12 +5,13 @@ This module provides JWT-based authentication and user management.
 """
 
 import logging
-from typing import Optional, Annotated
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel
-from jose import JWTError, jwt
 from datetime import datetime, timedelta
+from typing import Annotated
+
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
+from pydantic import BaseModel
 
 from src.core.config import settings
 
@@ -22,11 +23,11 @@ security = HTTPBearer(auto_error=False)
 
 class TokenData(BaseModel):
     """Token data model."""
-    username: Optional[str] = None
-    user_id: Optional[str] = None
+    username: str | None = None
+    user_id: str | None = None
 
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
     """
     Create a JWT access token.
 
@@ -48,7 +49,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     return encoded_jwt
 
 
-def verify_token(token: str) -> Optional[TokenData]:
+def verify_token(token: str) -> TokenData | None:
     """
     Verify and decode a JWT token.
 
@@ -74,7 +75,7 @@ def verify_token(token: str) -> Optional[TokenData]:
 
 
 async def get_current_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+    credentials: HTTPAuthorizationCredentials | None = Depends(security)
 ) -> str:
     """
     Get current user from JWT token.
@@ -112,8 +113,8 @@ async def get_current_user(
 
 # Dependency for optional authentication (doesn't raise error if not authenticated)
 async def get_current_user_optional(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
-) -> Optional[str]:
+    credentials: HTTPAuthorizationCredentials | None = Depends(security)
+) -> str | None:
     """Get current user if authenticated, None if not."""
     if not credentials:
         return None
@@ -124,4 +125,4 @@ async def get_current_user_optional(
 
 # Type alias for authenticated user
 CurrentUser = Annotated[str, Depends(get_current_user)]
-CurrentUserOptional = Annotated[Optional[str], Depends(get_current_user_optional)]
+CurrentUserOptional = Annotated[str | None, Depends(get_current_user_optional)]

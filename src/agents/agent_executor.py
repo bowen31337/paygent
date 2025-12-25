@@ -6,7 +6,7 @@ commands and executes them using available tools.
 """
 
 import logging
-from typing import Dict, Any, Optional
+from typing import Any
 from uuid import UUID
 
 from src.agents.command_parser import CommandParser, ParsedCommand
@@ -42,8 +42,8 @@ class AgentExecutor:
     async def execute_command(
         self,
         command: str,
-        budget_limit_usd: Optional[float] = None
-    ) -> Dict[str, Any]:
+        budget_limit_usd: float | None  # noqa: ARG002 = None
+    ) -> dict[str, Any]:
         """
         Execute a natural language command.
 
@@ -81,7 +81,7 @@ class AgentExecutor:
                 # Unknown intent - return helpful error
                 result = {
                     "success": False,
-                    "error": f"Could not understand command intent. Please rephrase your command.",
+                    "error": "Could not understand command intent. Please rephrase your command.",
                     "suggestions": [
                         "Pay 0.10 USDC to API service",
                         "Check my wallet balance",
@@ -112,8 +112,8 @@ class AgentExecutor:
     async def _execute_payment(
         self,
         parsed: ParsedCommand,
-        budget_limit_usd: Optional[float]
-    ) -> Dict[str, Any]:
+        budget_limit_usd: float | None  # noqa: ARG002
+    ) -> dict[str, Any]:
         """Execute a payment command."""
         params = parsed.parameters
 
@@ -160,7 +160,7 @@ class AgentExecutor:
             # Try to discover service using the services tool
             discover_tool = self.tools.get("discover_services")
             if discover_tool:
-                print(f"DEBUG: Found discover_services tool")
+                print("DEBUG: Found discover_services tool")
                 # Search for services containing the service name
                 result = discover_tool.run(category=None, mcp_compatible=True)
                 print(f"DEBUG: Discovery result: {result}")
@@ -218,8 +218,8 @@ class AgentExecutor:
     async def _execute_swap(
         self,
         parsed: ParsedCommand,
-        budget_limit_usd: Optional[float]
-    ) -> Dict[str, Any]:
+        budget_limit_usd: float | None  # noqa: ARG002
+    ) -> dict[str, Any]:
         """Execute a token swap command."""
         params = parsed.parameters
 
@@ -240,7 +240,7 @@ class AgentExecutor:
     async def _execute_balance_check(
         self,
         parsed: ParsedCommand
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute a balance check command."""
         params = parsed.parameters
 
@@ -259,7 +259,7 @@ class AgentExecutor:
     async def _execute_service_discovery(
         self,
         parsed: ParsedCommand
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute a service discovery command."""
         params = parsed.parameters
 
@@ -280,8 +280,8 @@ class AgentExecutor:
 async def execute_agent_command(
     command: str,
     session_id: UUID,
-    budget_limit_usd: Optional[float] = None
-) -> Dict[str, Any]:
+    budget_limit_usd: float | None = None
+) -> dict[str, Any]:
     """
     Convenience function to execute an agent command.
 

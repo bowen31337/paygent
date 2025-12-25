@@ -5,18 +5,19 @@ This module provides business logic for creating, updating, and retrieving
 agent sessions.
 """
 
-import json
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any
 from uuid import UUID, uuid4
 
-from sqlalchemy import select, update, delete
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.config import settings
-from src.models.agent_sessions import AgentSession, ApprovalRequest, ExecutionLog, ServiceSubscription
-from src.services.cache import CacheService
+from src.models.agent_sessions import (
+    AgentSession,
+    ApprovalRequest,
+    ExecutionLog,
+)
 from src.services.metrics_service import metrics_collector
 
 logger = logging.getLogger(__name__)
@@ -36,8 +37,8 @@ class SessionService:
     async def create_session(
         self,
         user_id: UUID,
-        wallet_address: Optional[str] = None,
-        config: Optional[dict] = None,
+        wallet_address: str | None = None,
+        config: dict | None = None,
     ) -> AgentSession:
         """Create a new agent session.
 
@@ -65,7 +66,7 @@ class SessionService:
         logger.info(f"Created session {session.id} for user {user_id}")
         return session
 
-    async def get_session(self, session_id: UUID) -> Optional[AgentSession]:
+    async def get_session(self, session_id: UUID) -> AgentSession | None:
         """Get a session by ID.
 
         Args:
@@ -99,7 +100,7 @@ class SessionService:
 
     async def list_sessions(
         self,
-        user_id: Optional[UUID] = None,
+        user_id: UUID | None = None,
         offset: int = 0,
         limit: int = 20,
     ) -> tuple[list[AgentSession], int]:
@@ -154,12 +155,12 @@ class SessionService:
         self,
         session_id: UUID,
         command: str,
-        plan: Optional[Dict[str, Any]] = None,
-        tool_calls: Optional[List[Dict[str, Any]]] = None,
-        result: Optional[Dict[str, Any]] = None,
-        total_cost: Optional[float] = None,
-        duration_ms: Optional[int] = None,
-    ) -> Optional[ExecutionLog]:
+        plan: dict[str, Any] | None = None,
+        tool_calls: list[dict[str, Any]] | None = None,
+        result: dict[str, Any] | None = None,
+        total_cost: float | None = None,
+        duration_ms: int | None = None,
+    ) -> ExecutionLog | None:
         """Log agent execution details.
 
         Args:
@@ -199,10 +200,10 @@ class SessionService:
 
     async def get_execution_logs(
         self,
-        session_id: Optional[UUID] = None,
+        session_id: UUID | None = None,
         limit: int = 20,
         offset: int = 0,
-    ) -> List[ExecutionLog]:
+    ) -> list[ExecutionLog]:
         """Get execution logs with optional filtering.
 
         Args:
@@ -233,16 +234,16 @@ class SessionService:
         self,
         session_id: UUID,
         tool_name: str,
-        tool_args: Dict[str, Any],
-        
-    ) -> Optional[ApprovalRequest]:
+        tool_args: dict[str, Any],
+
+    ) -> ApprovalRequest | None:
         """Request human approval for a tool call.
 
         Args:
             session_id: Session ID
             tool_name: Name of the tool requiring approval
             tool_args: Arguments for the tool
-            
+
 
         Returns:
             Created approval request
@@ -252,7 +253,7 @@ class SessionService:
                 session_id=session_id,
                 tool_name=tool_name,
                 tool_args=tool_args,
-                
+
             )
 
             self.db.add(approval_request)
@@ -268,8 +269,8 @@ class SessionService:
             return None
 
     async def get_pending_approvals(
-        self, session_id: Optional[UUID] = None
-    ) -> List[ApprovalRequest]:
+        self, session_id: UUID | None = None
+    ) -> list[ApprovalRequest]:
         """Get pending approval requests.
 
         Args:
@@ -295,7 +296,7 @@ class SessionService:
             return []
 
     async def approve_request(
-        self, request_id: UUID, edited_args: Optional[Dict[str, Any]] = None
+        self, request_id: UUID, edited_args: dict[str, Any] | None = None
     ) -> bool:
         """Approve an approval request.
 
@@ -358,7 +359,7 @@ class SessionService:
             logger.error(f"Failed to reject request {request_id}: {e}")
             return False
 
-    async def get_session_summary(self, session_id: UUID) -> Dict[str, Any]:
+    async def get_session_summary(self, session_id: UUID) -> dict[str, Any]:
         """Get summary of session execution.
 
         Args:

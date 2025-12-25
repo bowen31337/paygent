@@ -5,17 +5,17 @@ This module provides endpoints for viewing agent execution logs
 and session summaries.
 """
 
-from typing import Optional
-from uuid import UUID
 from datetime import datetime
-from sqlalchemy import select, func
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
-from src.models.agent_sessions import ExecutionLog as ExecutionLogModel, AgentSession
+from src.models.agent_sessions import AgentSession
+from src.models.agent_sessions import ExecutionLog as ExecutionLogModel
 
 router = APIRouter()
 
@@ -25,9 +25,9 @@ class ToolCall(BaseModel):
 
     tool_name: str
     arguments: dict
-    result: Optional[dict] = None
-    duration_ms: Optional[int] = None
-    error: Optional[str] = None
+    result: dict | None = None
+    duration_ms: int | None = None
+    error: str | None = None
 
 
 class ExecutionLog(BaseModel):
@@ -36,11 +36,11 @@ class ExecutionLog(BaseModel):
     id: UUID
     session_id: UUID
     command: str
-    plan: Optional[dict] = None
+    plan: dict | None = None
     tool_calls: list[ToolCall] = []
-    result: Optional[dict] = None
-    total_cost_usd: Optional[float] = None
-    duration_ms: Optional[int] = None
+    result: dict | None = None
+    total_cost_usd: float | None = None
+    duration_ms: int | None = None
     status: str = Field(..., description="running, completed, failed")
     created_at: str
 
@@ -76,10 +76,10 @@ class SessionSummary(BaseModel):
     description="Get execution logs with optional filtering.",
 )
 async def get_logs(
-    session_id: Optional[UUID] = Query(default=None, description="Filter by session"),
-    status_filter: Optional[str] = Query(default=None, alias="status", description="Filter by status"),
-    start_date: Optional[datetime] = Query(default=None),
-    end_date: Optional[datetime] = Query(default=None),
+    session_id: UUID | None = Query(default=None, description="Filter by session"),
+    status_filter: str | None = Query(default=None, alias="status", description="Filter by status"),
+    start_date: datetime | None = Query(default=None),
+    end_date: datetime | None = Query(default=None),
     offset: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),

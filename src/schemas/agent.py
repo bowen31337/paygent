@@ -4,30 +4,30 @@ Agent command and result schemas.
 This module defines the Pydantic schemas for agent commands and results.
 """
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class AgentCommand(BaseModel):
     """Schema for agent commands."""
     session_id: str
     command: str
-    plan: Optional[List[Dict[str, Any]]] = None
+    plan: list[dict[str, Any]] | None = None
 
 
 class AgentResult(BaseModel):
     """Schema for agent execution results."""
     success: bool
     message: str
-    data: Optional[Dict[str, Any]] = None
-    tool_calls: Optional[List[Dict[str, Any]]] = None
-    total_cost: Optional[float] = None
-    duration_ms: Optional[int] = None
-    execution_id: Optional[str] = None
+    data: dict[str, Any] | None = None
+    tool_calls: list[dict[str, Any]] | None = None
+    total_cost: float | None = None
+    duration_ms: int | None = None
+    execution_id: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert result to dictionary format."""
         return {
             "success": self.success,
@@ -44,8 +44,8 @@ class AgentSessionInfo(BaseModel):
     """Schema for agent session information."""
     id: UUID
     user_id: UUID
-    wallet_address: Optional[str] = None
-    config: Optional[Dict[str, Any]] = None
+    wallet_address: str | None = None
+    config: dict[str, Any] | None = None
     created_at: datetime
     last_active: datetime
 
@@ -59,7 +59,7 @@ class AgentExecutionSummary(BaseModel):
     total_cost: float
     total_duration_ms: int
     average_duration_ms: int
-    most_used_tool: Optional[str] = None
+    most_used_tool: str | None = None
     tool_usage_count: int
 
 

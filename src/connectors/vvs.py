@@ -12,8 +12,8 @@ to integrate with actual VVS Finance smart contracts.
 """
 
 import logging
-from typing import Dict, Any, Optional, Tuple
 from decimal import Decimal
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class VVSFinanceConnector:
         "CRO-USDT": "0x2345678901234567890123456789012345678901",
     }
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the VVS Finance connector."""
         logger.info("VVS Finance connector initialized")
 
@@ -55,7 +55,7 @@ class VVSFinanceConnector:
         to_token: str,
         amount: float,
         slippage_tolerance: float = 1.0
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get a price quote for a token swap.
 
@@ -114,8 +114,8 @@ class VVSFinanceConnector:
         to_token: str,
         amount: float,
         slippage_tolerance: float = 1.0,
-        deadline: Optional[int] = None
-    ) -> Dict[str, Any]:
+        deadline: int | None = None
+    ) -> dict[str, Any]:
         """
         Execute a token swap on VVS Finance.
 
@@ -139,8 +139,8 @@ class VVSFinanceConnector:
         quote = self.get_quote(from_token, to_token, amount, slippage_tolerance)
 
         # Verify slippage is acceptable
-        expected_out = Decimal(quote["expected_amount_out"])
-        min_out = Decimal(quote["min_amount_out"])
+        Decimal(quote["expected_amount_out"])
+        Decimal(quote["min_amount_out"])
 
         # Mock transaction submission
         tx_hash = self._generate_mock_tx_hash()
@@ -173,7 +173,7 @@ class VVSFinanceConnector:
         amount_a: float,
         amount_b: float,
         slippage_tolerance: float = 1.0
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Add liquidity to a VVS Finance pool.
 
@@ -233,7 +233,7 @@ class VVSFinanceConnector:
         token_a: str,
         token_b: str,
         lp_amount: float
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Remove liquidity from a VVS Finance pool.
 
@@ -286,8 +286,8 @@ class VVSFinanceConnector:
         token_a: str,
         token_b: str,
         amount: float,
-        farm_id: Optional[str] = None
-    ) -> Dict[str, Any]:
+        farm_id: str | None = None
+    ) -> dict[str, Any]:
         """
         Stake LP tokens in a VVS Finance yield farm.
 
@@ -364,7 +364,6 @@ class VVSFinanceConnector:
     def _generate_mock_tx_hash(self) -> str:
         """Generate a mock transaction hash for testing."""
         import random
-        import string
         return "0x" + "".join(random.choices("0123456789abcdef", k=64))
 
 

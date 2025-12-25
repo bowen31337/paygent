@@ -5,20 +5,19 @@ This module provides endpoints for viewing payment history, executing
 x402 payments, and getting payment statistics.
 """
 
-from typing import Optional
-from uuid import UUID
-from datetime import datetime
 import logging
+from datetime import datetime
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.database import get_db
 from src.core.config import settings
+from src.core.database import get_db
 from src.services.payment_service import PaymentService
-from src.services.x402_service import X402PaymentService
 from src.services.service_registry import ServiceRegistryService
+from src.services.x402_service import X402PaymentService
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -29,11 +28,11 @@ class PaymentInfo(BaseModel):
 
     id: UUID
     agent_wallet: str
-    service_id: Optional[UUID] = None
+    service_id: UUID | None = None
     recipient: str
     amount: float
     token: str
-    tx_hash: Optional[str] = None
+    tx_hash: str | None = None
     status: str = Field(..., description="pending, confirmed, or failed")
     created_at: str
 
@@ -64,16 +63,16 @@ class ExecuteX402Request(BaseModel):
     service_url: str = Field(..., description="URL of the service to pay")
     amount: float = Field(..., gt=0, description="Amount to pay")
     token: str = Field(..., description="Token address for payment")
-    service_id: Optional[UUID] = Field(default=None, description="Service ID for reputation tracking")
+    service_id: UUID | None = Field(default=None, description="Service ID for reputation tracking")
 
 
 class ExecuteX402Response(BaseModel):
     """Response from executing an x402 payment."""
 
     payment_id: UUID
-    tx_hash: Optional[str] = None
+    tx_hash: str | None = None
     status: str
-    service_response: Optional[dict] = None
+    service_response: dict | None = None
 
 
 @router.get(
@@ -83,11 +82,11 @@ class ExecuteX402Response(BaseModel):
     description="Get payment history with optional filtering.",
 )
 async def get_payment_history(
-    status: Optional[str] = Query(
+    status: str | None = Query(
         default=None, description="Filter by status (pending, confirmed, failed)"
     ),
-    start_date: Optional[datetime] = Query(default=None, description="Start date filter"),
-    end_date: Optional[datetime] = Query(default=None, description="End date filter"),
+    start_date: datetime | None = Query(default=None, description="Start date filter"),
+    end_date: datetime | None = Query(default=None, description="End date filter"),
     offset: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
@@ -277,7 +276,7 @@ class ExecuteApprovedPaymentRequest(BaseModel):
     """Request to execute a payment that has been approved."""
 
     approval_id: UUID
-    edited_args: Optional[dict] = None
+    edited_args: dict | None = None
 
 
 class ExecuteApprovedPaymentResponse(BaseModel):
@@ -287,7 +286,7 @@ class ExecuteApprovedPaymentResponse(BaseModel):
     approval_id: UUID
     success: bool
     message: str
-    tx_hash: Optional[str] = None
+    tx_hash: str | None = None
     status: str
 
 
@@ -307,9 +306,8 @@ async def execute_approved_payment(
     This endpoint is called after a payment approval request has been
     approved by a human operator.
     """
-    from src.models.agent_sessions import ApprovalRequest
+
     from src.services.approval_service import ApprovalService
-    from sqlalchemy import select
 
     try:
         # Get the approval request
@@ -379,4 +377,116 @@ async def execute_approved_payment(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to execute approved payment: {str(e)}",
+        )
+
+
+class PaymentStatusResponse(BaseModel):
+    """Response for payment status check."""
+
+    txHash: str
+    confirmed: bool
+    failed: bool
+    blockNumber: int | None = None
+    timestamp: str | None = None
+    error: str | None = None
+
+
+@router.get(
+    "/status/{tx_hash}",
+    response_model=PaymentStatusResponse,
+    summary="Check payment status",
+    description="Check the status of a payment transaction on the blockchain.",
+)
+async def get_payment_status(
+    tx_hash: str,
+    db: AsyncSession = Depends(get_db),
+) -> PaymentStatusResponse:
+    """
+    Check the status of a payment transaction on the blockchain.
+
+    This endpoint is used by Vercel Workflows to verify payment settlement.
+    In production, this would query the blockchain to check transaction confirmation.
+
+    Args:
+        tx_hash: The transaction hash to check
+        db: Database session
+
+    Returns:
+        PaymentStatusResponse: Transaction status information
+    """
+    from src.services.payment_service import PaymentService
+
+    payment_service = PaymentService(db)
+
+    # First check if we have this payment in our database
+    result = await payment_service.get_payment_by_tx_hash(tx_hash)
+
+    if result["success"] and result.get("payment"):
+        payment = result["payment"]
+        status = payment.get("status", "pending")
+
+        # Map our status to workflow status
+        if status == "confirmed":
+            return PaymentStatusResponse(
+                txHash=tx_hash,
+                confirmed=True,
+                failed=False,
+                blockNumber=payment.get("block_number", 12345),  # Mock
+                timestamp=payment.get("created_at"),
+            )
+        elif status == "failed":
+            return PaymentStatusResponse(
+                txHash=tx_hash,
+                confirmed=False,
+                failed=True,
+                error=payment.get("error_message", "Payment failed"),
+                timestamp=payment.get("created_at"),
+            )
+        else:  # pending
+            return PaymentStatusResponse(
+                txHash=tx_hash,
+                confirmed=False,
+                failed=False,
+                timestamp=payment.get("created_at"),
+            )
+
+    # If not in database, check mock blockchain status
+    # In production, this would use web3.py to query the actual blockchain
+    logger.info(f"Payment {tx_hash} not found in database, checking mock blockchain")
+
+    # Mock implementation - simulate blockchain check
+    # For demo purposes, assume transactions with specific patterns are confirmed
+    try:
+        # Simple mock: if tx_hash ends in even digit, it's confirmed
+        # This is just for testing the workflow integration
+        last_char = tx_hash[-1]
+        if last_char in '02468ace':
+            return PaymentStatusResponse(
+                txHash=tx_hash,
+                confirmed=True,
+                failed=False,
+                blockNumber=12345,
+                timestamp=datetime.utcnow().isoformat(),
+            )
+        elif last_char in '13579bdf':
+            return PaymentStatusResponse(
+                txHash=tx_hash,
+                confirmed=False,
+                failed=False,
+                timestamp=datetime.utcnow().isoformat(),
+            )
+        else:
+            return PaymentStatusResponse(
+                txHash=tx_hash,
+                confirmed=False,
+                failed=True,
+                error="Transaction not found",
+            )
+    except Exception as e:
+        logger.error(f"Error checking payment status: {e}")
+        return PaymentStatusResponse(
+            txHash=tx_hash,
+            confirmed=False,
+            failed=True,
+            error=str(e),
         )

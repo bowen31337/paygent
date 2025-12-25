@@ -7,8 +7,9 @@ using pattern matching and intent recognition.
 
 import logging
 import re
-from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
+from re import Match
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ class ParsedCommand:
 
     intent: str  # e.g., "payment", "swap", "balance_check", "service_discovery", "perpetual_trade"
     action: str  # e.g., "pay", "transfer", "swap", "check", "open"
-    parameters: Dict[str, Any]
+    parameters: dict[str, Any]
     confidence: float  # 0.0 to 1.0
     raw_command: str
 
@@ -70,13 +71,13 @@ class CommandParser:
         "service_discovery": ["find", "search", "discover", "list services", "available"],
     }
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the command parser."""
         self._compile_patterns()
 
-    def _compile_patterns(self):
+    def _compile_patterns(self) -> None:
         """Compile regex patterns for efficiency."""
-        self.compiled_patterns = {}
+        self.compiled_patterns: dict[str, list[re.Pattern[str]]] = {}
         for intent, patterns in self.PATTERNS.items():
             self.compiled_patterns[intent] = [
                 re.compile(pattern, re.IGNORECASE)
@@ -111,7 +112,7 @@ class CommandParser:
         return self._parse_by_keywords(command)
 
     def _extract_parameters_from_match(
-        self, intent: str, match: re.Match, raw_command: str
+        self, intent: str, match: Match[str], raw_command: str
     ) -> ParsedCommand:
         """Extract parameters from regex match."""
         groups = match.groups()
@@ -242,7 +243,7 @@ class CommandParser:
         Scores each intent based on keyword matches in the command.
         """
         command_lower = command.lower()
-        scores = {}
+        scores: dict[str, float] = {}
 
         for intent, keywords in self.INTENT_KEYWORDS.items():
             score = sum(
@@ -261,7 +262,7 @@ class CommandParser:
             )
 
         # Get highest scoring intent
-        best_intent = max(scores, key=scores.get)
+        best_intent = max(scores, key=lambda k: scores[k])
         confidence = min(scores[best_intent] * 0.7, 0.7)  # Max 0.7 for keyword matching
 
         logger.info(f"Keyword matched: intent={best_intent}, confidence={confidence}")
@@ -277,9 +278,9 @@ class CommandParser:
             raw_command=command,
         )
 
-    def _extract_basic_parameters(self, command: str, intent: str) -> Dict[str, Any]:
+    def _extract_basic_parameters(self, command: str, intent: str) -> dict[str, Any]:
         """Extract basic parameters from command string."""
-        parameters = {}
+        parameters: dict[str, Any] = {}
         command_lower = command.lower()
 
         # Extract amounts (e.g., "0.10", "100")
@@ -302,7 +303,7 @@ class CommandParser:
         # Extract tokens
         tokens = re.findall(r"\b(CRO|USDC|USDT|ETH|WBTC|BTC)\b", command, re.IGNORECASE)
         if tokens:
-            parameters["tokens"] = list(set([t.upper() for t in tokens]))
+            parameters["tokens"] = list({t.upper() for t in tokens})
 
         # Extract categories
         categories = re.findall(
@@ -349,7 +350,7 @@ def parse_command(command: str) -> ParsedCommand:
     return parser.parse(command)
 
 
-def test_parser():
+def test_parser() -> None:
     """Test the command parser with sample commands."""
     parser = CommandParser()
 

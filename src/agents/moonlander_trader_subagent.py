@@ -7,13 +7,12 @@ on the Cronos blockchain.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 from uuid import UUID
 
 from langchain.agents import AgentExecutor, create_openai_tools_agent
 from langchain.memory import ConversationBufferMemory
 from langchain_core.callbacks import BaseCallbackHandler
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -31,7 +30,7 @@ class MoonlanderTraderCallbackHandler(BaseCallbackHandler):
         self.events = []
 
     def on_tool_start(
-        self, serialized: Dict[str, Any], input_str: str, **kwargs: Any
+        self, serialized: dict[str, Any], input_str: str, **kwargs: Any
     ) -> Any:
         """Called when a tool is started."""
         event = {
@@ -146,7 +145,7 @@ class MoonlanderTraderSubagent:
                 api_key=settings.openai_api_key,
             )
 
-    def _create_tools(self) -> List[Any]:
+    def _create_tools(self) -> list[Any]:
         """Create tools specific to Moonlander trading."""
         # Create mock tools for Moonlander operations
         tools = [
@@ -240,7 +239,7 @@ Always be precise and return detailed trading execution information with risk me
         symbol: str,
         amount: float,
         leverage: float = 10.0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Execute a perpetual trading operation using Moonlander.
 
@@ -299,8 +298,8 @@ Always be precise and return detailed trading execution information with risk me
     async def close_position(
         self,
         symbol: str,
-        position_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        position_id: str | None = None,
+    ) -> dict[str, Any]:
         """
         Close an existing perpetual position.
 
@@ -350,9 +349,9 @@ Always be precise and return detailed trading execution information with risk me
     async def set_risk_management(
         self,
         symbol: str,
-        stop_loss: Optional[float] = None,
-        take_profit: Optional[float] = None,
-    ) -> Dict[str, Any]:
+        stop_loss: float | None = None,
+        take_profit: float | None = None,
+    ) -> dict[str, Any]:
         """
         Set risk management orders for a position.
 
@@ -408,12 +407,12 @@ Always be precise and return detailed trading execution information with risk me
 
     def _process_trade_result(
         self,
-        result: Dict[str, Any],
+        result: dict[str, Any],
         direction: str,
         symbol: str,
         amount: float,
         leverage: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Process and format trade execution result.
 
@@ -460,9 +459,9 @@ Always be precise and return detailed trading execution information with risk me
 
     def _process_close_result(
         self,
-        result: Dict[str, Any],
+        result: dict[str, Any],
         symbol: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Process and format position closure result.
 
@@ -492,9 +491,9 @@ Always be precise and return detailed trading execution information with risk me
 
     def _process_risk_order_result(
         self,
-        result: Dict[str, Any],
+        result: dict[str, Any],
         order_type: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Process and format risk order result.
 
@@ -541,7 +540,7 @@ Always be precise and return detailed trading execution information with risk me
             liquidation = entry_price * (1 + (0.9 / leverage))
         return round(liquidation, 2)
 
-    async def get_execution_summary(self) -> Dict[str, Any]:
+    async def get_execution_summary(self) -> dict[str, Any]:
         """Get execution summary for this subagent."""
         return {
             "subagent_type": "Moonlander Trader",
@@ -566,7 +565,7 @@ class OpenPositionTool:
         symbol: str,
         amount: float,
         leverage: float = 10.0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute position opening."""
         logger.info(f"Opening {direction} position: {amount} USDC {symbol} @ {leverage}x")
 
@@ -591,8 +590,8 @@ class ClosePositionTool:
     def run(
         self,
         symbol: str,
-        position_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        position_id: str | None = None,
+    ) -> dict[str, Any]:
         """Execute position closing."""
         logger.info(f"Closing position: {symbol}")
 
@@ -616,7 +615,7 @@ class SetStopLossTool:
         self,
         symbol: str,
         stop_loss_price: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Set stop-loss order."""
         logger.info(f"Setting stop-loss for {symbol} at {stop_loss_price}")
 
@@ -639,7 +638,7 @@ class SetTakeProfitTool:
         self,
         symbol: str,
         take_profit_price: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Set take-profit order."""
         logger.info(f"Setting take-profit for {symbol} at {take_profit_price}")
 
@@ -661,7 +660,7 @@ class GetFundingRateTool:
     def run(
         self,
         symbol: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get funding rate."""
         logger.info(f"Getting funding rate for {symbol}")
 

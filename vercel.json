@@ -2,41 +2,49 @@
   "version": 2,
   "builds": [
     {
-      "src": "src/main.py",
-      "use": "@vercel/python"
+      "src": "api/index.py",
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "15mb",
+        "runtime": "python3.11"
+      }
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "src/main.py"
+      "dest": "api/index.py"
     },
     {
       "src": "/docs",
-      "dest": "src/main.py"
+      "dest": "api/index.py"
     },
     {
       "src": "/redoc",
-      "dest": "src/main.py"
+      "dest": "api/index.py"
     },
     {
       "src": "/openapi.json",
-      "dest": "src/main.py"
+      "dest": "api/index.py"
     },
     {
-      "src": "/api/v1/ws",
-      "dest": "src/main.py"
+      "src": "/health",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "api/index.py"
     }
   ],
   "env": {
     "PYTHONPATH": "."
   },
   "functions": {
-    "src/main.py": {
+    "api/index.py": {
       "memory": 1024,
-      "maxDuration": 30
+      "maxDuration": 60
     }
   },
-  "regions": ["sfo1"],
+  "regions": ["iad1"],
   "framework": null
 }

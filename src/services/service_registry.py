@@ -5,15 +5,13 @@ This service manages MCP-compatible service discovery and registry
 for the Paygent platform.
 """
 
-import asyncio
 import json
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.config import settings
 from src.models.services import Service
 from src.services.cache import CacheService
 
@@ -36,14 +34,14 @@ class ServiceRegistryService:
     async def discover_services(
         self,
         query: str = "",
-        category: Optional[str] = None,
-        min_price: Optional[float] = None,
-        max_price: Optional[float] = None,
-        min_reputation: Optional[float] = None,
-        mcp_compatible: Optional[bool] = None,
+        category: str | None = None,
+        min_price: float | None = None,
+        max_price: float | None = None,
+        min_reputation: float | None = None,
+        mcp_compatible: bool | None = None,
         limit: int = 20,
         offset: int = 0,
-    ) -> List[Union[Service, Dict[str, Any]]]:
+    ) -> list[Service | dict[str, Any]]:
         """
         Discover services based on search criteria with caching.
 
@@ -135,7 +133,7 @@ class ServiceRegistryService:
             logger.error(f"Service discovery failed: {e}")
             return []
 
-    async def get_service(self, service_id: str) -> Optional[Service]:
+    async def get_service(self, service_id: str) -> Service | None:
         """
         Get service by ID.
 
@@ -164,9 +162,9 @@ class ServiceRegistryService:
         pricing_model: str,
         price_amount: float,
         price_token: str,
-        category: Optional[str] = None,
+        category: str | None = None,
         mcp_compatible: bool = False,
-    ) -> Optional[Service]:
+    ) -> Service | None:
         """
         Register a new service.
 
@@ -216,7 +214,7 @@ class ServiceRegistryService:
         self,
         service_id: str,
         **kwargs,
-    ) -> Optional[Service]:
+    ) -> Service | None:
         """
         Update service information.
 
@@ -252,7 +250,7 @@ class ServiceRegistryService:
             logger.error(f"Failed to update service {service_id}: {e}")
             return None
 
-    async def get_service_pricing(self, service_id: str) -> Optional[Dict[str, Any]]:
+    async def get_service_pricing(self, service_id: str) -> dict[str, Any] | None:
         """
         Get current pricing for a service.
 
@@ -297,7 +295,7 @@ class ServiceRegistryService:
 
     async def update_service_reputation(
         self, service_id: str, rating: float
-    ) -> Optional[Service]:
+    ) -> Service | None:
         """
         Update service reputation score.
 
@@ -311,10 +309,7 @@ class ServiceRegistryService:
         try:
             # Convert string to UUID if needed
             from uuid import UUID
-            if isinstance(service_id, str):
-                service_id_uuid = UUID(service_id)
-            else:
-                service_id_uuid = service_id
+            service_id_uuid = UUID(service_id) if isinstance(service_id, str) else service_id
 
             service = await self.get_service(service_id_uuid)
             if not service:
@@ -344,7 +339,7 @@ class ServiceRegistryService:
             logger.error(f"Failed to update service reputation: {e}")
             return None
 
-    async def get_mcp_services(self) -> List[Service]:
+    async def get_mcp_services(self) -> list[Service]:
         """
         Get all MCP-compatible services.
 
@@ -358,7 +353,7 @@ class ServiceRegistryService:
                 return json.loads(cached_services)
 
             # Query MCP-compatible services
-            stmt = select(Service).where(Service.mcp_compatible == True)
+            stmt = select(Service).where(Service.mcp_compatible)
             result = await self.db.execute(stmt)
             services = result.scalars().all()
 
@@ -388,7 +383,7 @@ class ServiceRegistryService:
             logger.error(f"Failed to get MCP services: {e}")
             return []
 
-    async def search_services(self, query: str, **filters) -> List[Service]:
+    async def search_services(self, query: str, **filters) -> list[Service]:
         """
         Advanced service search with filters.
 
@@ -418,7 +413,7 @@ class ServiceRegistryService:
             logger.error(f"Service search failed: {e}")
             return []
 
-    async def get_service_stats(self, service_id: str) -> Dict[str, Any]:
+    async def get_service_stats(self, service_id: str) -> dict[str, Any]:
         """
         Get service usage statistics.
 

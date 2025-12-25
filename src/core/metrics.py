@@ -5,15 +5,16 @@ Provides endpoints for retrieving performance metrics and
 middleware for automatic metrics collection.
 """
 
-import time
 import logging
-from typing import Callable, Optional
+import time
+from collections.abc import Callable
+
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from src.core.monitoring import performance_monitor, Timer
 from src.core.config import settings
+from src.core.monitoring import Timer, performance_monitor
 
 logger = logging.getLogger(__name__)
 
@@ -198,29 +199,28 @@ async def get_agent_performance(request: Request) -> JSONResponse:
 
     # Collect timing metrics
     for key, stats in metrics["timers"].items():
-        if key.startswith("agent.executions.duration"):
-            if "{" in key and "}" in key:
-                labels_part = key[key.find("{") + 1:key.find("}")]
-                labels = {}
-                for label in labels_part.split(","):
-                    if "=" in label:
-                        k, v = label.split("=", 1)
-                        labels[k.strip()] = v.strip()
+        if key.startswith("agent.executions.duration") and "{" in key and "}" in key:
+            labels_part = key[key.find("{") + 1:key.find("}")]
+            labels = {}
+            for label in labels_part.split(","):
+                if "=" in label:
+                    k, v = label.split("=", 1)
+                    labels[k.strip()] = v.strip()
 
-                command_type = labels.get("command_type", "unknown")
-                session_id = labels.get("session_id", "unknown")
+            command_type = labels.get("command_type", "unknown")
+            session_id = labels.get("session_id", "unknown")
 
-                if command_type not in agent_metrics["execution_times"]:
-                    agent_metrics["execution_times"][command_type] = {}
+            if command_type not in agent_metrics["execution_times"]:
+                agent_metrics["execution_times"][command_type] = {}
 
-                agent_metrics["execution_times"][command_type][session_id] = {
-                    "count": stats["count"],
-                    "avg_ms": stats["average"],
-                    "min_ms": stats["min"],
-                    "max_ms": stats["max"],
-                    "p95_ms": stats["p95"],
-                    "p99_ms": stats["p99"],
-                }
+            agent_metrics["execution_times"][command_type][session_id] = {
+                "count": stats["count"],
+                "avg_ms": stats["average"],
+                "min_ms": stats["min"],
+                "max_ms": stats["max"],
+                "p95_ms": stats["p95"],
+                "p99_ms": stats["p99"],
+            }
 
     return JSONResponse(content=agent_metrics)
 
@@ -342,35 +342,34 @@ async def get_cache_performance(request: Request) -> JSONResponse:
 
     # Collect timing metrics
     for key, stats in metrics["timers"].items():
-        if key.startswith("cache.operations.duration"):
-            if "{" in key and "}" in key:
-                labels_part = key[key.find("{") + 1:key.find("}")]
-                labels = {}
-                for label in labels_part.split(","):
-                    if "=" in label:
-                        k, v = label.split("=", 1)
-                        labels[k.strip()] = v.strip()
+        if key.startswith("cache.operations.duration") and "{" in key and "}" in key:
+            labels_part = key[key.find("{") + 1:key.find("}")]
+            labels = {}
+            for label in labels_part.split(","):
+                if "=" in label:
+                    k, v = label.split("=", 1)
+                    labels[k.strip()] = v.strip()
 
-                operation = labels.get("operation", "unknown")
-                cache_type = labels.get("cache_type", "unknown")
+            operation = labels.get("operation", "unknown")
+            cache_type = labels.get("cache_type", "unknown")
 
-                if cache_type not in cache_metrics["cache_types"]:
-                    cache_metrics["cache_types"][cache_type] = {}
+            if cache_type not in cache_metrics["cache_types"]:
+                cache_metrics["cache_types"][cache_type] = {}
 
-                cache_metrics["cache_types"][cache_type][operation] = {
-                    "count": stats["count"],
-                    "avg_ms": stats["average"],
-                    "min_ms": stats["min"],
-                    "max_ms": stats["max"],
-                    "p95_ms": stats["p95"],
-                    "p99_ms": stats["p99"],
-                }
+            cache_metrics["cache_types"][cache_type][operation] = {
+                "count": stats["count"],
+                "avg_ms": stats["average"],
+                "min_ms": stats["min"],
+                "max_ms": stats["max"],
+                "p95_ms": stats["p95"],
+                "p99_ms": stats["p99"],
+            }
 
     return JSONResponse(content=cache_metrics)
 
 
 # Timer utility function for manual timing
-def time_operation(operation_name: str, labels: Optional[dict] = None) -> Timer:
+def time_operation(operation_name: str, labels: dict | None = None) -> Timer:
     """
     Create a timer for manual operation timing.
 
@@ -383,7 +382,7 @@ def time_operation(operation_name: str, labels: Optional[dict] = None) -> Timer:
 
 
 # Performance decorator for functions
-def track_performance(operation_name: Optional[str] = None):
+def track_performance(operation_name: str | None = None):
     """
     Decorator to automatically track function performance.
 

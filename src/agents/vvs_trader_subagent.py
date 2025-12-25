@@ -6,13 +6,12 @@ token swaps on the Cronos blockchain.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 from uuid import UUID
 
 from langchain.agents import AgentExecutor, create_openai_tools_agent
 from langchain.memory import ConversationBufferMemory
 from langchain_core.callbacks import BaseCallbackHandler
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -31,7 +30,7 @@ class VVSTraderCallbackHandler(BaseCallbackHandler):
         self.events = []
 
     def on_tool_start(
-        self, serialized: Dict[str, Any], input_str: str, **kwargs: Any
+        self, serialized: dict[str, Any], input_str: str, **kwargs: Any
     ) -> Any:
         """Called when a tool is started."""
         event = {
@@ -147,7 +146,7 @@ class VVSTraderSubagent:
                 api_key=settings.openai_api_key,
             )
 
-    def _create_tools(self) -> List[Any]:
+    def _create_tools(self) -> list[Any]:
         """Create tools specific to VVS trading."""
         swap_tool = SwapTokensTool()
         return [swap_tool]
@@ -226,7 +225,7 @@ Always be precise and return detailed swap execution information."""
         to_token: str,
         amount: float,
         slippage_tolerance_percent: float = 1.0
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Execute a token swap using VVS Finance.
 
@@ -284,11 +283,11 @@ Always be precise and return detailed swap execution information."""
 
     def _process_swap_result(
         self,
-        result: Dict[str, Any],
+        result: dict[str, Any],
         from_token: str,
         to_token: str,
         amount: float
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Process and format swap execution result.
 
@@ -327,7 +326,7 @@ Always be precise and return detailed swap execution information."""
 
         return processed_result
 
-    async def get_execution_summary(self) -> Dict[str, Any]:
+    async def get_execution_summary(self) -> dict[str, Any]:
         """Get execution summary for this subagent."""
         return {
             "subagent_type": "VVS Trader",

@@ -7,20 +7,19 @@ on the Cronos blockchain.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
-from uuid import UUID
 from datetime import datetime
+from typing import Any
+from uuid import UUID
 
 from langchain.agents import AgentExecutor, create_openai_tools_agent
 from langchain.memory import ConversationBufferMemory
 from langchain_core.callbacks import BaseCallbackHandler
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.config import settings
 from src.connectors.delphi import DelphiConnector
+from src.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +32,7 @@ class DelphiPredictorCallbackHandler(BaseCallbackHandler):
         self.events = []
 
     def on_tool_start(
-        self, serialized: Dict[str, Any], input_str: str, **kwargs: Any
+        self, serialized: dict[str, Any], input_str: str, **kwargs: Any  # noqa: ARG002
     ) -> Any:
         """Called when a tool is started."""
         event = {
@@ -44,7 +43,7 @@ class DelphiPredictorCallbackHandler(BaseCallbackHandler):
         self.events.append(event)
         logger.info(f"Delphi Predictor {self.session_id}: Tool call - {event}")
 
-    def on_tool_end(self, output: str, **kwargs: Any) -> Any:
+    def on_tool_end(self, output: str, **kwargs: Any) -> Any:  # noqa: ARG002
         """Called when a tool finishes."""
         event = {
             "type": "tool_result",
@@ -124,7 +123,7 @@ class DelphiPredictorSubagent:
                 api_key=settings.openai_api_key,
             )
 
-    def _create_tools(self) -> List[Any]:
+    def _create_tools(self) -> list[Any]:
         """Create tools specific to Delphi prediction markets."""
         tools = [
             GetDelphiMarketsTool(self.delphi_connector),
@@ -218,8 +217,8 @@ Always be precise and return detailed betting information with risk analysis."""
         market_id: str,
         outcome: str,
         amount: float,
-        odds: Optional[float] = None,
-    ) -> Dict[str, Any]:
+        odds: float | None = None,
+    ) -> dict[str, Any]:
         """
         Place a prediction bet using Delphi connector.
 
@@ -279,7 +278,7 @@ Always be precise and return detailed betting information with risk analysis."""
     async def claim_winnings(
         self,
         bet_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Claim winnings from a resolved bet.
 
@@ -321,9 +320,9 @@ Always be precise and return detailed betting information with risk analysis."""
 
     async def get_market_analysis(
         self,
-        market_id: Optional[str] = None,
-        category: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        market_id: str | None = None,
+        category: str | None = None,
+    ) -> dict[str, Any]:
         """
         Get market analysis for prediction markets.
 
@@ -375,12 +374,12 @@ Always be precise and return detailed betting information with risk analysis."""
 
     def _process_bet_result(
         self,
-        result: Dict[str, Any],
+        result: dict[str, Any],
         market_id: str,
         outcome: str,
         amount: float,
-        odds: Optional[float] = None,
-    ) -> Dict[str, Any]:
+        odds: float | None = None,
+    ) -> dict[str, Any]:
         """
         Process and format bet placement result.
 
@@ -399,7 +398,7 @@ Always be precise and return detailed betting information with risk analysis."""
             try:
                 import json as json_lib
                 bet_details = json_lib.loads(bet_details)
-            except:
+            except Exception:
                 bet_details = {"raw_output": bet_details}
 
         return {
@@ -416,9 +415,9 @@ Always be precise and return detailed betting information with risk analysis."""
 
     def _process_claim_result(
         self,
-        result: Dict[str, Any],
+        result: dict[str, Any],
         bet_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Process and format winnings claim result.
 
@@ -434,7 +433,7 @@ Always be precise and return detailed betting information with risk analysis."""
             try:
                 import json as json_lib
                 claim_details = json_lib.loads(claim_details)
-            except:
+            except Exception:
                 claim_details = {"raw_output": claim_details}
 
         return {
@@ -449,10 +448,10 @@ Always be precise and return detailed betting information with risk analysis."""
 
     def _process_market_analysis(
         self,
-        result: Dict[str, Any],
-        market_id: Optional[str] = None,
-        category: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        result: dict[str, Any],
+        market_id: str | None = None,
+        category: str | None = None,
+    ) -> dict[str, Any]:
         """
         Process and format market analysis result.
 
@@ -469,7 +468,7 @@ Always be precise and return detailed betting information with risk analysis."""
             try:
                 import json as json_lib
                 analysis_details = json_lib.loads(analysis_details)
-            except:
+            except Exception:
                 analysis_details = {"raw_output": analysis_details}
 
         return {
@@ -480,7 +479,7 @@ Always be precise and return detailed betting information with risk analysis."""
             "timestamp": analysis_details.get("timestamp", datetime.now().isoformat()),
         }
 
-    async def get_execution_summary(self) -> Dict[str, Any]:
+    async def get_execution_summary(self) -> dict[str, Any]:
         """Get execution summary for this subagent."""
         return {
             "subagent_type": "Delphi Predictor",
@@ -504,10 +503,10 @@ class GetDelphiMarketsTool:
 
     def run(
         self,
-        category: Optional[str] = None,
+        category: str | None = None,
         status: str = "active",
         limit: int = 50,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get available markets."""
         logger.info(f"Getting Delphi markets: category={category}, status={status}")
 
@@ -539,8 +538,8 @@ class PlacePredictionBetTool:
         market_id: str,
         outcome: str,
         amount: float,
-        odds: Optional[float] = None,
-    ) -> Dict[str, Any]:
+        odds: float | None = None,
+    ) -> dict[str, Any]:
         """Place a prediction bet."""
         logger.info(f"Placing Delphi bet: {amount} USDC on {outcome} for {market_id}")
 
@@ -586,7 +585,7 @@ class ClaimPredictionWinningsTool:
     def run(
         self,
         bet_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Claim winnings from a bet."""
         logger.info(f"Claiming Delphi winnings for bet: {bet_id}")
 
@@ -624,7 +623,7 @@ class GetPredictionBetTool:
     def run(
         self,
         bet_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get bet details."""
         logger.info(f"Getting Delphi bet details: {bet_id}")
 
@@ -663,7 +662,7 @@ class GetMarketOutcomesTool:
     def run(
         self,
         market_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get market outcomes."""
         logger.info(f"Getting Delphi market outcomes: {market_id}")
 

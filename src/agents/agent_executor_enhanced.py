@@ -12,23 +12,22 @@ import asyncio
 import json
 import logging
 import time
-from typing import Dict, Any, Optional, List
-from uuid import UUID, uuid4
 from datetime import datetime
+from typing import Any
+from uuid import UUID, uuid4
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.agents.command_parser import CommandParser, ParsedCommand
-from src.tools.simple_tools import get_all_tools
-from src.models.agent_sessions import ExecutionLog, AgentSession, AgentMemory
-from src.core.database import get_db
-from src.services.x402_service import X402PaymentService
-from src.services.approval_service import ApprovalService, BudgetLimitService
-from src.services.metrics_service import metrics_collector
-from src.core.security import get_tool_allowlist, ToolAllowlistError
-from src.services.alerting_service import AlertType, send_error_alert
 from src.core.config import settings
+from src.core.security import ToolAllowlistError, get_tool_allowlist
+from src.models.agent_sessions import AgentMemory, ExecutionLog
+from src.services.alerting_service import AlertType, send_error_alert
+from src.services.approval_service import ApprovalService
+from src.services.metrics_service import metrics_collector
+from src.services.x402_service import X402PaymentService
+from src.tools.simple_tools import get_all_tools
 
 # Try to import the subagents, but fall back gracefully if langchain isn't available
 try:
@@ -73,9 +72,9 @@ class AgentExecutorEnhanced:
         self.db = db
         self.parser = CommandParser()
         self.tools = get_all_tools()
-        self.tool_calls: List[Dict[str, Any]] = []
-        self.current_execution_log_id: Optional[UUID] = None
-        self.memory: List[Dict[str, Any]] = []
+        self.tool_calls: list[dict[str, Any]] = []
+        self.current_execution_log_id: UUID | None = None
+        self.memory: list[dict[str, Any]] = []
         self.use_allowlist = use_allowlist
         self.allowlist = get_tool_allowlist() if use_allowlist else None
 
@@ -115,7 +114,7 @@ class AgentExecutorEnhanced:
         self,
         message_type: str,
         content: str,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: dict[str, Any] | None = None
     ) -> None:
         """
         Save a message to the conversation memory.
@@ -209,10 +208,10 @@ class AgentExecutorEnhanced:
 
     async def execute_command(
         self,
-        command: str,
-        budget_limit_usd: Optional[float] = None,
+        command: str,  # noqa: ARG002
+        budget_limit_usd: float | None = None,  # noqa: ARG002
         timeout_seconds: float = 30.0
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Execute a natural language command with full logging and planning.
 
@@ -345,7 +344,7 @@ class AgentExecutorEnhanced:
                     timeout=execution_timeout
                 )
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 # Handle timeout
                 logger.error(f"Command execution exceeded {execution_timeout}s timeout")
                 result = {
@@ -425,8 +424,8 @@ class AgentExecutorEnhanced:
     def _generate_execution_plan(
         self,
         parsed: ParsedCommand,
-        command: str
-    ) -> Optional[Dict[str, Any]]:
+        command: str  # noqa: ARG002
+    ) -> dict[str, Any] | None:
         """
         Generate a write_todos style execution plan.
 
@@ -548,7 +547,7 @@ class AgentExecutorEnhanced:
     async def _log_tool_call(
         self,
         tool_name: str,
-        tool_args: Dict[str, Any],
+        tool_args: dict[str, Any],
         tool_result: Any
     ) -> None:
         """
@@ -571,8 +570,8 @@ class AgentExecutorEnhanced:
     async def _execute_payment_with_logging(
         self,
         parsed: ParsedCommand,
-        budget_limit_usd: Optional[float]
-    ) -> Dict[str, Any]:
+        budget_limit_usd: float | None  # noqa: ARG002
+    ) -> dict[str, Any]:
         """Execute a payment command with HITL approval checks and logging using X402PaymentService."""
         params = parsed.parameters
         amount = params["amount"]
@@ -663,8 +662,8 @@ class AgentExecutorEnhanced:
     async def _execute_swap_with_logging(
         self,
         parsed: ParsedCommand,
-        budget_limit_usd: Optional[float]
-    ) -> Dict[str, Any]:
+        budget_limit_usd: float | None  # noqa: ARG002
+    ) -> dict[str, Any]:
         """Execute a swap command with VVS subagent (or fallback to simple tool) and logging."""
         params = parsed.parameters
 
@@ -721,8 +720,8 @@ class AgentExecutorEnhanced:
     async def _execute_perpetual_trade_with_logging(
         self,
         parsed: ParsedCommand,
-        budget_limit_usd: Optional[float]
-    ) -> Dict[str, Any]:
+        budget_limit_usd: float | None  # noqa: ARG002
+    ) -> dict[str, Any]:
         """Execute a perpetual trade command with Moonlander subagent and logging."""
         params = parsed.parameters
 
@@ -841,7 +840,7 @@ class AgentExecutorEnhanced:
     async def _execute_balance_check_with_logging(
         self,
         parsed: ParsedCommand
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute a balance check command with logging."""
         params = parsed.parameters
 
@@ -867,7 +866,7 @@ class AgentExecutorEnhanced:
     async def _execute_service_discovery_with_logging(
         self,
         parsed: ParsedCommand
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute a service discovery command with logging."""
         params = parsed.parameters
 
@@ -940,9 +939,9 @@ async def execute_agent_command_enhanced(
     command: str,
     session_id: UUID,
     db: AsyncSession,
-    budget_limit_usd: Optional[float] = None,
+    budget_limit_usd: float | None = None,
     timeout_seconds: float = 30.0
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Convenience function to execute an agent command with enhanced logging.
 

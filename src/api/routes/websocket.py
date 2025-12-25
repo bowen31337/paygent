@@ -10,41 +10,39 @@ Provides WebSocket support for:
 import asyncio
 import json
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
+from uuid import UUID, uuid4
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException, Query
+from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.encoders import jsonable_encoder
-from starlette.status import WS_1008_POLICY_VIOLATION
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.status import WS_1008_POLICY_VIOLATION
 
+from src.agents.agent_executor_enhanced import AgentExecutorEnhanced
 from src.core.config import settings
-from src.core.auth import get_current_user, get_current_user_optional
+from src.core.database import get_db
 from src.schemas.websocket import (
-    WebSocketMessage,
-    ExecuteMessage,
+    ApprovalRequiredEvent,
     ApproveMessage,
-    RejectMessage,
-    EditMessage,
     CancelMessage,
-    WebSocketEvent,
+    CompleteEvent,
+    EditMessage,
+    ErrorEvent,
+    ExecuteMessage,
+    RejectMessage,
+    SubagentEndEvent,
+    SubagentStartEvent,
     ThinkingEvent,
     ToolCallEvent,
     ToolResultEvent,
-    ApprovalRequiredEvent,
-    CompleteEvent,
-    ErrorEvent,
-    SubagentStartEvent,
-    SubagentEndEvent,
+    WebSocketEvent,
+    WebSocketMessage,
 )
-from src.services.agent_service import AgentService
 from src.services.approval_service import ApprovalService
-from src.services.session_service import SessionService
 from src.services.execution_log_service import ExecutionLogService
-from src.agents.agent_executor_enhanced import AgentExecutorEnhanced
 from src.services.metrics_service import metrics_collector
-from src.core.database import get_db
-from uuid import UUID, uuid4
-from sqlalchemy.ext.asyncio import AsyncSession
+from src.services.session_service import SessionService
 
 logger = logging.getLogger(__name__)
 
@@ -55,9 +53,9 @@ class ConnectionManager:
     """Manages WebSocket connections for real-time communication."""
 
     def __init__(self):
-        self.active_connections: Dict[str, WebSocket] = {}
-        self.user_sessions: Dict[str, str] = {}  # user_id -> session_id
-        self.execution_tasks: Dict[str, asyncio.Task] = {}  # session_id -> task
+        self.active_connections: dict[str, WebSocket] = {}
+        self.user_sessions: dict[str, str] = {}  # user_id -> session_id
+        self.execution_tasks: dict[str, asyncio.Task] = {}  # session_id -> task
 
     async def connect(self, websocket: WebSocket, session_id: str, user_id: str):
         """Connect a new WebSocket client."""
@@ -82,7 +80,7 @@ class ConnectionManager:
             del self.execution_tasks[session_id]
         logger.info(f"WebSocket disconnected for session {session_id}, user {user_id}")
 
-    async def send_personal_message(self, message: Dict[str, Any] | BaseModel, session_id: str):
+    async def send_personal_message(self, message: dict[str, Any] | BaseModel, session_id: str):
         """Send a message to a specific client."""
         if session_id in self.active_connections:
             websocket = self.active_connections[session_id]
@@ -102,7 +100,7 @@ class ConnectionManager:
                 # Remove broken connection
                 self.disconnect(session_id, self.get_user_id_by_session(session_id))
 
-    async def broadcast(self, message: Dict[str, Any] | BaseModel):
+    async def broadcast(self, message: dict[str, Any] | BaseModel):
         """Broadcast a message to all connected clients."""
         # Convert to dict if needed
         if isinstance(message, BaseModel):
@@ -119,11 +117,11 @@ class ConnectionManager:
                 logger.error(f"Failed to broadcast to session {session_id}: {e}")
                 self.disconnect(session_id, self.get_user_id_by_session(session_id))
 
-    def get_session_by_user(self, user_id: str) -> Optional[str]:
+    def get_session_by_user(self, user_id: str) -> str | None:
         """Get session ID by user ID."""
         return self.user_sessions.get(user_id)
 
-    def get_user_id_by_session(self, session_id: str) -> Optional[str]:
+    def get_user_id_by_session(self, session_id: str) -> str | None:
         """Get user ID by session ID."""
         for user_id, sess_id in self.user_sessions.items():
             if sess_id == session_id:
@@ -134,7 +132,7 @@ class ConnectionManager:
         """Register an active execution task for a session."""
         self.execution_tasks[session_id] = task
 
-    def get_execution_task(self, session_id: str) -> Optional[asyncio.Task]:
+    def get_execution_task(self, session_id: str) -> asyncio.Task | None:
         """Get the active execution task for a session."""
         return self.execution_tasks.get(session_id)
 
@@ -146,7 +144,7 @@ manager = ConnectionManager()
 async def websocket_endpoint(
     websocket: WebSocket,
     session_id: str,
-    token: Optional[str] = None
+    token: str | None = None
 ):
     """
     WebSocket endpoint for real-time agent execution and HITL workflows.
@@ -188,7 +186,7 @@ async def websocket_endpoint(
     # Validate session exists - get db session for validation
     print("DEBUG: Starting session validation")
     async for db in get_db():
-        print(f"DEBUG: Got db session")
+        print("DEBUG: Got db session")
         session_service = SessionService(db)
         # Convert session_id string to UUID for get_session
         try:
@@ -204,7 +202,7 @@ async def websocket_endpoint(
         break
     logger.info(f"WebSocket: Session lookup result: {session}")
     if not session:
-        print(f"DEBUG: No session found, closing")
+        print("DEBUG: No session found, closing")
         logger.warning(f"WebSocket: Invalid session {session_id}")
         await websocket.close(code=WS_1008_POLICY_VIOLATION, reason="Invalid session")
         return
@@ -613,7 +611,7 @@ async def handle_cancel_message(
 
 
 # Helper functions for sending events to clients
-async def send_thinking_event(session_id: str, data: Dict[str, Any]):
+async def send_thinking_event(session_id: str, data: dict[str, Any]):
     """Send a thinking event to the client."""
     await manager.send_personal_message(
         ThinkingEvent(type="thinking", data=data),
@@ -621,7 +619,7 @@ async def send_thinking_event(session_id: str, data: Dict[str, Any]):
     )
 
 
-async def send_tool_call_event(session_id: str, data: Dict[str, Any]):
+async def send_tool_call_event(session_id: str, data: dict[str, Any]):
     """Send a tool call event to the client."""
     await manager.send_personal_message(
         ToolCallEvent(type="tool_call", data=data),
@@ -629,7 +627,7 @@ async def send_tool_call_event(session_id: str, data: Dict[str, Any]):
     )
 
 
-async def send_tool_result_event(session_id: str, data: Dict[str, Any]):
+async def send_tool_result_event(session_id: str, data: dict[str, Any]):
     """Send a tool result event to the client."""
     await manager.send_personal_message(
         ToolResultEvent(type="tool_result", data=data),
@@ -637,7 +635,7 @@ async def send_tool_result_event(session_id: str, data: Dict[str, Any]):
     )
 
 
-async def send_approval_required_event(session_id: str, data: Dict[str, Any]):
+async def send_approval_required_event(session_id: str, data: dict[str, Any]):
     """Send an approval required event to the client."""
     await manager.send_personal_message(
         ApprovalRequiredEvent(type="approval_required", data=data),
@@ -645,7 +643,7 @@ async def send_approval_required_event(session_id: str, data: Dict[str, Any]):
     )
 
 
-async def send_complete_event(session_id: str, data: Dict[str, Any]):
+async def send_complete_event(session_id: str, data: dict[str, Any]):
     """Send a complete event to the client."""
     await manager.send_personal_message(
         CompleteEvent(type="complete", data=data),
@@ -653,7 +651,7 @@ async def send_complete_event(session_id: str, data: Dict[str, Any]):
     )
 
 
-async def send_error_event(session_id: str, data: Dict[str, Any]):
+async def send_error_event(session_id: str, data: dict[str, Any]):
     """Send an error event to the client."""
     await manager.send_personal_message(
         ErrorEvent(type="error", data=data),
@@ -661,7 +659,7 @@ async def send_error_event(session_id: str, data: Dict[str, Any]):
     )
 
 
-async def send_subagent_start_event(session_id: str, data: Dict[str, Any]):
+async def send_subagent_start_event(session_id: str, data: dict[str, Any]):
     """Send a subagent start event to the client."""
     await manager.send_personal_message(
         SubagentStartEvent(type="subagent_start", data=data),
@@ -669,7 +667,7 @@ async def send_subagent_start_event(session_id: str, data: Dict[str, Any]):
     )
 
 
-async def send_subagent_end_event(session_id: str, data: Dict[str, Any]):
+async def send_subagent_end_event(session_id: str, data: dict[str, Any]):
     """Send a subagent end event to the client."""
     await manager.send_personal_message(
         SubagentEndEvent(type="subagent_end", data=data),

@@ -11,12 +11,12 @@ Supported alert channels:
 - Slack/Discord webhooks (future)
 """
 
-import logging
 import json
+import logging
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, Any, Optional, List
-from dataclasses import dataclass, asdict
 from enum import Enum
+from typing import Any
 
 from src.core.config import settings
 
@@ -51,10 +51,10 @@ class Alert:
     severity: AlertSeverity
     message: str
     timestamp: str
-    details: Optional[Dict[str, Any]] = None
-    correlation_id: Optional[str] = None
+    details: dict[str, Any] | None = None
+    correlation_id: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert alert to dictionary."""
         return {
             "alert_type": self.alert_type.value,
@@ -76,7 +76,7 @@ class AlertingService:
 
     def __init__(self):
         """Initialize the alerting service."""
-        self.alert_handlers: List[callable] = []
+        self.alert_handlers: list[callable] = []
         self._setup_default_handlers()
         logger.info("AlertingService initialized")
 
@@ -140,8 +140,8 @@ class AlertingService:
         alert_type: AlertType,
         severity: AlertSeverity,
         message: str,
-        details: Optional[Dict[str, Any]] = None,
-        correlation_id: Optional[str] = None
+        details: dict[str, Any] | None = None,
+        correlation_id: str | None = None
     ) -> None:
         """
         Send an alert through all registered handlers.
@@ -185,8 +185,8 @@ class AlertingService:
         self,
         alert_type: AlertType,
         message: str,
-        details: Optional[Dict[str, Any]] = None,
-        correlation_id: Optional[str] = None
+        details: dict[str, Any] | None = None,
+        correlation_id: str | None = None
     ) -> None:
         """Send a critical severity alert."""
         self.send_alert(
@@ -201,8 +201,8 @@ class AlertingService:
         self,
         alert_type: AlertType,
         message: str,
-        details: Optional[Dict[str, Any]] = None,
-        correlation_id: Optional[str] = None
+        details: dict[str, Any] | None = None,
+        correlation_id: str | None = None
     ) -> None:
         """Send an error severity alert."""
         self.send_alert(
@@ -217,8 +217,8 @@ class AlertingService:
         self,
         alert_type: AlertType,
         message: str,
-        details: Optional[Dict[str, Any]] = None,
-        correlation_id: Optional[str] = None
+        details: dict[str, Any] | None = None,
+        correlation_id: str | None = None
     ) -> None:
         """Send a warning severity alert."""
         self.send_alert(
@@ -233,8 +233,8 @@ class AlertingService:
         self,
         alert_type: AlertType,
         message: str,
-        details: Optional[Dict[str, Any]] = None,
-        correlation_id: Optional[str] = None
+        details: dict[str, Any] | None = None,
+        correlation_id: str | None = None
     ) -> None:
         """Send an info severity alert."""
         self.send_alert(
@@ -250,8 +250,8 @@ class AlertingService:
         alert_type: AlertType,
         severity: AlertSeverity,
         message: str,
-        details: Optional[Dict[str, Any]] = None,
-        correlation_id: Optional[str] = None
+        details: dict[str, Any] | None = None,
+        correlation_id: str | None = None
     ) -> None:
         """
         Send an alert through all registered handlers (async version).
@@ -283,7 +283,7 @@ class AlertingService:
             except Exception as e:
                 logger.error(f"Alert handler {handler.__name__} failed: {e}")
 
-    def add_synchronous_webhook_handler(self, mock_response: Optional[int] = None) -> None:
+    def add_synchronous_webhook_handler(self, mock_response: int | None = None) -> None:
         """
         Add a synchronous webhook handler for testing purposes.
 
@@ -316,8 +316,8 @@ def send_alert(
     alert_type: AlertType,
     severity: AlertSeverity,
     message: str,
-    details: Optional[Dict[str, Any]] = None,
-    correlation_id: Optional[str] = None
+    details: dict[str, Any] | None = None,
+    correlation_id: str | None = None
 ) -> None:
     """
     Convenience function to send an alert.
@@ -341,8 +341,8 @@ def send_alert(
 def send_critical_alert(
     alert_type: AlertType,
     message: str,
-    details: Optional[Dict[str, Any]] = None,
-    correlation_id: Optional[str] = None
+    details: dict[str, Any] | None = None,
+    correlation_id: str | None = None
 ) -> None:
     """Send a critical alert."""
     alerting_service.send_critical(
@@ -356,8 +356,8 @@ def send_critical_alert(
 def send_error_alert(
     alert_type: AlertType,
     message: str,
-    details: Optional[Dict[str, Any]] = None,
-    correlation_id: Optional[str] = None
+    details: dict[str, Any] | None = None,
+    correlation_id: str | None = None
 ) -> None:
     """Send an error alert."""
     alerting_service.send_error(
@@ -372,8 +372,8 @@ async def send_alert_async(
     alert_type: AlertType,
     severity: AlertSeverity,
     message: str,
-    details: Optional[Dict[str, Any]] = None,
-    correlation_id: Optional[str] = None
+    details: dict[str, Any] | None = None,
+    correlation_id: str | None = None
 ) -> None:
     """Send an alert asynchronously."""
     await alerting_service.send_alert_async(
@@ -388,8 +388,8 @@ async def send_alert_async(
 async def send_critical_alert_async(
     alert_type: AlertType,
     message: str,
-    details: Optional[Dict[str, Any]] = None,
-    correlation_id: Optional[str] = None
+    details: dict[str, Any] | None = None,
+    correlation_id: str | None = None
 ) -> None:
     """Send a critical alert asynchronously."""
     await alerting_service.send_alert_async(

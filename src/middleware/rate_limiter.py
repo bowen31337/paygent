@@ -6,14 +6,14 @@ It supports per-IP and per-user rate limiting.
 """
 
 import logging
-import time
-from typing import Optional, Callable, Any
-from functools import wraps
-from collections import defaultdict
 import threading
+import time
+from collections import defaultdict
+from collections.abc import Callable
+from functools import wraps
+from typing import Any
 
-from fastapi import Request, HTTPException, status
-from fastapi.responses import JSONResponse
+from fastapi import HTTPException, Request, status
 
 try:
     from redis import Redis
@@ -46,7 +46,7 @@ class RateLimiter:
     def __init__(
         self,
         requests_per_minute: int = 100,
-        redis_client: Optional[Redis] = None
+        redis_client: Redis | None = None
     ):
         """
         Initialize the rate limiter.
@@ -81,7 +81,7 @@ class RateLimiter:
         else:
             logger.warning("Redis library not available for rate limiting, using in-memory fallback")
 
-    def _get_key(self, request: Request, user_id: Optional[str] = None) -> str:
+    def _get_key(self, request: Request, user_id: str | None = None) -> str:
         """
         Generate a rate limit key based on user or IP.
 
@@ -146,7 +146,7 @@ class RateLimiter:
             else:
                 data["count"] += 1
 
-    def check_limit(self, request: Request, user_id: Optional[str] = None) -> tuple[bool, int, int]:
+    def check_limit(self, request: Request, user_id: str | None = None) -> tuple[bool, int, int]:
         """
         Check if request is within rate limit.
 
@@ -251,7 +251,7 @@ async def rate_limit_middleware(
 
 def rate_limit(
     requests_per_minute: int,
-    key_func: Optional[Callable[[Request], str]] = None
+    key_func: Callable[[Request], str] | None = None
 ):
     """
     Decorator for rate limiting specific endpoints.

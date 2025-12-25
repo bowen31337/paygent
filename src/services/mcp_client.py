@@ -8,9 +8,9 @@ to get real-time cryptocurrency prices and market data.
 import asyncio
 import logging
 import time
-from typing import Any, Dict, List, Optional, Union
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any
 
 import httpx
 
@@ -45,7 +45,7 @@ class MCPServerClient:
     - Rate limiting and error handling
     """
 
-    def __init__(self, server_url: Optional[str] = None):
+    def __init__(self, server_url: str | None = None):
         """
         Initialize the MCP server client.
 
@@ -80,7 +80,7 @@ class MCPServerClient:
 
         self.last_request_time = time.time()
 
-    async def _make_request(self, method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
+    async def _make_request(self, method: str, endpoint: str, **kwargs) -> dict[str, Any]:
         """
         Make an authenticated request to the MCP server.
 
@@ -166,7 +166,7 @@ class MCPServerClient:
         except Exception as e:
             raise MCPServerError(f"Failed to parse price data: {e}")
 
-    async def get_multiple_prices(self, symbols: List[str]) -> List[PriceData]:
+    async def get_multiple_prices(self, symbols: list[str]) -> list[PriceData]:
         """
         Get prices for multiple symbols in a single request.
 
@@ -205,7 +205,7 @@ class MCPServerClient:
         except Exception as e:
             raise MCPServerError(f"Failed to get multiple prices: {e}")
 
-    async def get_supported_symbols(self) -> List[str]:
+    async def get_supported_symbols(self) -> list[str]:
         """
         Get list of supported trading symbols.
 
@@ -224,7 +224,7 @@ class MCPServerClient:
         except Exception as e:
             raise MCPServerError(f"Failed to get supported symbols: {e}")
 
-    async def get_market_status(self) -> Dict[str, Any]:
+    async def get_market_status(self) -> dict[str, Any]:
         """
         Get market status and server information.
 
@@ -266,7 +266,7 @@ class MCPServerClient:
 
 
 # Global MCP client instance
-_mcp_client: Optional[MCPServerClient] = None
+_mcp_client: MCPServerClient | None = None
 
 
 def get_mcp_client() -> MCPServerClient:
@@ -282,7 +282,7 @@ def get_mcp_client() -> MCPServerClient:
     return _mcp_client
 
 
-def create_mcp_client(server_url: Optional[str] = None) -> MCPServerClient:
+def create_mcp_client(server_url: str | None = None) -> MCPServerClient:
     """
     Create a new MCP client instance.
 

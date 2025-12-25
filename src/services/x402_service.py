@@ -6,9 +6,8 @@ payment execution, EIP-712 signature generation, and facilitator integration.
 """
 
 import asyncio
-import json
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 from httpx import AsyncClient, Response
 
@@ -33,8 +32,8 @@ class X402PaymentService:
         service_url: str,
         amount: float,
         token: str,
-        description: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        description: str | None = None,
+    ) -> dict[str, Any]:
         """
         Execute an x402 payment flow.
 
@@ -94,8 +93,8 @@ class X402PaymentService:
         service_url: str,
         amount: float,
         token: str,
-        description: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        description: str | None = None,
+    ) -> dict[str, Any]:
         """
         Make a payment request following x402 protocol.
 
@@ -184,8 +183,8 @@ class X402PaymentService:
         service_url: str,
         amount: float,
         token: str,
-        description: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        description: str | None = None,
+    ) -> dict[str, Any]:
         """
         Handle HTTP 402 response by executing payment via facilitator.
 
@@ -273,7 +272,7 @@ class X402PaymentService:
                 return {
                     "success": False,
                     "error": f"HTTP {final_response.status_code}",
-                    "message": f"Service still requires payment after facilitator submission",
+                    "message": "Service still requires payment after facilitator submission",
                 }
 
         except Exception as e:
@@ -284,7 +283,7 @@ class X402PaymentService:
                 "message": f"402 response handling failed: {str(e)}",
             }
 
-    def _parse_payment_required_header(self, header: str) -> Dict[str, str]:
+    def _parse_payment_required_header(self, header: str) -> dict[str, str]:
         """
         Parse Payment-Required header.
 
@@ -317,8 +316,8 @@ class X402PaymentService:
         service_url: str,
         amount: float,
         token: str,
-        description: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        description: str | None = None,
+    ) -> dict[str, Any]:
         """
         Generate EIP-712 signature for payment authorization.
 
@@ -375,9 +374,9 @@ class X402PaymentService:
         service_url: str,
         amount: float,
         token: str,
-        signature: Dict[str, Any],
-        description: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        signature: dict[str, Any],
+        description: str | None = None,
+    ) -> dict[str, Any]:
         """
         Submit payment to x402 facilitator for settlement.
 
@@ -466,7 +465,7 @@ class X402PaymentService:
                 "message": f"Facilitator submission failed: {str(e)}",
             }
 
-    async def verify_payment(self, payment_id: str) -> Dict[str, Any]:
+    async def verify_payment(self, payment_id: str) -> dict[str, Any]:
         """
         Verify payment status with facilitator.
 

@@ -5,13 +5,13 @@ This module provides endpoints for discovering, registering, and managing
 services in the Paygent marketplace.
 """
 
-from typing import Optional
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
+from sqlalchemy import func as sql_func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func as sql_func
 
 from src.core.database import get_db
 from src.models.services import Service
@@ -25,7 +25,7 @@ class ServiceInfo(BaseModel):
 
     id: UUID
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     endpoint: str
     pricing_model: str = Field(
         ..., description="pay-per-call, subscription, or metered"
@@ -62,7 +62,7 @@ class CreateServiceRequest(BaseModel):
     """Request body for creating a new service."""
 
     name: str = Field(..., min_length=1, max_length=255)
-    description: Optional[str] = Field(default=None, max_length=2000)
+    description: str | None = Field(default=None, max_length=2000)
     endpoint: str = Field(..., min_length=1, max_length=512)
     pricing_model: str = Field(
         default="pay-per-call",
@@ -76,12 +76,12 @@ class CreateServiceRequest(BaseModel):
 class UpdateServiceRequest(BaseModel):
     """Request body for updating a service."""
 
-    name: Optional[str] = Field(default=None, min_length=1, max_length=255)
-    description: Optional[str] = Field(default=None, max_length=2000)
-    endpoint: Optional[str] = Field(default=None, min_length=1, max_length=512)
-    pricing_model: Optional[str] = None
-    price_amount: Optional[float] = Field(default=None, gt=0)
-    mcp_compatible: Optional[bool] = None
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=2000)
+    endpoint: str | None = Field(default=None, min_length=1, max_length=512)
+    pricing_model: str | None = None
+    price_amount: float | None = Field(default=None, gt=0)
+    mcp_compatible: bool | None = None
 
 
 @router.get(
@@ -91,13 +91,13 @@ class UpdateServiceRequest(BaseModel):
     description="Discover available services with optional filtering. Results are cached for 5 minutes.",
 )
 async def discover_services(
-    category: Optional[str] = Query(default=None, description="Filter by category"),
-    min_price: Optional[float] = Query(default=None, ge=0, description="Minimum price"),
-    max_price: Optional[float] = Query(default=None, ge=0, description="Maximum price"),
-    min_reputation: Optional[float] = Query(
+    category: str | None = Query(default=None, description="Filter by category"),
+    min_price: float | None = Query(default=None, ge=0, description="Minimum price"),
+    max_price: float | None = Query(default=None, ge=0, description="Maximum price"),
+    min_reputation: float | None = Query(
         default=None, ge=0, description="Minimum reputation score"
     ),
-    mcp_compatible: Optional[bool] = Query(
+    mcp_compatible: bool | None = Query(
         default=None, description="Filter MCP-compatible services"
     ),
     offset: int = Query(default=0, ge=0),

@@ -8,7 +8,7 @@ with graceful fallback when Redis is unavailable.
 import json
 import logging
 import time
-from typing import Any, Optional
+from typing import Any
 
 from src.core.cache import cache_client
 
@@ -74,7 +74,7 @@ class CacheService:
         """Initialize the cache service."""
         self.client = cache_client
 
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         """
         Get a value from cache with performance tracking.
 
@@ -110,7 +110,7 @@ class CacheService:
             return None
 
     async def set(
-        self, key: str, value: Any, expiration: Optional[int] = None
+        self, key: str, value: Any, expiration: int | None = None
     ) -> bool:
         """
         Set a value in cache with performance tracking.

@@ -5,8 +5,10 @@ This module provides middleware to enforce HTTPS connections in production
 environments, redirecting HTTP requests to HTTPS and rejecting insecure requests.
 """
 
-from typing import Callable, Any
-from fastapi import Request, HTTPException
+from collections.abc import Callable
+from typing import Any
+
+from fastapi import HTTPException, Request
 from fastapi.responses import RedirectResponse
 from starlette.status import HTTP_301_MOVED_PERMANENTLY, HTTP_403_FORBIDDEN
 
@@ -38,7 +40,7 @@ async def https_enforcement_middleware(
 
     # Get the original protocol from headers (set by reverse proxy)
     forwarded_proto = request.headers.get("X-Forwarded-Proto", "")
-    forwarded_ssl = request.headers.get("X-Forwarded-SSL", "")
+    request.headers.get("X-Forwarded-SSL", "")
 
     # Check if this is an HTTP request that should be redirected
     # In production behind a reverse proxy, we check X-Forwarded-Proto
@@ -93,7 +95,4 @@ def is_secure_request(request: Request) -> bool:
         return True
 
     # Check if the request was made over HTTPS directly
-    if request.url.scheme == "https":
-        return True
-
-    return False
+    return request.url.scheme == "https"

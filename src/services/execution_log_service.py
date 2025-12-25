@@ -5,15 +5,12 @@ This service provides functionality for creating, retrieving, and analyzing
 execution logs from agent operations.
 """
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_
 
-from src.core.database import get_db
 from src.models import ExecutionLog
-from src.schemas.execution_log import ExecutionLogCreate, ExecutionLogResponse
-from src.models.agent_sessions import AgentSession
 
 logger = logging.getLogger(__name__)
 
@@ -28,10 +25,10 @@ class ExecutionLogService:
         self,
         session_id: str,
         command: str,
-        plan: Optional[List[Dict[str, Any]]] = None,
-        result: Optional[Dict[str, Any]] = None,
-        total_cost: Optional[float] = None,
-        duration_ms: Optional[int] = None
+        plan: list[dict[str, Any]] | None = None,
+        result: dict[str, Any] | None = None,
+        total_cost: float | None = None,
+        duration_ms: int | None = None
     ) -> ExecutionLog:
         """
         Create a new execution log.
@@ -69,13 +66,13 @@ class ExecutionLogService:
 
     async def get_execution_logs(
         self,
-        session_id: Optional[str] = None,
-        status: Optional[str] = None,
-        start_date: Optional[str] = None,
-        end_date: Optional[str] = None,
+        session_id: str | None = None,
+        status: str | None = None,
+        start_date: str | None = None,
+        end_date: str | None = None,
         limit: int = 100,
         offset: int = 0
-    ) -> List[ExecutionLog]:
+    ) -> list[ExecutionLog]:
         """
         Get execution logs with optional filtering.
 
@@ -116,7 +113,7 @@ class ExecutionLogService:
             logger.error(f"Error getting execution logs: {e}")
             return []
 
-    async def get_execution_log(self, log_id: str) -> Optional[ExecutionLog]:
+    async def get_execution_log(self, log_id: str) -> ExecutionLog | None:
         """Get specific execution log by ID."""
         if not self.db:
             return None
@@ -134,8 +131,8 @@ class ExecutionLogService:
     async def update_execution_log(
         self,
         log_id: str,
-        updates: Dict[str, Any]
-    ) -> Optional[ExecutionLog]:
+        updates: dict[str, Any]
+    ) -> ExecutionLog | None:
         """Update execution log."""
         if not self.db:
             return None
@@ -178,7 +175,7 @@ class ExecutionLogService:
                 await self.db.rollback()
             return False
 
-    async def get_session_summary(self, session_id: str) -> Dict[str, Any]:
+    async def get_session_summary(self, session_id: str) -> dict[str, Any]:
         """
         Get execution summary for a session.
 
@@ -274,10 +271,10 @@ class ExecutionLogService:
 
     async def get_tool_usage_stats(
         self,
-        session_id: Optional[str] = None,
-        start_date: Optional[str] = None,
-        end_date: Optional[str] = None
-    ) -> Dict[str, Dict[str, int]]:
+        session_id: str | None = None,
+        start_date: str | None = None,
+        end_date: str | None = None
+    ) -> dict[str, dict[str, int]]:
         """
         Get tool usage statistics.
 
@@ -319,7 +316,7 @@ class ExecutionLogService:
     async def cleanup_old_logs(
         self,
         days_to_keep: int = 30,
-        session_id: Optional[str] = None
+        session_id: str | None = None
     ) -> int:
         """
         Clean up old execution logs.

@@ -5,15 +5,12 @@ This module implements typed data signing according to EIP-712 for payment
 authorization on the Cronos blockchain.
 """
 
-import json
 import logging
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 from eth_account import Account
 from eth_account.messages import encode_typed_data
-from eth_typing import HexStr, ChecksumAddress
-from eth_utils import to_checksum_address
 from pydantic import BaseModel, Field
 
 from src.core.config import settings
@@ -27,7 +24,7 @@ class PaymentSignatureData(BaseModel):
     service_url: str = Field(..., description="URL of the service being paid")
     amount: int = Field(..., description="Payment amount in smallest unit")
     token: str = Field(..., description="Token symbol (e.g., USDC)")
-    description: Optional[str] = Field(None, description="Optional payment description")
+    description: str | None = Field(None, description="Optional payment description")
     timestamp: int = Field(default_factory=lambda: int(time.time()), description="Payment timestamp")
     nonce: int = Field(..., description="Unique nonce for replay protection")
     wallet_address: str = Field(..., description="Payer's wallet address")
@@ -68,7 +65,7 @@ class EIP712SignatureGenerator:
         ],
     }
 
-    def __init__(self, private_key: Optional[str] = None):
+    def __init__(self, private_key: str | None = None):
         """
         Initialize the signature generator.
 
@@ -119,7 +116,7 @@ class EIP712SignatureGenerator:
         amount: float,
         token: str,
         wallet_address: str,
-        description: Optional[str] = None,
+        description: str | None = None,
     ) -> PaymentSignatureData:
         """
         Create payment signature data.
@@ -143,7 +140,7 @@ class EIP712SignatureGenerator:
             nonce=self.get_nonce(wallet_address),
         )
 
-    def sign_payment(self, payment_data: PaymentSignatureData) -> Dict[str, Any]:
+    def sign_payment(self, payment_data: PaymentSignatureData) -> dict[str, Any]:
         """
         Sign payment data using EIP-712.
 
@@ -219,7 +216,7 @@ class EIP712SignatureGenerator:
     def verify_signature(
         self,
         signature: str,
-        message: Dict[str, Any],
+        message: dict[str, Any],
         expected_address: str,
     ) -> bool:
         """
@@ -253,7 +250,7 @@ class EIP712SignatureGenerator:
 
 
 # Singleton instance
-_generator: Optional[EIP712SignatureGenerator] = None
+_generator: EIP712SignatureGenerator | None = None
 
 
 def get_signature_generator() -> EIP712SignatureGenerator:

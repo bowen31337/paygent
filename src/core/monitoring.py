@@ -7,15 +7,13 @@ for agent execution, API endpoints, and system operations.
 
 import asyncio
 import logging
-import time
-from collections import defaultdict, deque
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Callable, TypeVar, Generic
-from datetime import datetime, timedelta
-from enum import Enum
 import statistics
-
-from src.core.config import settings
+import time
+from collections import defaultdict
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+from typing import Any, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +33,7 @@ class MetricValue:
     """Represents a single metric value with timestamp."""
     value: float
     timestamp: float
-    labels: Dict[str, str] = field(default_factory=dict)
+    labels: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -45,7 +43,7 @@ class PerformanceStats:
     min_val: float = float('inf')
     max_val: float = float('-inf')
     sum_val: float = 0.0
-    values: List[float] = field(default_factory=list)
+    values: list[float] = field(default_factory=list)
 
     def add_value(self, value: float) -> None:
         """Add a new value to the statistics."""
@@ -83,32 +81,32 @@ class PerformanceRegistry:
 
     def __init__(self, max_history: int = 10000):
         self.max_history = max_history
-        self._metrics: Dict[str, List[MetricValue]] = defaultdict(list)
-        self._counters: Dict[str, int] = defaultdict(int)
-        self._gauges: Dict[str, float] = {}
-        self._histograms: Dict[str, PerformanceStats] = defaultdict(PerformanceStats)
-        self._timers: Dict[str, List[float]] = defaultdict(list)
-        self._labels: Dict[str, Dict[str, str]] = {}
+        self._metrics: dict[str, list[MetricValue]] = defaultdict(list)
+        self._counters: dict[str, int] = defaultdict(int)
+        self._gauges: dict[str, float] = {}
+        self._histograms: dict[str, PerformanceStats] = defaultdict(PerformanceStats)
+        self._timers: dict[str, list[float]] = defaultdict(list)
+        self._labels: dict[str, dict[str, str]] = {}
 
-    def counter(self, name: str, labels: Optional[Dict[str, str]] = None) -> None:
+    def counter(self, name: str, labels: dict[str, str] | None = None) -> None:
         """Increment a counter metric."""
         key = self._make_key(name, labels)
         self._counters[key] += 1
         self._labels[key] = labels or {}
 
-    def gauge(self, name: str, value: float, labels: Optional[Dict[str, str]] = None) -> None:
+    def gauge(self, name: str, value: float, labels: dict[str, str] | None = None) -> None:
         """Set a gauge metric value."""
         key = self._make_key(name, labels)
         self._gauges[key] = value
         self._labels[key] = labels or {}
 
-    def histogram(self, name: str, value: float, labels: Optional[Dict[str, str]] = None) -> None:
+    def histogram(self, name: str, value: float, labels: dict[str, str] | None = None) -> None:
         """Record a histogram metric value."""
         key = self._make_key(name, labels)
         self._histograms[key].add_value(value)
         self._labels[key] = labels or {}
 
-    def timer(self, name: str, duration_ms: float, labels: Optional[Dict[str, str]] = None) -> None:
+    def timer(self, name: str, duration_ms: float, labels: dict[str, str] | None = None) -> None:
         """Record a timing metric."""
         key = self._make_key(name, labels)
         self._timers[key].append(duration_ms)
@@ -117,29 +115,29 @@ class PerformanceRegistry:
             self._timers[key] = self._timers[key][-self.max_history:]
         self._labels[key] = labels or {}
 
-    def _make_key(self, name: str, labels: Optional[Dict[str, str]] = None) -> str:
+    def _make_key(self, name: str, labels: dict[str, str] | None = None) -> str:
         """Create a unique key for the metric."""
         if labels:
             label_str = ",".join(f"{k}={v}" for k, v in sorted(labels.items()))
             return f"{name}{{{label_str}}}"
         return name
 
-    def get_counter(self, name: str, labels: Optional[Dict[str, str]] = None) -> int:
+    def get_counter(self, name: str, labels: dict[str, str] | None = None) -> int:
         """Get current counter value."""
         key = self._make_key(name, labels)
         return self._counters[key]
 
-    def get_gauge(self, name: str, labels: Optional[Dict[str, str]] = None) -> float:
+    def get_gauge(self, name: str, labels: dict[str, str] | None = None) -> float:
         """Get current gauge value."""
         key = self._make_key(name, labels)
         return self._gauges.get(key, 0.0)
 
-    def get_histogram_stats(self, name: str, labels: Optional[Dict[str, str]] = None) -> PerformanceStats:
+    def get_histogram_stats(self, name: str, labels: dict[str, str] | None = None) -> PerformanceStats:
         """Get histogram statistics."""
         key = self._make_key(name, labels)
         return self._histograms[key]
 
-    def get_timer_stats(self, name: str, labels: Optional[Dict[str, str]] = None) -> PerformanceStats:
+    def get_timer_stats(self, name: str, labels: dict[str, str] | None = None) -> PerformanceStats:
         """Get timer statistics."""
         key = self._make_key(name, labels)
         stats = PerformanceStats()
@@ -148,7 +146,7 @@ class PerformanceRegistry:
                 stats.add_value(value)
         return stats
 
-    def get_all_metrics(self) -> Dict[str, Any]:
+    def get_all_metrics(self) -> dict[str, Any]:
         """Get all metrics in a structured format."""
         metrics = {
             "counters": dict(self._counters),
@@ -198,11 +196,11 @@ class PerformanceRegistry:
 class Timer:
     """Context manager for timing operations."""
 
-    def __init__(self, registry: PerformanceRegistry, name: str, labels: Optional[Dict[str, str]] = None):
+    def __init__(self, registry: PerformanceRegistry, name: str, labels: dict[str, str] | None = None):
         self.registry = registry
         self.name = name
         self.labels = labels
-        self.start_time: Optional[float] = None
+        self.start_time: float | None = None
 
     def __enter__(self):
         self.start_time = time.perf_counter()
@@ -217,10 +215,10 @@ class Timer:
 class PerformanceMonitor:
     """Main performance monitoring system."""
 
-    def __init__(self, registry: Optional[PerformanceRegistry] = None):
+    def __init__(self, registry: PerformanceRegistry | None = None):
         self.registry = registry or PerformanceRegistry()
         self._running = False
-        self._monitor_task: Optional[asyncio.Task] = None
+        self._monitor_task: asyncio.Task | None = None
 
     def start_monitoring(self) -> None:
         """Start background performance monitoring."""
@@ -369,7 +367,7 @@ class PerformanceMonitor:
         else:
             return "other"
 
-    def get_performance_report(self) -> Dict[str, Any]:
+    def get_performance_report(self) -> dict[str, Any]:
         """Generate a comprehensive performance report."""
         metrics = self.registry.get_all_metrics()
 
@@ -384,7 +382,7 @@ class PerformanceMonitor:
 
         return report
 
-    def _generate_summary(self, metrics: Dict[str, Any]) -> Dict[str, Any]:
+    def _generate_summary(self, metrics: dict[str, Any]) -> dict[str, Any]:
         """Generate performance summary."""
         total_api_calls = sum(v for k, v in metrics["counters"].items() if "api.calls.total" in k)
         total_agent_executions = sum(v for k, v in metrics["counters"].items() if "agent.executions.total" in k)
@@ -397,7 +395,7 @@ class PerformanceMonitor:
             "uptime_minutes": self._calculate_uptime(),
         }
 
-    def _analyze_api_performance(self, metrics: Dict[str, Any]) -> Dict[str, Any]:
+    def _analyze_api_performance(self, metrics: dict[str, Any]) -> dict[str, Any]:
         """Analyze API performance metrics."""
         api_timings = {}
 
@@ -412,7 +410,7 @@ class PerformanceMonitor:
             "requests_per_minute": self._calculate_rpm(metrics),
         }
 
-    def _analyze_agent_performance(self, metrics: Dict[str, Any]) -> Dict[str, Any]:
+    def _analyze_agent_performance(self, metrics: dict[str, Any]) -> dict[str, Any]:
         """Analyze agent performance metrics."""
         agent_timings = {}
 
@@ -426,7 +424,7 @@ class PerformanceMonitor:
             "commands_by_type": self._get_commands_by_type(metrics),
         }
 
-    def _analyze_cache_performance(self, metrics: Dict[str, Any]) -> Dict[str, Any]:
+    def _analyze_cache_performance(self, metrics: dict[str, Any]) -> dict[str, Any]:
         """Analyze cache performance metrics."""
         cache_hits = sum(v for k, v in metrics["counters"].items() if "cache.operations.hit" in k)
         cache_misses = sum(v for k, v in metrics["counters"].items() if "cache.operations.miss" in k)
@@ -441,7 +439,7 @@ class PerformanceMonitor:
             "misses": cache_misses,
         }
 
-    def _analyze_system_health(self, metrics: Dict[str, Any]) -> Dict[str, Any]:
+    def _analyze_system_health(self, metrics: dict[str, Any]) -> dict[str, Any]:
         """Analyze system health metrics."""
         return {
             "cpu_usage_percent": metrics["gauges"].get("system.cpu.percent", 0),
@@ -455,7 +453,7 @@ class PerformanceMonitor:
         # In production, you'd track start time
         return 0.0
 
-    def _calculate_avg_response_time(self, timings: Dict[str, Dict]) -> float:
+    def _calculate_avg_response_time(self, timings: dict[str, dict]) -> float:
         """Calculate average API response time."""
         if not timings:
             return 0.0
@@ -465,7 +463,7 @@ class PerformanceMonitor:
 
         return total_time / total_count if total_count > 0 else 0.0
 
-    def _calculate_p95_response_time(self, timings: Dict[str, Dict]) -> float:
+    def _calculate_p95_response_time(self, timings: dict[str, dict]) -> float:
         """Calculate 95th percentile response time."""
         if not timings:
             return 0.0
@@ -488,7 +486,7 @@ class PerformanceMonitor:
         except statistics.StatisticsError:
             return 0.0
 
-    def _calculate_p95_execution_time(self, timings: Dict[str, Dict]) -> float:
+    def _calculate_p95_execution_time(self, timings: dict[str, dict]) -> float:
         """Calculate 95th percentile execution time."""
         if not timings:
             return 0.0
@@ -508,7 +506,7 @@ class PerformanceMonitor:
         except statistics.StatisticsError:
             return 0.0
 
-    def _calculate_error_rate(self, metrics: Dict[str, Any]) -> float:
+    def _calculate_error_rate(self, metrics: dict[str, Any]) -> float:
         """Calculate API error rate percentage."""
         total_errors = sum(v for k, v in metrics["counters"].items() if "api.calls.error" in k)
         total_calls = sum(v for k, v in metrics["counters"].items() if "api.calls.total" in k)
@@ -518,13 +516,13 @@ class PerformanceMonitor:
 
         return (total_errors / total_calls) * 100
 
-    def _calculate_rpm(self, metrics: Dict[str, Any]) -> float:
+    def _calculate_rpm(self, metrics: dict[str, Any]) -> float:
         """Calculate requests per minute."""
         # This would require tracking over time intervals
         # Simplified for now
         return 0.0
 
-    def _calculate_avg_execution_time(self, timings: Dict[str, Dict]) -> float:
+    def _calculate_avg_execution_time(self, timings: dict[str, dict]) -> float:
         """Calculate average agent execution time."""
         if not timings:
             return 0.0
@@ -534,7 +532,7 @@ class PerformanceMonitor:
 
         return total_time / total_count if total_count > 0 else 0.0
 
-    def _calculate_success_rate(self, metrics: Dict[str, Any], prefix: str) -> float:
+    def _calculate_success_rate(self, metrics: dict[str, Any], prefix: str) -> float:
         """Calculate success rate percentage."""
         total_success = sum(v for k, v in metrics["counters"].items() if f"{prefix}.success" in k)
         total_attempts = sum(v for k, v in metrics["counters"].items() if f"{prefix}.total" in k)
@@ -544,7 +542,7 @@ class PerformanceMonitor:
 
         return (total_success / total_attempts) * 100
 
-    def _get_commands_by_type(self, metrics: Dict[str, Any]) -> Dict[str, int]:
+    def _get_commands_by_type(self, metrics: dict[str, Any]) -> dict[str, int]:
         """Get command counts by type."""
         command_counts = defaultdict(int)
 

@@ -5,10 +5,9 @@ This module provides utilities to ensure sensitive information like private keys
 API keys, and passwords are never exposed in logs or error messages.
 """
 
-import re
 import logging
-from typing import Any, Optional, Set, Literal
-from functools import lru_cache
+import re
+from typing import Any, Literal
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +38,8 @@ class RedactingFormatter(logging.Formatter):
 
     def __init__(
         self,
-        fmt: Optional[str] = None,
-        datefmt: Optional[str] = None,
+        fmt: str | None = None,
+        datefmt: str | None = None,
         style: Literal['%', '{', '$'] = '%'
     ) -> None:
         """Initialize the redacting formatter."""
@@ -66,7 +65,7 @@ class RedactingFormatter(logging.Formatter):
         return message
 
 
-def redact_dict(data: dict[str, Any], additional_keys: Optional[set[str]] = None) -> dict[str, Any]:
+def redact_dict(data: dict[str, Any], additional_keys: set[str] | None = None) -> dict[str, Any]:
     """
     Redact sensitive values from a dictionary.
 
@@ -121,7 +120,7 @@ def safe_log_dict(
     logger: logging.Logger,
     level: int,
     data: dict[str, Any],
-    additional_keys: Optional[set[str]] = None
+    additional_keys: set[str] | None = None
 ) -> None:
     """
     Safely log a dictionary with sensitive data redacted.
@@ -146,10 +145,7 @@ def is_safe_for_logging(value: str) -> bool:
     Returns:
         True if safe, False if contains sensitive patterns
     """
-    for pattern, _ in SENSITIVE_PATTERNS:
-        if re.search(pattern, value, re.IGNORECASE):
-            return False
-    return True
+    return all(not re.search(pattern, value, re.IGNORECASE) for pattern, _ in SENSITIVE_PATTERNS)
 
 
 def redact_string(value: str) -> str:
@@ -238,7 +234,7 @@ class ToolAllowlist:
     """
 
     # Default allowlist - all safe tools
-    DEFAULT_ALLOWED_TOOLS: Set[str] = {
+    DEFAULT_ALLOWED_TOOLS: set[str] = {
         "check_balance",
         "discover_services",
         "x402_payment",
@@ -251,7 +247,7 @@ class ToolAllowlist:
     }
 
     # Tools that are always blocked (dangerous operations)
-    BLOCKED_TOOLS: Set[str] = {
+    BLOCKED_TOOLS: set[str] = {
         "exec",
         "eval",
         "system",
@@ -271,7 +267,7 @@ class ToolAllowlist:
         "withdraw_all",
     }
 
-    def __init__(self, allowed_tools: Optional[Set[str]] = None) -> None:
+    def __init__(self, allowed_tools: set[str] | None = None) -> None:
         """
         Initialize the tool allowlist.
 
@@ -338,13 +334,13 @@ class ToolAllowlist:
             self.allowed_tools.remove(tool_name)
             logger.info(f"Removed tool '{tool_name}' from allowlist")
 
-    def get_allowed_tools(self) -> Set[str]:
+    def get_allowed_tools(self) -> set[str]:
         """Get the current set of allowed tools."""
         return self.allowed_tools.copy()
 
 
 # Global tool allowlist instance
-_tool_allowlist: Optional[ToolAllowlist] = None
+_tool_allowlist: ToolAllowlist | None = None
 
 
 def get_tool_allowlist() -> ToolAllowlist:
@@ -360,7 +356,7 @@ def get_tool_allowlist() -> ToolAllowlist:
     return _tool_allowlist
 
 
-def configure_tool_allowlist(allowed_tools: Set[str]) -> None:
+def configure_tool_allowlist(allowed_tools: set[str]) -> None:
     """
     Configure the global tool allowlist.
 

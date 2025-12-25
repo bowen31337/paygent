@@ -7,23 +7,27 @@ via AI agents and managing agent sessions.
 
 import asyncio
 import json
-from typing import Optional
-from uuid import UUID, uuid4
 from datetime import datetime
+from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.agents.agent_executor_enhanced import AgentExecutorEnhanced, execute_agent_command_enhanced
+from src.agents.command_parser import CommandParser
 from src.core.database import get_db
 from src.core.errors import validate_command_input
-from src.models.agent_sessions import AgentSession, ExecutionLog
-from src.agents.agent_executor_enhanced import execute_agent_command_enhanced, AgentExecutorEnhanced
-from src.agents.command_parser import CommandParser
-from src.tools.simple_tools import X402PaymentTool, SwapTokensTool, CheckBalanceTool, DiscoverServicesTool
+from src.models.agent_sessions import AgentSession
 from src.services.metrics_service import metrics_collector
+from src.tools.simple_tools import (
+    CheckBalanceTool,
+    DiscoverServicesTool,
+    SwapTokensTool,
+    X402PaymentTool,
+)
 
 router = APIRouter()
 
@@ -38,11 +42,11 @@ class ExecuteCommandRequest(BaseModel):
         description="Natural language command to execute",
         examples=["Pay 0.10 USDC to access the market data API"],
     )
-    session_id: Optional[UUID] = Field(
+    session_id: UUID | None = Field(
         default=None,
         description="Existing session ID to use, or None to create new session",
     )
-    budget_limit_usd: Optional[float] = Field(
+    budget_limit_usd: float | None = Field(
         default=None,
         ge=0,
         description="Maximum budget for this command execution in USD",
@@ -54,8 +58,8 @@ class ExecuteCommandResponse(BaseModel):
 
     session_id: UUID = Field(..., description="Session ID for this execution")
     status: str = Field(..., description="Execution status")
-    result: Optional[dict] = Field(default=None, description="Execution result")
-    total_cost_usd: Optional[float] = Field(
+    result: dict | None = Field(default=None, description="Execution result")
+    total_cost_usd: float | None = Field(
         default=None, description="Total cost of execution in USD"
     )
 
@@ -64,9 +68,9 @@ class SessionInfo(BaseModel):
     """Information about an agent session."""
 
     id: UUID
-    user_id: Optional[UUID] = None
-    wallet_address: Optional[str] = None
-    config: Optional[dict] = None
+    user_id: UUID | None = None
+    wallet_address: str | None = None
+    config: dict | None = None
     created_at: str
     last_active: str
     status: str
@@ -83,9 +87,9 @@ class SessionListResponse(BaseModel):
 
 async def get_or_create_session(
     db: AsyncSession,
-    session_id: Optional[UUID] = None,
-    user_id: Optional[UUID] = None,
-    config: Optional[dict] = None,
+    session_id: UUID | None = None,
+    user_id: UUID | None = None,
+    config: dict | None = None,
 ) -> AgentSession:
     """
     Get an existing session or create a new one.
@@ -417,3 +421,217 @@ async def terminate_session(
     metrics_collector.record_session_terminated()
 
     return {"message": f"Session {session_id} terminated successfully", "session_id": str(session_id)}
+
+
+class ExecuteStepRequest(BaseModel):
+    """Request body for executing a single step in a workflow."""
+
+    stepId: str = Field(..., description="Unique identifier for the step")
+    stepName: str = Field(..., description="Human-readable name of the step")
+    args: dict = Field(default={}, description="Arguments for the step execution")
+
+
+class ExecuteStepResponse(BaseModel):
+    """Response from executing a single step."""
+
+    success: bool
+    stepId: str
+    stepName: str
+    result: dict | None = None
+    error: str | None = None
+    executionTimeMs: int | None = None
+
+
+@router.post(
+    "/execute-step",
+    response_model=ExecuteStepResponse,
+    summary="Execute single workflow step",
+    description="Execute a single step within a Vercel Workflow. This endpoint is used by workflows to execute individual steps with retry logic.",
+)
+async def execute_step(
+    request: ExecuteStepRequest,
+    db: AsyncSession = Depends(get_db),
+) -> ExecuteStepResponse:
+    """
+    Execute a single step within a Vercel Workflow.
+
+    This endpoint is designed for use by Vercel Workflows to execute individual
+    steps with proper error handling and retry logic. Each step represents a
+    discrete operation that can be retried independently.
+
+    Args:
+        request: Step execution request with step ID, name, and arguments
+        db: Database session dependency
+
+    Returns:
+        ExecuteStepResponse with success status and result or error
+    """
+    start_time = datetime.utcnow()
+
+    try:
+        step_id = request.stepId
+        step_name = request.stepName
+        args = request.args
+
+        # Log step execution start
+        print(f"Executing step {step_id}: {step_name} with args: {args}")
+
+        # Execute step based on type
+        if step_name == "parse-payment":
+            result = await _execute_parse_payment_step(args)
+        elif step_name == "check-balance":
+            result = await _execute_check_balance_step(args)
+        elif step_name == "execute-payment":
+            result = await _execute_payment_step(args, db)
+        elif step_name == "parse-swap":
+            result = await _execute_parse_swap_step(args)
+        elif step_name == "get-quote":
+            result = await _execute_get_quote_step(args)
+        elif step_name == "execute-swap":
+            result = await _execute_swap_step(args, db)
+        elif step_name == "parse-command":
+            result = await _execute_parse_command_step(args)
+        else:
+            raise ValueError(f"Unknown step type: {step_name}")
+
+        execution_time = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+
+        return ExecuteStepResponse(
+            success=True,
+            stepId=step_id,
+            stepName=step_name,
+            result=result,
+            executionTimeMs=execution_time
+        )
+
+    except Exception as e:
+        execution_time = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+
+        return ExecuteStepResponse(
+            success=False,
+            stepId=request.stepId,
+            stepName=request.stepName,
+            error=str(e),
+            executionTimeMs=execution_time
+        )
+
+
+async def _execute_parse_payment_step(args: dict) -> dict:
+    """Execute payment parsing step."""
+    from src.agents.command_parser import CommandParser
+
+    command = args.get("command", "")
+    parser = CommandParser()
+    parsed = parser.parse(command)
+
+    return {
+        "intent": parsed.intent,
+        "parameters": parsed.parameters,
+        "confidence": parsed.confidence
+    }
+
+
+async def _execute_check_balance_step(args: dict) -> dict:
+    """Execute balance checking step."""
+    from src.tools.simple_tools import CheckBalanceTool
+
+    tool = CheckBalanceTool()
+    result = tool.run(tokens=args.get("tokens", ["CRO", "USDC"]))
+
+    return {
+        "balances": result.get("balances", {}),
+        "total_usd_value": result.get("total_usd_value", 0.0)
+    }
+
+
+async def _execute_payment_step(args: dict, db: AsyncSession) -> dict:
+    """Execute payment execution step."""
+    from src.agents.agent_executor_enhanced import AgentExecutorEnhanced
+    from src.tools.simple_tools import X402PaymentTool
+
+    tool = X402PaymentTool()
+    executor = AgentExecutorEnhanced(session_id=uuid4(), db=db)
+
+    command = args.get("command", "")
+    parser = CommandParser()
+    parsed = parser.parse(command)
+
+    service_url = executor._resolve_service_endpoint(parsed.parameters.get('recipient', 'api'))
+
+    result = tool.run(
+        service_url=service_url,
+        amount=parsed.parameters['amount'],
+        token=parsed.parameters.get('token', 'USDC')
+    )
+
+    return {
+        "payment_result": result,
+        "tx_hash": result.get("tx_hash"),
+        "status": result.get("status")
+    }
+
+
+async def _execute_parse_swap_step(args: dict) -> dict:
+    """Execute swap parsing step."""
+    from src.agents.command_parser import CommandParser
+
+    command = args.get("command", "")
+    parser = CommandParser()
+    parsed = parser.parse(command)
+
+    return {
+        "intent": parsed.intent,
+        "parameters": parsed.parameters,
+        "confidence": parsed.confidence
+    }
+
+
+async def _execute_get_quote_step(args: dict) -> dict:
+    """Execute price quote step."""
+    from src.connectors.vvs import VVSConnector
+
+    connector = VVSConnector()
+    result = await connector.get_quote(
+        from_token=args.get("from_token", "CRO"),
+        to_token=args.get("to_token", "USDC"),
+        amount=args.get("amount", "10")
+    )
+
+    return {
+        "quote": result,
+        "slippage_tolerance": "0.5%"
+    }
+
+
+async def _execute_swap_step(args: dict, db: AsyncSession) -> dict:
+    """Execute token swap step."""
+    from src.tools.simple_tools import SwapTokensTool
+
+    tool = SwapTokensTool()
+    result = tool.run(
+        from_token=args.get("from_token", "CRO"),
+        to_token=args.get("to_token", "USDC"),
+        amount=args.get("amount", "10")
+    )
+
+    return {
+        "swap_result": result,
+        "tx_hash": result.get("tx_hash"),
+        "status": result.get("status")
+    }
+
+
+async def _execute_parse_command_step(args: dict) -> dict:
+    """Execute general command parsing step."""
+    from src.agents.command_parser import CommandParser
+
+    command = args.get("command", "")
+    parser = CommandParser()
+    parsed = parser.parse(command)
+
+    return {
+        "intent": parsed.intent,
+        "parameters": parsed.parameters,
+        "confidence": parsed.confidence,
+        "requires_approval": parsed.requires_approval
+    }

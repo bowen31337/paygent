@@ -4,26 +4,24 @@ Vercel database configuration and connection management.
 Handles Vercel Postgres integration for serverless deployment.
 """
 import os
-from typing import AsyncGenerator, Optional
-from urllib.parse import quote_plus
+from collections.abc import AsyncGenerator
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
-    create_async_engine,
 )
-from sqlalchemy.orm import declarative_base, sessionmaker
-from sqlalchemy import text
+from sqlalchemy.orm import declarative_base
 
 # Create base for models
 Base = declarative_base()
 
 # Vercel Postgres connection URL from environment
-def get_vercel_postgres_url() -> Optional[str]:
+def get_vercel_postgres_url() -> str | None:
     """Get Vercel Postgres URL from environment."""
     return os.getenv("POSTGRES_URL")
 
-def get_vercel_postgres_url_non_pooling() -> Optional[str]:
+def get_vercel_postgres_url_non_pooling() -> str | None:
     """Get Vercel Postgres non-pooling URL from environment."""
     return os.getenv("POSTGRES_URL_NON_POOLING")
 
@@ -85,7 +83,7 @@ def _create_engine():
         if "psycopg2" in str(e):
             # Fall back to SQLite if PostgreSQL driver not available
             import warnings
-            warnings.warn("psycopg2 not available, falling back to SQLite", RuntimeWarning)
+            warnings.warn("psycopg2 not available, falling back to SQLite", RuntimeWarning, stacklevel=2)
             return create_async_engine(
                 "sqlite+aiosqlite:///./paygent.db",
                 echo=False,
@@ -176,7 +174,7 @@ def get_sync_engine():
         if "psycopg2" in str(e):
             # Return None if PostgreSQL driver not available
             import warnings
-            warnings.warn("psycopg2 not available for sync engine, returning None", RuntimeWarning)
+            warnings.warn("psycopg2 not available for sync engine, returning None", RuntimeWarning, stacklevel=2)
             return None
         raise
 

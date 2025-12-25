@@ -5,9 +5,8 @@ This module implements the core AI agent that handles natural language payment c
 using LangChain framework with Claude and OpenAI models.
 """
 
-import json
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 from uuid import UUID
 
 # TODO: Fix langchain compatibility - AgentExecutor moved/removed in 1.2.0
@@ -15,22 +14,18 @@ from uuid import UUID
 # from langchain_core.agents import AgentExecutor
 # from langchain.chains import create_history_aware_retriever, create_retrieval_chain
 # from langchain.chains.combine_documents import create_stuff_documents_chain
-# from langchain.memory import ConversationBufferMemory
+from langchain.memory import ConversationBufferMemory
 from langchain_core.callbacks import BaseCallbackHandler
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.prompts import (
     ChatPromptTemplate,
     MessagesPlaceholder,
-    PromptTemplate,
 )
-from langchain_core.retrievers import BaseRetriever
 from langchain_openai import ChatOpenAI
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.config import settings
-from src.models.agent_sessions import AgentSession
-from src.services.session_service import SessionService
 from src.agents.vvs_trader_subagent import VVSTraderSubagent
+from src.core.config import settings
+from src.services.session_service import SessionService
 from src.tools.market_data_tools import get_market_data_tools
 
 logger = logging.getLogger(__name__)
@@ -44,7 +39,7 @@ class AgentCallbackHandler(BaseCallbackHandler):
         self.events = []
 
     def on_tool_start(
-        self, serialized: Dict[str, Any], input_str: str, **kwargs: Any
+        self, serialized: dict[str, Any], input_str: str, **kwargs: Any  # noqa: ARG002
     ) -> Any:
         """Called when a tool is started."""
         event = {
@@ -55,7 +50,7 @@ class AgentCallbackHandler(BaseCallbackHandler):
         self.events.append(event)
         logger.info(f"Session {self.session_id}: Tool call - {event}")
 
-    def on_tool_end(self, output: str, **kwargs: Any) -> Any:
+    def on_tool_end(self, output: str, **kwargs: Any) -> Any:  # noqa: ARG002
         """Called when a tool finishes."""
         event = {
             "type": "tool_result",
@@ -64,7 +59,7 @@ class AgentCallbackHandler(BaseCallbackHandler):
         self.events.append(event)
         logger.info(f"Session {self.session_id}: Tool result - {event}")
 
-    def on_agent_action(self, action: Any, **kwargs: Any) -> Any:
+    def on_agent_action(self, action: Any, **kwargs: Any) -> Any:  # noqa: ARG002
         """Called when the agent takes an action."""
         event = {
             "type": "thinking",
@@ -188,7 +183,7 @@ Example commands you should handle:
 Always be helpful, accurate, and security-conscious."""
 
         # Create agent prompt
-        prompt = ChatPromptTemplate.from_messages([
+        ChatPromptTemplate.from_messages([
             ("system", system_prompt),
             MessagesPlaceholder(variable_name="chat_history"),
             ("human", "{input}"),
@@ -223,8 +218,8 @@ Always be helpful, accurate, and security-conscious."""
         self.agent_executor.tools = self.tools
 
     async def execute_command(
-        self, command: str, budget_limit_usd: Optional[float] = None
-    ) -> Dict[str, Any]:
+        self, command: str, budget_limit_usd: float | None = None
+    ) -> dict[str, Any]:
         """
         Execute a natural language command with VVS subagent support.
 
@@ -334,8 +329,8 @@ Always be helpful, accurate, and security-conscious."""
     async def _execute_with_vvs_subagent(
         self,
         command: str,
-        budget_limit_usd: Optional[float] = None
-    ) -> Dict[str, Any]:
+        budget_limit_usd: float | None = None
+    ) -> dict[str, Any]:
         """
         Execute swap command using VVS trader subagent.
 
@@ -398,7 +393,7 @@ Always be helpful, accurate, and security-conscious."""
                 "session_id": str(self.session_id),
             }
 
-    def _parse_swap_command(self, command: str) -> Dict[str, Any]:
+    def _parse_swap_command(self, command: str) -> dict[str, Any]:
         """
         Parse swap command to extract parameters.
 
@@ -450,7 +445,7 @@ Always be helpful, accurate, and security-conscious."""
                 "command": command,
             }
 
-    async def get_session_info(self) -> Dict[str, Any]:
+    async def get_session_info(self) -> dict[str, Any]:
         """Get current session information."""
         session = await self.session_service.get_session(self.session_id)
         if not session:

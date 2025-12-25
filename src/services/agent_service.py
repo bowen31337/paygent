@@ -6,14 +6,13 @@ commands through the deepagents framework and managing agent execution state.
 """
 import asyncio
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.database import get_db
-from src.models.agent_sessions import AgentSession, ExecutionLog
 from src.agents.agent_executor_enhanced import execute_agent_command_enhanced
+from src.models.agent_sessions import AgentSession, ExecutionLog
 
 logger = logging.getLogger(__name__)
 
@@ -23,14 +22,14 @@ class AgentService:
 
     def __init__(self, db: AsyncSession = None):
         self.db = db
-        self.active_executions: Dict[str, asyncio.Task] = {}
+        self.active_executions: dict[str, asyncio.Task] = {}
 
     async def execute_command(
         self,
         session_id: str,
         command: str,
-        plan: Optional[List[Dict[str, Any]]] = None
-    ) -> Dict[str, Any]:
+        plan: list[dict[str, Any]] | None = None
+    ) -> dict[str, Any]:
         """
         Execute a natural language command.
 
@@ -91,7 +90,7 @@ class AgentService:
             logger.error(f"Error cancelling execution {execution_id}: {e}")
             return False
 
-    async def get_session(self, session_id: str) -> Optional[AgentSession]:
+    async def get_session(self, session_id: str) -> AgentSession | None:
         """Get agent session by ID."""
         if not self.db:
             return None
@@ -123,10 +122,10 @@ class AgentService:
 
     async def get_execution_logs(
         self,
-        session_id: Optional[str] = None,
+        session_id: str | None = None,
         limit: int = 100,
         offset: int = 0
-    ) -> List[ExecutionLog]:
+    ) -> list[ExecutionLog]:
         """Get execution logs."""
         if not self.db:
             return []
@@ -144,7 +143,7 @@ class AgentService:
             logger.error(f"Error getting execution logs: {e}")
             return []
 
-    async def get_execution_log(self, log_id: str) -> Optional[ExecutionLog]:
+    async def get_execution_log(self, log_id: str) -> ExecutionLog | None:
         """Get specific execution log."""
         if not self.db:
             return None
@@ -159,7 +158,7 @@ class AgentService:
             logger.error(f"Error getting execution log {log_id}: {e}")
             return None
 
-    async def get_session_summary(self, session_id: str) -> Dict[str, Any]:
+    async def get_session_summary(self, session_id: str) -> dict[str, Any]:
         """Get session execution summary."""
         logs = await self.get_execution_logs(session_id)
         if not logs:

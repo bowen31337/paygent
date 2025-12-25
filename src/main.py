@@ -8,21 +8,21 @@ import logging
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.core.config import settings
-from src.core.database import init_db, close_db
-from src.core.vercel_db import close_db as close_vercel_db
-from src.core.cache import init_cache, close_cache
-from src.core.errors import (
-    http_exception_handler,
-    general_exception_handler,
-)
 from src.api import router as api_router
+from src.core.cache import close_cache, init_cache
+from src.core.config import settings
+from src.core.database import close_db, init_db
+from src.core.errors import (
+    general_exception_handler,
+    http_exception_handler,
+)
+from src.core.vercel_db import close_db as close_vercel_db
+from src.middleware.https_enforcement import https_enforcement_middleware
 from src.middleware.metrics import metrics_middleware
 from src.middleware.rate_limiter import rate_limit_middleware
-from src.middleware.https_enforcement import https_enforcement_middleware
 
 # Configure logging
 logging.basicConfig(
@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI):  # noqa: ARG001
     """
     Application lifespan handler for startup and shutdown events.
     """

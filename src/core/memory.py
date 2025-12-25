@@ -6,12 +6,12 @@ using the database-backed AgentMemory model.
 """
 
 import logging
-from typing import Dict, Any, Optional, List
-from uuid import UUID
 from datetime import datetime
+from typing import Any
+from uuid import UUID
 
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
 
 from src.models.agent_sessions import AgentMemory
 
@@ -43,7 +43,7 @@ class SessionMemoryManager:
         user_message: str,
         agent_response: str,
         message_type: str = "human",
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: dict[str, Any] | None = None
     ) -> UUID:
         """
         Store a conversation turn in the database.
@@ -88,7 +88,7 @@ class SessionMemoryManager:
         self,
         limit: int = 10,
         offset: int = 0
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Retrieve conversation history for this session.
 

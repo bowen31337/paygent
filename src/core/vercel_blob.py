@@ -4,24 +4,20 @@ Vercel Blob storage implementation for agent logs and file storage.
 Provides file storage with graceful fallback for local development.
 """
 
-import asyncio
-import json
 import logging
 import os
 import tempfile
 import time
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, AsyncGenerator, Dict, List, Optional, Union
-from urllib.parse import quote_plus, unquote_plus
+from typing import Any, List
 
 try:
-    import aiofiles
+    import aiofiles  # type: ignore
     AIOFILES_AVAILABLE = True
 except ImportError:
     AIOFILES_AVAILABLE = False
 
-from src.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -29,35 +25,35 @@ logger = logging.getLogger(__name__)
 class BlobMetrics:
     """Track blob storage performance metrics."""
 
-    def __init__(self):
-        self.uploads = 0
-        self.downloads = 0
-        self.deletes = 0
-        self.errors = 0
-        self.total_upload_time = 0
-        self.total_download_time = 0
-        self.total_delete_time = 0
+    def __init__(self) -> None:
+        self.uploads: int = 0
+        self.downloads: int = 0
+        self.deletes: int = 0
+        self.errors: int = 0
+        self.total_upload_time: float = 0.0
+        self.total_download_time: float = 0.0
+        self.total_delete_time: float = 0.0
 
-    def record_upload(self, elapsed_ms: float):
+    def record_upload(self, elapsed_ms: float) -> None:
         """Record upload operation."""
         self.uploads += 1
         self.total_upload_time += elapsed_ms
 
-    def record_download(self, elapsed_ms: float):
+    def record_download(self, elapsed_ms: float) -> None:
         """Record download operation."""
         self.downloads += 1
         self.total_download_time += elapsed_ms
 
-    def record_delete(self, elapsed_ms: float):
+    def record_delete(self, elapsed_ms: float) -> None:
         """Record delete operation."""
         self.deletes += 1
         self.total_delete_time += elapsed_ms
 
-    def record_error(self):
+    def record_error(self) -> None:
         """Record an error."""
         self.errors += 1
 
-    def get_metrics(self) -> Dict[str, Union[int, float]]:
+    def get_metrics(self) -> dict[str, int | float]:
         """Get blob storage metrics."""
         avg_upload_time = (self.total_upload_time / self.uploads) if self.uploads > 0 else 0
         avg_download_time = (self.total_download_time / self.downloads) if self.downloads > 0 else 0
@@ -78,12 +74,12 @@ class BlobInterface(ABC):
     """Abstract base class for blob storage implementations."""
 
     @abstractmethod
-    async def upload(self, path: str, content: Union[str, bytes], content_type: Optional[str] = None) -> Dict[str, Any]:
+    async def upload(self, path: str, content: str | bytes, content_type: str | None = None) -> dict[str, Any]:
         """Upload content to blob storage."""
         pass
 
     @abstractmethod
-    async def download(self, path: str) -> Optional[bytes]:
+    async def download(self, path: str) -> bytes | None:
         """Download content from blob storage."""
         pass
 
@@ -98,12 +94,12 @@ class BlobInterface(ABC):
         pass
 
     @abstractmethod
-    async def list(self, prefix: Optional[str] = None) -> List[str]:
+    async def list(self, prefix: str | None = None) -> list[str]:
         """List blobs with optional prefix."""
         pass
 
     @abstractmethod
-    async def get_url(self, path: str, expires_in: Optional[int] = None) -> Optional[str]:
+    async def get_url(self, path: str, expires_in: int | None = None) -> str | None:
         """Get signed URL for blob access."""
         pass
 
@@ -113,12 +109,12 @@ class BlobInterface(ABC):
         pass
 
     @abstractmethod
-    def get_metrics(self) -> Dict[str, Union[int, float]]:
+    def get_metrics(self) -> dict[str, int | float]:
         """Get storage performance metrics."""
         pass
 
     @abstractmethod
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         """Get storage configuration info."""
         pass
 
@@ -130,9 +126,12 @@ class VercelBlobStorage(BlobInterface):
     Supports both Vercel environment and local development with graceful fallback.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.metrics = BlobMetrics()
-        self._is_connected = False
+        self._is_connected: bool = False
+        self._storage_type: str = ""
+        self._blob_token: str = ""
+        self._base_path: Path = Path("")
 
     async def initialize(self) -> bool:
         """
@@ -170,16 +169,13 @@ class VercelBlobStorage(BlobInterface):
         """Get local storage path for blob files."""
         # Try to use configured path, otherwise use temp directory
         local_path = os.getenv("LOCAL_BLOB_PATH")
-        if local_path:
-            path = Path(local_path)
-        else:
-            path = Path(tempfile.gettempdir()) / "paygent_blobs"
+        path = Path(local_path) if local_path else Path(tempfile.gettempdir()) / "paygent_blobs"
 
         # Ensure directory exists
         path.mkdir(parents=True, exist_ok=True)
         return path
 
-    async def upload(self, path: str, content: Union[str, bytes], content_type: Optional[str] = None) -> Dict[str, Any]:
+    async def upload(self, path: str, content: str | bytes, content_type: str | None = None) -> dict[str, Any]:
         """
         Upload content to blob storage.
 
@@ -210,14 +206,14 @@ class VercelBlobStorage(BlobInterface):
             elapsed = (time.time() - start_time) * 1000
             self.metrics.record_upload(elapsed)
 
-    async def _upload_to_vercel(self, path: str, content: Union[str, bytes], content_type: Optional[str]) -> Dict[str, Any]:
+    async def _upload_to_vercel(self, path: str, content: str | bytes, content_type: str | None) -> dict[str, Any]:
         """Upload to Vercel Blob (placeholder - would need actual Vercel Blob API)."""
         # Note: Vercel Blob API would be used here in production
         # For now, we'll simulate the behavior or use local storage
         logger.warning("Vercel Blob API not implemented, using local storage fallback")
         return await self._upload_to_local(path, content, content_type)
 
-    async def _upload_to_local(self, path: str, content: Union[str, bytes], content_type: Optional[str]) -> Dict[str, Any]:
+    async def _upload_to_local(self, path: str, content: str | bytes, content_type: str | None) -> dict[str, Any]:
         """Upload to local filesystem."""
         # Use synchronous file operations as fallback
         try:
@@ -226,10 +222,7 @@ class VercelBlobStorage(BlobInterface):
             full_path.parent.mkdir(parents=True, exist_ok=True)
 
             # Write content
-            if isinstance(content, str):
-                content_bytes = content.encode('utf-8')
-            else:
-                content_bytes = content
+            content_bytes = content.encode('utf-8') if isinstance(content, str) else content
 
             with open(full_path, 'wb') as f:
                 f.write(content_bytes)
@@ -252,7 +245,7 @@ class VercelBlobStorage(BlobInterface):
             logger.error(f"Failed to upload blob {path}: {e}")
             return self._create_error_result(str(e))
 
-    async def download(self, path: str) -> Optional[bytes]:
+    async def download(self, path: str) -> bytes | None:
         """
         Download content from blob storage.
 
@@ -281,12 +274,12 @@ class VercelBlobStorage(BlobInterface):
             elapsed = (time.time() - start_time) * 1000
             self.metrics.record_download(elapsed)
 
-    async def _download_from_vercel(self, path: str) -> Optional[bytes]:
+    async def _download_from_vercel(self, path: str) -> bytes | None:
         """Download from Vercel Blob (placeholder)."""
         logger.warning("Vercel Blob API not implemented, using local storage fallback")
         return await self._download_from_local(path)
 
-    async def _download_from_local(self, path: str) -> Optional[bytes]:
+    async def _download_from_local(self, path: str) -> bytes | None:
         """Download from local filesystem."""
         full_path = self._base_path / path
         if not full_path.exists():
@@ -375,7 +368,7 @@ class VercelBlobStorage(BlobInterface):
         full_path = self._base_path / path
         return full_path.exists()
 
-    async def list(self, prefix: Optional[str] = None) -> List[str]:
+    async def list(self, prefix: str | None = None) -> list[str]:
         """
         List blobs with optional prefix.
 
@@ -399,12 +392,12 @@ class VercelBlobStorage(BlobInterface):
             self.metrics.record_error()
             return []
 
-    async def _list_vercel(self, prefix: Optional[str]) -> List[str]:
+    async def _list_vercel(self, prefix: str | None) -> builtins.list[str]:
         """List blobs in Vercel Blob (placeholder)."""
         logger.warning("Vercel Blob API not implemented, using local storage fallback")
         return await self._list_local(prefix)
 
-    async def _list_local(self, prefix: Optional[str]) -> List[str]:
+    async def _list_local(self, prefix: str | None) -> builtins.list[str]:
         """List blobs in local filesystem."""
         if not AIOFILES_AVAILABLE:
             return []
@@ -423,7 +416,7 @@ class VercelBlobStorage(BlobInterface):
 
         return sorted(blob_paths)
 
-    async def get_url(self, path: str, expires_in: Optional[int] = None) -> Optional[str]:
+    async def get_url(self, path: str, expires_in: int | None = None) -> str | None:
         """
         Get signed URL for blob access.
 
@@ -448,12 +441,12 @@ class VercelBlobStorage(BlobInterface):
             logger.error(f"Blob URL generation error for {path}: {e}")
             return None
 
-    async def _get_url_vercel(self, path: str, expires_in: Optional[int]) -> Optional[str]:
+    async def _get_url_vercel(self, path: str, expires_in: int | None) -> str | None:
         """Get signed URL from Vercel Blob (placeholder)."""
         logger.warning("Vercel Blob API not implemented, using local storage fallback")
         return await self._get_url_local(path)
 
-    async def _get_url_local(self, path: str) -> Optional[str]:
+    async def _get_url_local(self, path: str) -> str | None:
         """Get file:// URL for local blob."""
         full_path = self._base_path / path
         if full_path.exists():
@@ -466,11 +459,11 @@ class VercelBlobStorage(BlobInterface):
         # For Vercel, would close any connections
         logger.info("Vercel Blob storage connection closed")
 
-    def get_metrics(self) -> Dict[str, Union[int, float]]:
+    def get_metrics(self) -> dict[str, int | float]:
         """Get blob storage metrics."""
         return self.metrics.get_metrics()
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         """Get blob storage configuration info."""
         info = {
             "type": "Vercel Blob",
@@ -498,7 +491,7 @@ class VercelBlobStorage(BlobInterface):
 
         return info
 
-    def _create_error_result(self, error_msg: str) -> Dict[str, Any]:
+    def _create_error_result(self, error_msg: str) -> dict[str, Any]:
         """Create error result dictionary."""
         return {
             "success": False,

@@ -7,12 +7,12 @@ Provides endpoints for:
 """
 
 import logging
-from typing import Optional, List
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from src.connectors.moonlander import get_moonlander_connector
 from src.connectors.delphi import get_delphi_connector
+from src.connectors.moonlander import get_moonlander_connector
 
 logger = logging.getLogger(__name__)
 
@@ -35,13 +35,13 @@ class OpenPositionRequest(BaseModel):
     side: str = Field(..., description="Position side: 'long' or 'short'")
     size_usd: float = Field(..., gt=0, description="Position size in USDC")
     leverage: int = Field(..., ge=1, le=20, description="Leverage multiplier (1-20)")
-    price: Optional[float] = Field(None, description="Limit price (None for market order)")
+    price: float | None = Field(None, description="Limit price (None for market order)")
 
 
 class SetRiskManagementRequest(BaseModel):
     """Request to set stop-loss/take-profit."""
-    stop_loss: Optional[float] = Field(None, description="Stop-loss price")
-    take_profit: Optional[float] = Field(None, description="Take-profit price")
+    stop_loss: float | None = Field(None, description="Stop-loss price")
+    take_profit: float | None = Field(None, description="Take-profit price")
 
 
 @router.get("/moonlander/markets")
@@ -165,7 +165,7 @@ async def get_position(position_id: str):
 
 
 @router.get("/moonlander/positions")
-async def list_positions(asset: Optional[str] = Query(None, description="Filter by asset")):
+async def list_positions(asset: str | None = Query(None, description="Filter by asset")):
     """
     List all open positions.
 
@@ -223,12 +223,12 @@ class PlaceBetRequest(BaseModel):
     market_id: str = Field(..., description="Market identifier")
     outcome: str = Field(..., description="Predicted outcome")
     amount_usd: float = Field(..., gt=0, description="Bet amount in USDC")
-    odds: Optional[float] = Field(None, description="Odds to accept (None for current)")
+    odds: float | None = Field(None, description="Odds to accept (None for current)")
 
 
 @router.get("/delphi/markets")
 async def get_delphi_markets(
-    category: Optional[str] = Query(None, description="Filter by category"),
+    category: str | None = Query(None, description="Filter by category"),
     status: str = Query("active", description="Market status"),
     limit: int = Query(50, ge=1, le=100, description="Max markets to return")
 ):
@@ -394,8 +394,8 @@ async def get_bet(bet_id: str):
 
 @router.get("/delphi/bets")
 async def list_bets(
-    market_id: Optional[str] = Query(None, description="Filter by market ID"),
-    status: Optional[str] = Query(None, description="Filter by status")
+    market_id: str | None = Query(None, description="Filter by market ID"),
+    status: str | None = Query(None, description="Filter by status")
 ):
     """
     List bets with optional filters.

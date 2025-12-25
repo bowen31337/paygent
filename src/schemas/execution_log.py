@@ -5,29 +5,29 @@ This module defines the Pydantic schemas for creating, updating, and responding
 with execution log data.
 """
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class ExecutionLogCreate(BaseModel):
     """Schema for creating execution logs."""
     session_id: str
     command: str
-    plan: Optional[List[Dict[str, Any]]] = None
-    result: Optional[Dict[str, Any]] = None
-    total_cost: Optional[float] = None
-    duration_ms: Optional[int] = None
+    plan: list[dict[str, Any]] | None = None
+    result: dict[str, Any] | None = None
+    total_cost: float | None = None
+    duration_ms: int | None = None
 
 
 class ExecutionLogUpdate(BaseModel):
     """Schema for updating execution logs."""
-    plan: Optional[List[Dict[str, Any]]] = None
-    result: Optional[Dict[str, Any]] = None
-    total_cost: Optional[float] = None
-    duration_ms: Optional[int] = None
-    status: Optional[str] = None
+    plan: list[dict[str, Any]] | None = None
+    result: dict[str, Any] | None = None
+    total_cost: float | None = None
+    duration_ms: int | None = None
+    status: str | None = None
 
 
 class ExecutionLogResponse(BaseModel):
@@ -35,10 +35,10 @@ class ExecutionLogResponse(BaseModel):
     id: UUID
     session_id: str
     command: str
-    plan: Optional[List[Dict[str, Any]]] = None
-    result: Optional[Dict[str, Any]] = None
-    total_cost: Optional[float] = None
-    duration_ms: Optional[int] = None
+    plan: list[dict[str, Any]] | None = None
+    result: dict[str, Any] | None = None
+    total_cost: float | None = None
+    duration_ms: int | None = None
     status: str
     created_at: datetime
 

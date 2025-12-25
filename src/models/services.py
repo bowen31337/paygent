@@ -4,11 +4,11 @@ Service registry models.
 This module defines the SQLAlchemy models for service registry and discovery.
 """
 
-from sqlalchemy import Column, String, Text, Float, Boolean, BigInteger, DateTime, func
-from sqlalchemy.orm import Mapped, mapped_column
-from typing import Optional
 from datetime import datetime
 from uuid import UUID
+
+from sqlalchemy import BigInteger, Boolean, DateTime, Float, String, Text, func
+from sqlalchemy.orm import Mapped, mapped_column
 
 from src.core.database import Base
 
@@ -20,7 +20,7 @@ class Service(Base):
 
     id: Mapped[UUID] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(Text)
+    description: Mapped[str | None] = mapped_column(Text)
     endpoint: Mapped[str] = mapped_column(String(512), nullable=False)
     pricing_model: Mapped[str] = mapped_column(String(50), nullable=False)  # pay-per-call, subscription, metered
     price_amount: Mapped[float] = mapped_column(Float, nullable=False)

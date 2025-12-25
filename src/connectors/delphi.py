@@ -12,10 +12,9 @@ to integrate with actual Delphi smart contracts.
 """
 
 import logging
-from typing import Dict, Any, Optional, List
-from decimal import Decimal
-from datetime import datetime, timedelta
 import random
+from datetime import datetime, timedelta
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +31,7 @@ class DelphiConnector:
     """
 
     # Mock prediction markets
-    MOCK_MARKETS = [
+    MOCK_MARKETS: list[dict[str, Any]] = [
         {
             "market_id": "market_001",
             "question": "Will Bitcoin exceed $50,000 by January 31, 2025?",
@@ -77,17 +76,17 @@ class DelphiConnector:
         },
     ]
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the Delphi connector."""
-        self.bets: Dict[str, Dict[str, Any]] = {}
+        self.bets: dict[str, dict[str, Any]] = {}
         logger.info("Delphi connector initialized")
 
     def get_markets(
         self,
-        category: Optional[str] = None,
+        category: str | None = None,
         status: str = "active",
         limit: int = 50
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get list of prediction markets.
 
@@ -117,7 +116,7 @@ class DelphiConnector:
 
         return markets
 
-    def get_market(self, market_id: str) -> Dict[str, Any]:
+    def get_market(self, market_id: str) -> dict[str, Any]:
         """
         Get details of a specific market.
 
@@ -152,8 +151,8 @@ class DelphiConnector:
         market_id: str,
         outcome: str,
         amount: float,
-        odds: Optional[float] = None
-    ) -> Dict[str, Any]:
+        odds: float | None = None
+    ) -> dict[str, Any]:
         """
         Place a bet on a prediction market.
 
@@ -221,7 +220,7 @@ class DelphiConnector:
             "bet": bet,
         }
 
-    def claim_winnings(self, bet_id: str) -> Dict[str, Any]:
+    def claim_winnings(self, bet_id: str) -> dict[str, Any]:
         """
         Claim winnings from a resolved bet.
 
@@ -274,7 +273,7 @@ class DelphiConnector:
             "winning_outcome": winning_outcome,
         }
 
-    def get_bet(self, bet_id: str) -> Dict[str, Any]:
+    def get_bet(self, bet_id: str) -> dict[str, Any]:
         """
         Get details of a bet.
 
@@ -297,9 +296,9 @@ class DelphiConnector:
 
     def list_bets(
         self,
-        market_id: Optional[str] = None,
-        status: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        market_id: str | None = None,
+        status: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         List bets with optional filters.
 
@@ -312,7 +311,7 @@ class DelphiConnector:
         """
         bets = []
 
-        for bet_id, bet in self.bets.items():
+        for _bet_id, bet in self.bets.items():
             # Apply market filter
             if market_id and bet["market_id"] != market_id:
                 continue
@@ -325,7 +324,7 @@ class DelphiConnector:
 
         return bets
 
-    def get_market_outcomes(self, market_id: str) -> Dict[str, Any]:
+    def get_market_outcomes(self, market_id: str) -> dict[str, Any]:
         """
         Get current outcomes and odds for a market.
 
@@ -350,7 +349,7 @@ class DelphiConnector:
     def get_outcome(
         self,
         market_id: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get the outcome of a resolved market.
 

@@ -9,15 +9,15 @@ from fastapi import APIRouter
 
 from src.api.routes import (
     agent,
-    services,
-    payments,
-    wallet,
     approvals,
-    logs,
-    websocket,
-    defi,
-    metrics,
     cache,
+    defi,
+    logs,
+    metrics,
+    payments,
+    services,
+    wallet,
+    websocket,
 )
 
 router = APIRouter()

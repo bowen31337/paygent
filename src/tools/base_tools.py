@@ -6,7 +6,7 @@ when executing payment and DeFi operations.
 """
 
 import logging
-from typing import Optional, Type
+
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class CheckBalanceInput(BaseModel):
     """Input schema for check_balance tool."""
 
-    wallet_address: Optional[str] = Field(
+    wallet_address: str | None = Field(
         default=None,
         description="Wallet address to check balance for. If not provided, uses default agent wallet."
     )
@@ -40,12 +40,12 @@ class CheckBalanceTool(BaseTool):
 
     Returns balances for major tokens (CRO, USDC, etc.).
     """
-    args_schema: Type[BaseModel] = CheckBalanceInput
+    args_schema: type[BaseModel] = CheckBalanceInput
 
     def _run(
         self,
-        wallet_address: Optional[str] = None,
-        tokens: list[str] = ["CRO", "USDC"]
+        wallet_address: str | None = None,
+        tokens: list[str] = None
     ) -> dict:
         """
         Execute the balance check.
@@ -57,6 +57,8 @@ class CheckBalanceTool(BaseTool):
         Returns:
             Dict containing token balances
         """
+        if tokens is None:
+            tokens = ["CRO", "USDC"]
         logger.info(f"Checking balance for wallet: {wallet_address or 'default agent wallet'}")
 
         # Mock balance data - in production, this would query the blockchain
@@ -81,11 +83,11 @@ class CheckBalanceTool(BaseTool):
 class DiscoverServicesInput(BaseModel):
     """Input schema for discover_services tool."""
 
-    category: Optional[str] = Field(
+    category: str | None = Field(
         default=None,
         description="Category of services to search for (e.g., 'market_data', 'defi', 'prediction')"
     )
-    max_price_usd: Optional[float] = Field(
+    max_price_usd: float | None = Field(
         default=None,
         description="Maximum price per call in USD"
     )
@@ -109,12 +111,12 @@ class DiscoverServicesTool(BaseTool):
 
     Returns a list of services with pricing information.
     """
-    args_schema: Type[DiscoverServicesInput] = DiscoverServicesInput
+    args_schema: type[DiscoverServicesInput] = DiscoverServicesInput
 
     def _run(
         self,
-        category: Optional[str] = None,
-        max_price_usd: Optional[float] = None,
+        category: str | None = None,
+        max_price_usd: float | None = None,
         mcp_compatible: bool = True
     ) -> dict:
         """
@@ -227,7 +229,7 @@ class X402PaymentTool(BaseTool):
 
     Returns payment confirmation with transaction hash.
     """
-    args_schema: Type[BaseModel] = X402PaymentInput
+    args_schema: type[BaseModel] = X402PaymentInput
 
     def _run(
         self,
@@ -315,7 +317,7 @@ class SwapTokensTool(BaseTool):
 
     Returns swap confirmation with received amount.
     """
-    args_schema: Type[BaseModel] = SwapTokensInput
+    args_schema: type[BaseModel] = SwapTokensInput
 
     def _run(
         self,

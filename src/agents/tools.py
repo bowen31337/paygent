@@ -5,19 +5,15 @@ This module contains LangChain tools that the agent can use to execute
 payment commands and interact with the blockchain.
 """
 
-import json
 import logging
-from typing import Any, Dict, List, Optional, Union
-from uuid import UUID
+from typing import Any
 
-from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.tools import BaseTool
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.config import settings
-from src.services.x402_service import X402PaymentService
 from src.services.service_registry import ServiceRegistryService
+from src.services.x402_service import X402PaymentService
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +24,7 @@ class X402PaymentInput(BaseModel):
     service_url: str = Field(..., description="URL of the service to pay")
     amount: float = Field(..., description="Amount to pay")
     token: str = Field(..., description="Token symbol (e.g., USDC, CRO)")
-    description: Optional[str] = Field(None, description="Description of the payment")
+    description: str | None = Field(None, description="Description of the payment")
 
 
 class X402PaymentTool(BaseTool):
@@ -46,8 +42,8 @@ class X402PaymentTool(BaseTool):
         self.payment_service = payment_service
 
     async def _arun(
-        self, service_url: str, amount: float, token: str, description: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, service_url: str, amount: float, token: str, description: str | None = None
+    ) -> dict[str, Any]:
         """
         Execute an x402 payment.
 
@@ -92,7 +88,7 @@ class DiscoverServicesInput(BaseModel):
     """Input schema for service discovery tool."""
 
     query: str = Field(..., description="Search query for services")
-    category: Optional[str] = Field(None, description="Service category to filter")
+    category: str | None = Field(None, description="Service category to filter")
     max_results: int = Field(10, description="Maximum number of results to return")
 
 
@@ -111,8 +107,8 @@ class DiscoverServicesTool(BaseTool):
         self.service_registry = service_registry
 
     async def _arun(
-        self, query: str, category: Optional[str] = None, max_results: int = 10
-    ) -> Dict[str, Any]:
+        self, query: str, category: str | None = None, max_results: int = 10
+    ) -> dict[str, Any]:
         """
         Discover services based on search criteria.
 
@@ -164,7 +160,7 @@ class DiscoverServicesTool(BaseTool):
 class CheckBalanceInput(BaseModel):
     """Input schema for balance check tool."""
 
-    wallet_address: Optional[str] = Field(None, description="Wallet address to check (optional)")
+    wallet_address: str | None = Field(None, description="Wallet address to check (optional)")
 
 
 class CheckBalanceTool(BaseTool):
@@ -181,7 +177,7 @@ class CheckBalanceTool(BaseTool):
         super().__init__()
         self.db = db
 
-    async def _arun(self, wallet_address: Optional[str] = None) -> Dict[str, Any]:
+    async def _arun(self, wallet_address: str | None = None) -> dict[str, Any]:
         """
         Check token balances.
 
@@ -194,7 +190,6 @@ class CheckBalanceTool(BaseTool):
         try:
             # TODO: Implement actual balance checking using wallet integration
             # For now, return mock data
-            from src.core.config import settings
 
             mock_balances = {
                 "CRO": 1000.0,
@@ -226,7 +221,7 @@ class TransferTokensInput(BaseModel):
     recipient: str = Field(..., description="Recipient wallet address")
     amount: float = Field(..., description="Amount to transfer")
     token: str = Field(..., description="Token symbol")
-    description: Optional[str] = Field(None, description="Transfer description")
+    description: str | None = Field(None, description="Transfer description")
 
 
 class TransferTokensTool(BaseTool):
@@ -244,8 +239,8 @@ class TransferTokensTool(BaseTool):
         self.db = db
 
     async def _arun(
-        self, recipient: str, amount: float, token: str, description: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, recipient: str, amount: float, token: str, description: str | None = None
+    ) -> dict[str, Any]:
         """
         Transfer tokens to another wallet.
 
@@ -285,8 +280,8 @@ class GetApprovalInput(BaseModel):
     """Input schema for approval request tool."""
 
     action: str = Field(..., description="Action that requires approval")
-    amount_usd: Optional[float] = Field(None, description="Amount in USD")
-    details: Optional[str] = Field(None, description="Additional details")
+    amount_usd: float | None = Field(None, description="Amount in USD")
+    details: str | None = Field(None, description="Additional details")
 
 
 class GetApprovalTool(BaseTool):
@@ -304,8 +299,8 @@ class GetApprovalTool(BaseTool):
         self.db = db
 
     async def _arun(
-        self, action: str, amount_usd: Optional[float] = None, details: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, action: str, amount_usd: float | None = None, details: str | None = None
+    ) -> dict[str, Any]:
         """
         Request human approval for an action.
 
@@ -343,7 +338,7 @@ def create_agent_tools(
     payment_service: X402PaymentService,
     service_registry: ServiceRegistryService,
     db: AsyncSession,
-) -> List[BaseTool]:
+) -> list[BaseTool]:
     """
     Create a list of tools for the agent.
 

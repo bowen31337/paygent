@@ -6,10 +6,9 @@ This module provides Redis connection and cache operations for the Paygent appli
 
 import logging
 import os
-import time
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Union
 from functools import wraps
+from typing import Any
 
 try:
     import redis
@@ -85,7 +84,7 @@ class CacheMetrics:
         """Record DELETE operations."""
         self.delete_count += count
 
-    def get_metrics(self) -> Dict[str, Union[int, float]]:
+    def get_metrics(self) -> dict[str, int | float]:
         """Get cache performance metrics."""
         total_requests = self.hits + self.misses
         hit_rate = (self.hits / total_requests * 100) if total_requests > 0 else 0
@@ -109,7 +108,7 @@ class CacheInterface(ABC):
     """Abstract base class for cache implementations."""
 
     @abstractmethod
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         """Get value from cache."""
         pass
 
@@ -118,7 +117,7 @@ class CacheInterface(ABC):
         self,
         key: str,
         value: Any,
-        ttl_seconds: Optional[int] = None,
+        ttl_seconds: int | None = None,
     ) -> bool:
         """Set value in cache with optional TTL."""
         pass
@@ -129,26 +128,26 @@ class CacheInterface(ABC):
         pass
 
     @abstractmethod
-    async def get_many(self, keys: List[str]) -> Dict[str, Any]:
+    async def get_many(self, keys: list[str]) -> dict[str, Any]:
         """Get multiple values from cache."""
         pass
 
     @abstractmethod
     async def set_many(
         self,
-        key_value_pairs: Dict[str, Any],
-        ttl_seconds: Optional[int] = None,
+        key_value_pairs: dict[str, Any],
+        ttl_seconds: int | None = None,
     ) -> bool:
         """Set multiple key-value pairs in cache."""
         pass
 
     @abstractmethod
-    async def delete_many(self, keys: List[str]) -> int:
+    async def delete_many(self, keys: list[str]) -> int:
         """Delete multiple keys from cache."""
         pass
 
     @abstractmethod
-    async def keys(self, pattern: str = "*") -> List[str]:
+    async def keys(self, pattern: str = "*") -> list[str]:
         """Get all keys matching pattern."""
         pass
 
@@ -163,12 +162,12 @@ class CacheInterface(ABC):
         pass
 
     @abstractmethod
-    def get_metrics(self) -> Dict[str, Union[int, float]]:
+    def get_metrics(self) -> dict[str, int | float]:
         """Get cache performance metrics."""
         pass
 
     @abstractmethod
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         """Get cache connection and configuration info."""
         pass
 
@@ -177,7 +176,7 @@ class CacheClient:
     """Redis cache client wrapper for Paygent."""
 
     def __init__(self):
-        self._client: Optional[Any] = None
+        self._client: Any | None = None
         self._available = False
 
     async def connect(self) -> bool:
@@ -237,7 +236,7 @@ class CacheClient:
         """Check if Redis is available."""
         return self._available and self._client is not None
 
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         """Get value from cache."""
         if not self.available:
             return None
@@ -248,7 +247,7 @@ class CacheClient:
             logger.error(f"Cache get error: {e}")
             return None
 
-    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
+    async def set(self, key: str, value: Any, ttl: int | None = None) -> bool:
         """Set value in cache with optional TTL."""
         if not self.available:
             return False
