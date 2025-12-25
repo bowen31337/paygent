@@ -30,26 +30,6 @@ class AgentSession(Base):
         return f"<AgentSession(id={self.id}, wallet='{self.wallet_address}')>"
 
 
-class ExecutionLog(Base):
-    """Execution log model for tracking agent command execution."""
-
-    __tablename__ = "execution_logs"
-
-    id: Mapped[UUID] = mapped_column(primary_key=True)
-    session_id: Mapped[UUID] = mapped_column(ForeignKey("agent_sessions.id"))
-    command: Mapped[str] = mapped_column(String, nullable=False)
-    plan: Mapped[dict[str, Any] | None] = mapped_column(JSON)  # write_todos plan structure
-    tool_calls: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON)  # array of tool invocations
-    result: Mapped[dict[str, Any] | None] = mapped_column(JSON)  # final execution result
-    total_cost: Mapped[float | None] = mapped_column(Float)
-    duration_ms: Mapped[int | None] = mapped_column(Integer)
-    status: Mapped[str] = mapped_column(String(20), default="running")  # running, completed, failed
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
-
-    def __repr__(self) -> str:
-        return f"<ExecutionLog(id={self.id}, session={self.session_id}, status='{self.status}')>"
-
-
 class ApprovalRequest(Base):
     """Approval request model for human-in-the-loop workflows."""
 

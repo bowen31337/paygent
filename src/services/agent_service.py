@@ -12,7 +12,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.agents.agent_executor_enhanced import execute_agent_command_enhanced
-from src.models.agent_sessions import AgentSession, ExecutionLog
+from src.models.agent_sessions import AgentSession
+from src.models.execution_logs import ExecutionLog
 
 logger = logging.getLogger(__name__)
 

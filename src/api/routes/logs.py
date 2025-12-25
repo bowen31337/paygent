@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
 from src.models.agent_sessions import AgentSession
-from src.models.agent_sessions import ExecutionLog as ExecutionLogModel
+from src.models.execution_logs import ExecutionLog as ExecutionLogModel
 
 router = APIRouter()
 

@@ -22,7 +22,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.agents.command_parser import CommandParser, ParsedCommand
 from src.core.config import settings
 from src.core.security import ToolAllowlistError, get_tool_allowlist
-from src.models.agent_sessions import AgentMemory, ExecutionLog
+from src.models.agent_sessions import AgentMemory
+from src.models.execution_logs import ExecutionLog
 from src.services.alerting_service import AlertType, send_error_alert
 from src.services.approval_service import ApprovalService
 from src.services.metrics_service import metrics_collector

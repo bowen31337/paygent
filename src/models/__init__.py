@@ -9,9 +9,9 @@ from src.models.agent_sessions import (
     AgentMemory,
     AgentSession,
     ApprovalRequest,
-    ExecutionLog,
     ServiceSubscription,
 )
+from src.models.execution_logs import ExecutionLog, ToolCall
 from src.models.payments import Payment
 from src.models.services import Service
 
@@ -21,6 +21,7 @@ __all__ = [
     "Payment",
     "AgentSession",
     "ExecutionLog",
+    "ToolCall",
     "ApprovalRequest",
     "ServiceSubscription",
 ]

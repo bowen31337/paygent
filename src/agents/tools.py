@@ -8,7 +8,7 @@ payment commands and interact with the blockchain.
 import logging
 from typing import Any
 
-from langchain_core.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 from langchain_core.tools import BaseTool
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -35,7 +35,7 @@ class X402PaymentTool(BaseTool):
         "Execute an HTTP 402 payment using the x402 protocol. "
         "Use this when you need to pay for a service that returns HTTP 402 Payment Required."
     )
-    args_schema = X402PaymentInput
+    args_schema: type[BaseModel] = X402PaymentInput  # type: ignore[assignment]
 
     def __init__(self, payment_service: X402PaymentService):
         super().__init__()
@@ -100,7 +100,7 @@ class DiscoverServicesTool(BaseTool):
         "Discover MCP-compatible services based on search criteria. "
         "Use this when you need to find services that support the x402 payment protocol."
     )
-    args_schema = DiscoverServicesInput
+    args_schema: type[BaseModel] = DiscoverServicesInput  # type: ignore[assignment]
 
     def __init__(self, service_registry: ServiceRegistryService):
         super().__init__()
@@ -171,7 +171,7 @@ class CheckBalanceTool(BaseTool):
         "Check the balance of tokens in the agent's wallet. "
         "Use this when you need to verify available funds before making payments."
     )
-    args_schema = CheckBalanceInput
+    args_schema: type[BaseModel] = CheckBalanceInput  # type: ignore[assignment]
 
     def __init__(self, db: AsyncSession):
         super().__init__()
@@ -232,7 +232,7 @@ class TransferTokensTool(BaseTool):
         "Transfer tokens from the agent's wallet to another wallet. "
         "Use this when you need to send payments or move funds."
     )
-    args_schema = TransferTokensInput
+    args_schema: type[BaseModel] = TransferTokensInput  # type: ignore[assignment]
 
     def __init__(self, db: AsyncSession):
         super().__init__()
@@ -292,7 +292,7 @@ class GetApprovalTool(BaseTool):
         "Request human approval for sensitive operations. "
         "Use this when transactions exceed budget limits or require human oversight."
     )
-    args_schema = GetApprovalInput
+    args_schema: type[BaseModel] = GetApprovalInput  # type: ignore[assignment]
 
     def __init__(self, db: AsyncSession):
         super().__init__()

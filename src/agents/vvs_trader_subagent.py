@@ -151,7 +151,7 @@ class VVSTraderSubagent:
         swap_tool = SwapTokensTool()
         return [swap_tool]
 
-    def _create_agent(self) -> AgentExecutor:
+    def _create_agent(self) -> Any:
         """
         Create the VVS trader agent.
 

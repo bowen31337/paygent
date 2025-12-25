@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.execution_logs import ExecutionLog, ToolCall
@@ -222,11 +222,6 @@ class AuditService:
         """
         try:
             # Get total count
-            count_result = await self.db.execute(
-                select(func.count())
-                .where(ExecutionLog.session_id == session_id)
-            )
-            from sqlalchemy import func
             count_result = await self.db.execute(
                 select(func.count(ExecutionLog.id))
                 .where(ExecutionLog.session_id == session_id)

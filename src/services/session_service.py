@@ -16,8 +16,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.models.agent_sessions import (
     AgentSession,
     ApprovalRequest,
-    ExecutionLog,
 )
+from src.models.execution_logs import ExecutionLog
 from src.services.metrics_service import metrics_collector
 
 logger = logging.getLogger(__name__)
