@@ -120,7 +120,7 @@ async def open_position(request: OpenPositionRequest) -> dict[str, Any]:
 
 
 @router.post("/moonlander/positions/{position_id}/close")
-async def close_position(position_id: str): -> dict[str, Any]:
+async def close_position(position_id: str) -> dict[str, Any]:
     """
     Close a perpetual position.
 
@@ -145,7 +145,7 @@ async def close_position(position_id: str): -> dict[str, Any]:
 
 
 @router.get("/moonlander/positions/{position_id}")
-async def get_position(position_id: str): -> dict[str, Any]:
+async def get_position(position_id: str) -> dict[str, Any]:
     """
     Get details of a specific position.
 
@@ -166,7 +166,7 @@ async def get_position(position_id: str): -> dict[str, Any]:
 
 
 @router.get("/moonlander/positions")
-async def list_positions(asset: str | None = Query(None, description="Filter by asset")): -> dict[str, Any]:
+async def list_positions(asset: str | None = Query(None, description="Filter by asset")) -> dict[str, Any]:
     """
     List all open positions.
 
@@ -189,7 +189,7 @@ async def list_positions(asset: str | None = Query(None, description="Filter by 
 
 
 @router.post("/moonlander/positions/{position_id}/risk-management")
-async def set_risk_management(position_id: str, request: SetRiskManagementRequest): -> dict[str, Any]:
+async def set_risk_management(position_id: str, request: SetRiskManagementRequest) -> dict[str, Any]:
     """
     Set stop-loss and/or take-profit for a position.
 
@@ -228,11 +228,11 @@ class PlaceBetRequest(BaseModel):
 
 
 @router.get("/delphi/markets")
-async def get_delphi_markets( -> dict[str, Any]:
+async def get_delphi_markets(
     category: str | None = Query(None, description="Filter by category"),
     status: str = Query("active", description="Market status"),
     limit: int = Query(50, ge=1, le=100, description="Max markets to return")
-):
+) -> dict[str, Any]:
     """
     Get list of prediction markets.
 
@@ -257,7 +257,7 @@ async def get_delphi_markets( -> dict[str, Any]:
 
 
 @router.get("/delphi/markets/{market_id}")
-async def get_delphi_market(market_id: str): -> dict[str, Any]:
+async def get_delphi_market(market_id: str) -> dict[str, Any]:
     """
     Get details of a specific prediction market.
 
@@ -278,7 +278,7 @@ async def get_delphi_market(market_id: str): -> dict[str, Any]:
 
 
 @router.get("/delphi/markets/{market_id}/outcomes")
-async def get_market_outcomes(market_id: str): -> dict[str, Any]:
+async def get_market_outcomes(market_id: str) -> dict[str, Any]:
     """
     Get current outcomes and odds for a market.
 
@@ -299,7 +299,7 @@ async def get_market_outcomes(market_id: str): -> dict[str, Any]:
 
 
 @router.get("/delphi/markets/{market_id}/outcome")
-async def get_market_outcome(market_id: str): -> dict[str, Any]:
+async def get_market_outcome(market_id: str) -> dict[str, Any]:
     """
     Get the outcome of a resolved market.
 
@@ -320,7 +320,7 @@ async def get_market_outcome(market_id: str): -> dict[str, Any]:
 
 
 @router.post("/delphi/bets")
-async def place_bet(request: PlaceBetRequest): -> dict[str, Any]:
+async def place_bet(request: PlaceBetRequest) -> dict[str, Any]:
     """
     Place a bet on a prediction market.
 
@@ -347,7 +347,7 @@ async def place_bet(request: PlaceBetRequest): -> dict[str, Any]:
 
 
 @router.post("/delphi/bets/{bet_id}/claim")
-async def claim_winnings(bet_id: str): -> dict[str, Any]:
+async def claim_winnings(bet_id: str) -> dict[str, Any]:
     """
     Claim winnings from a resolved bet.
 
@@ -373,7 +373,7 @@ async def claim_winnings(bet_id: str): -> dict[str, Any]:
 
 
 @router.get("/delphi/bets/{bet_id}")
-async def get_bet(bet_id: str): -> dict[str, Any]:
+async def get_bet(bet_id: str) -> dict[str, Any]:
     """
     Get details of a specific bet.
 
@@ -394,10 +394,10 @@ async def get_bet(bet_id: str): -> dict[str, Any]:
 
 
 @router.get("/delphi/bets")
-async def list_bets( -> dict[str, Any]:
+async def list_bets(
     market_id: str | None = Query(None, description="Filter by market ID"),
     status: str | None = Query(None, description="Filter by status")
-):
+) -> dict[str, Any]:
     """
     List bets with optional filters.
 

@@ -5,7 +5,7 @@ This service provides functionality for creating, retrieving, and analyzing
 execution logs from agent operations.
 """
 import logging
-from typing import Any
+from typing import Any, Optional, Sequence
 
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class ExecutionLogService:
     """Service for managing execution logs."""
 
-    def __init__(self, db: AsyncSession = None):
+    def __init__(self, db: Optional[AsyncSession] = None):
         self.db = db
 
     async def create_execution_log(
@@ -107,8 +107,8 @@ class ExecutionLogService:
             query = query.offset(offset).limit(limit)
 
             result = await self.db.execute(query)
-            logs = result.scalars().all()
-            return logs
+            logs: Sequence[ExecutionLog] = result.scalars().all()
+            return list(logs)
         except Exception as e:
             logger.error(f"Error getting execution logs: {e}")
             return []
@@ -230,12 +230,18 @@ class ExecutionLogService:
                 )
             )
             cost_result = cost_duration.fetchone()
-            total_cost = cost_result[0] or 0
-            total_duration = cost_result[1] or 0
+
+            # Handle None cost_result
+            if cost_result is None:
+                total_cost = 0
+                total_duration = 0
+            else:
+                total_cost = cost_result[0] if cost_result[0] is not None else 0
+                total_duration = cost_result[1] if cost_result[1] is not None else 0
 
             # Get tool usage
             logs = await self.get_execution_logs(session_id)
-            tool_usage = {}
+            tool_usage: dict[str, int] = {}
             for log in logs:
                 if log.result and "tool_calls" in log.result:
                     for tool_call in log.result["tool_calls"]:
@@ -247,11 +253,11 @@ class ExecutionLogService:
             return {
                 "session_id": session_id,
                 "total_executions": total_executions,
-                "successful_executions": successful_executions,
-                "success_rate": successful_executions / total_executions if total_executions > 0 else 0,
+                "successful_executions": successful_executions if successful_executions is not None else 0,
+                "success_rate": (successful_executions / total_executions) if successful_executions is not None and total_executions and total_executions > 0 else 0,
                 "total_cost": float(total_cost) if total_cost else 0,
                 "total_duration_ms": int(total_duration) if total_duration else 0,
-                "average_duration_ms": int(total_duration / total_executions) if total_executions > 0 else 0,
+                "average_duration_ms": int(total_duration / total_executions) if total_executions and total_executions > 0 and total_duration else 0,
                 "most_used_tool": most_used_tool[0] if most_used_tool else None,
                 "tool_usage_count": most_used_tool[1] if most_used_tool else 0
             }
@@ -296,17 +302,17 @@ class ExecutionLogService:
                 end_date=end_date
             )
 
-            tool_stats = {}
+            tool_stats: dict[str, dict[str, int]] = {}
             for log in logs:
                 if log.result and "tool_calls" in log.result:
                     for tool_call in log.result["tool_calls"]:
                         tool_name = tool_call.get("tool_name", "unknown")
-                        session_id = log.session_id
+                        log_session_id = str(log.session_id)
 
-                        if session_id not in tool_stats:
-                            tool_stats[session_id] = {}
+                        if log_session_id not in tool_stats:
+                            tool_stats[log_session_id] = {}
 
-                        tool_stats[session_id][tool_name] = tool_stats[session_id].get(tool_name, 0) + 1
+                        tool_stats[log_session_id][tool_name] = tool_stats[log_session_id].get(tool_name, 0) + 1
 
             return tool_stats
         except Exception as e:
