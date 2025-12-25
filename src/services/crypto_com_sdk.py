@@ -7,7 +7,7 @@ spending limit management.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from src.core.config import settings
 
@@ -44,7 +44,7 @@ class CryptoComAgentSDK:
 
         logger.info("Crypto.com AI Agent SDK initialized")
 
-    async def check_balance(self, tokens: List[str] | None = None) -> Dict[str, Any]:
+    async def check_balance(self, tokens: list[str] | None = None) -> dict[str, Any]:
         """
         Check wallet balance for specified tokens.
 
@@ -63,7 +63,6 @@ class CryptoComAgentSDK:
         try:
             # This would integrate with the actual Crypto.com AI Agent SDK
             # For now, return mock data structure
-            import aiohttp
 
             if not tokens:
                 tokens = ["CRO", "USDC"]
@@ -94,7 +93,7 @@ class CryptoComAgentSDK:
         amount: float,
         token: str,
         description: str = ""
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Execute a token transfer using the AI Agent SDK.
 
@@ -120,7 +119,6 @@ class CryptoComAgentSDK:
         try:
             # This would integrate with the actual Crypto.com AI Agent SDK
             # For now, return mock data structure
-            import aiohttp
 
             # Validate inputs
             if not recipient_address:
@@ -156,7 +154,7 @@ class CryptoComAgentSDK:
         self,
         limit: int = 100,
         token: str | None = None
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get transaction history for the wallet.
 
@@ -170,7 +168,6 @@ class CryptoComAgentSDK:
         try:
             # This would integrate with the actual Crypto.com AI Agent SDK
             # For now, return mock data structure
-            import aiohttp
 
             # Mock implementation
             transactions = [
@@ -194,7 +191,7 @@ class CryptoComAgentSDK:
             logger.error(f"Failed to get transaction history: {e}")
             raise CryptoComAgentSDKError(f"Transaction history failed: {e}")
 
-    async def check_spending_limit(self, token: str = "USDC") -> Dict[str, Any]:
+    async def check_spending_limit(self, token: str = "USDC") -> dict[str, Any]:
         """
         Check current spending limits for a token.
 
@@ -207,7 +204,6 @@ class CryptoComAgentSDK:
         try:
             # This would integrate with the actual Crypto.com AI Agent SDK
             # For now, return mock data structure
-            import aiohttp
 
             # Mock implementation
             limit_info = {
@@ -232,7 +228,7 @@ class CryptoComAgentSDK:
         self,
         daily_limit: float,
         token: str = "USDC"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Set a new daily spending limit for a token.
 
@@ -246,7 +242,6 @@ class CryptoComAgentSDK:
         try:
             # This would integrate with the actual Crypto.com AI Agent SDK
             # For now, return mock data structure
-            import aiohttp
 
             # Validate inputs
             if daily_limit <= 0:
@@ -269,7 +264,7 @@ class CryptoComAgentSDK:
             logger.error(f"Failed to set spending limit: {e}")
             raise CryptoComAgentSDKError(f"Set spending limit failed: {e}")
 
-    async def get_wallet_info(self) -> Dict[str, Any]:
+    async def get_wallet_info(self) -> dict[str, Any]:
         """
         Get comprehensive wallet information.
 
@@ -279,7 +274,6 @@ class CryptoComAgentSDK:
         try:
             # This would integrate with the actual Crypto.com AI Agent SDK
             # For now, return mock data structure
-            import aiohttp
 
             # Mock implementation
             wallet_info = {
@@ -314,7 +308,6 @@ class CryptoComAgentSDK:
         try:
             # This would integrate with the actual Crypto.com AI Agent SDK
             # For now, return mock health check
-            import aiohttp
 
             # Mock implementation - in real implementation, this would ping
             # the Crypto.com AI Agent SDK health endpoint

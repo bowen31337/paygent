@@ -5,7 +5,8 @@ This service provides functionality for creating, retrieving, and analyzing
 execution logs from agent operations.
 """
 import logging
-from typing import Any, Optional, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 class ExecutionLogService:
     """Service for managing execution logs."""
 
-    def __init__(self, db: Optional[AsyncSession] = None):
+    def __init__(self, db: AsyncSession | None = None):
         self.db = db
 
     async def create_execution_log(

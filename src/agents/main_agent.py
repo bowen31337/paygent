@@ -21,7 +21,7 @@ try:
 except ImportError:
     # langchain 1.x moved memory to langchain_community
     from langchain_core.chat_history import InMemoryChatMessageHistory
-    from langchain_core.messages import HumanMessage, AIMessage
+    from langchain_core.messages import AIMessage, HumanMessage
 
     class ConversationBufferMemory:  # type: ignore
         """Compatibility wrapper for langchain 1.x memory."""

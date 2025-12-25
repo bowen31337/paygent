@@ -8,13 +8,12 @@ commands, tool calls, and results for complete audit trails.
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, JSON, String, Text, func
+from sqlalchemy import JSON, DateTime, Float, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.core.database import Base
 
 # Import AgentSession from the agent_sessions module
-from src.models.agent_sessions import AgentSession
 
 
 class ExecutionLog(Base):

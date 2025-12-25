@@ -10,6 +10,13 @@ from functools import lru_cache
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
+from .constants import (
+    DEFAULT_APP_PORT, HTTP_TIMEOUT_SECONDS, X402_RETRY_DELAY_MS,
+    X402_MAX_RETRIES, DB_POOL_RECYCLE_SECONDS, DEFAULT_RATE_LIMIT_REQUESTS_PER_MINUTE,
+    AGENT_MAX_ITERATIONS, AGENT_TIMEOUT_SECONDS, AGENT_DEFAULT_BUDGET_USD,
+    HITL_APPROVAL_THRESHOLD_USD, JWT_EXPIRATION_HOURS, DEFAULT_DAILY_LIMIT_USD
+)
+
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
@@ -22,12 +29,12 @@ class Settings(BaseSettings):
 
     # API Server
     host: str = "0.0.0.0"
-    port: int = 8000
+    port: int = DEFAULT_APP_PORT
 
     # Security
     jwt_secret: str = Field(default="development-secret-change-in-production")
     jwt_algorithm: str = "HS256"
-    jwt_expiration_hours: int = 24
+    jwt_expiration_hours: int = JWT_EXPIRATION_HOURS
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000", "http://localhost:8000"])
 
     @field_validator("cors_origins", mode="before")
@@ -67,8 +74,8 @@ class Settings(BaseSettings):
         default="https://x402-facilitator.cronos.org",
         description="x402 Facilitator URL for payment verification"
     )
-    x402_max_retries: int = 3
-    x402_retry_delay_ms: int = 1000
+    x402_max_retries: int = X402_MAX_RETRIES
+    x402_retry_delay_ms: int = X402_RETRY_DELAY_MS
 
     # Wallet Configuration (development only - use HSM in production)
     agent_wallet_private_key: str | None = Field(
@@ -79,10 +86,7 @@ class Settings(BaseSettings):
         default="0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
         description="Default agent wallet address"
     )
-    default_daily_limit_usd: float = Field(
-        default=1000.0,
-        description="Default daily spending limit in USD"
-    )
+    default_daily_limit_usd: float = DEFAULT_DAILY_LIMIT_USD
 
     # Database Configuration
     # Vercel Postgres (production)
@@ -112,13 +116,13 @@ class Settings(BaseSettings):
     crypto_com_mcp_url: str = "https://mcp.crypto.com"
 
     # Rate Limiting
-    rate_limit_requests_per_minute: int = 100
+    rate_limit_requests_per_minute: int = DEFAULT_RATE_LIMIT_REQUESTS_PER_MINUTE
 
     # Agent Configuration
-    agent_max_iterations: int = 50
-    agent_timeout_seconds: int = 300
-    agent_default_budget_usd: float = 100.0
-    hitl_approval_threshold_usd: float = 10.0
+    agent_max_iterations: int = AGENT_MAX_ITERATIONS
+    agent_timeout_seconds: int = AGENT_TIMEOUT_SECONDS
+    agent_default_budget_usd: float = AGENT_DEFAULT_BUDGET_USD
+    hitl_approval_threshold_usd: float = HITL_APPROVAL_THRESHOLD_USD
 
     # Logging
     log_level: str = "INFO"

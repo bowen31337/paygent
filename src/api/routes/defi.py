@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 
 from src.connectors.delphi import get_delphi_connector
 from src.connectors.moonlander import get_moonlander_connector
+from src.core.errors import create_safe_error_message
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +66,8 @@ async def get_moonlander_markets() -> dict[str, Any]:
         }
     except Exception as e:
         logger.error(f"Error getting Moonlander markets: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        safe_message = create_safe_error_message(e, include_detail=True)
+        raise HTTPException(status_code=500, detail=safe_message)
 
 
 @router.get("/moonlander/funding-rate/{asset}")
@@ -85,10 +87,12 @@ async def get_funding_rate(asset: str) -> dict[str, Any]:
             "data": rate_info,
         }
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        safe_message = create_safe_error_message(e, include_detail=True)
+        raise HTTPException(status_code=404, detail=safe_message)
     except Exception as e:
         logger.error(f"Error getting funding rate: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        safe_message = create_safe_error_message(e, include_detail=True)
+        raise HTTPException(status_code=500, detail=safe_message)
 
 
 @router.post("/moonlander/positions/open")
@@ -113,10 +117,12 @@ async def open_position(request: OpenPositionRequest) -> dict[str, Any]:
             "tx_hash": result["tx_hash"],
         }
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        safe_message = create_safe_error_message(e, include_detail=True)
+        raise HTTPException(status_code=400, detail=safe_message)
     except Exception as e:
         logger.error(f"Error opening position: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        safe_message = create_safe_error_message(e, include_detail=True)
+        raise HTTPException(status_code=500, detail=safe_message)
 
 
 @router.post("/moonlander/positions/{position_id}/close")
@@ -138,10 +144,12 @@ async def close_position(position_id: str) -> dict[str, Any]:
             "tx_hash": result["tx_hash"],
         }
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        safe_message = create_safe_error_message(e, include_detail=True)
+        raise HTTPException(status_code=404, detail=safe_message)
     except Exception as e:
         logger.error(f"Error closing position: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        safe_message = create_safe_error_message(e, include_detail=True)
+        raise HTTPException(status_code=500, detail=safe_message)
 
 
 @router.get("/moonlander/positions/{position_id}")
@@ -159,10 +167,12 @@ async def get_position(position_id: str) -> dict[str, Any]:
             "position": position,
         }
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        safe_message = create_safe_error_message(e, include_detail=True)
+        raise HTTPException(status_code=404, detail=safe_message)
     except Exception as e:
         logger.error(f"Error getting position: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        safe_message = create_safe_error_message(e, include_detail=True)
+        raise HTTPException(status_code=500, detail=safe_message)
 
 
 @router.get("/moonlander/positions")
@@ -185,7 +195,8 @@ async def list_positions(asset: str | None = Query(None, description="Filter by 
         }
     except Exception as e:
         logger.error(f"Error listing positions: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        safe_message = create_safe_error_message(e, include_detail=True)
+        raise HTTPException(status_code=500, detail=safe_message)
 
 
 @router.post("/moonlander/positions/{position_id}/risk-management")
@@ -209,10 +220,12 @@ async def set_risk_management(position_id: str, request: SetRiskManagementReques
             "take_profit": result["take_profit"],
         }
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        safe_message = create_safe_error_message(e, include_detail=True)
+        raise HTTPException(status_code=404, detail=safe_message)
     except Exception as e:
         logger.error(f"Error setting risk management: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        safe_message = create_safe_error_message(e, include_detail=True)
+        raise HTTPException(status_code=500, detail=safe_message)
 
 
 # ============================================================================
@@ -253,7 +266,8 @@ async def get_delphi_markets(
         }
     except Exception as e:
         logger.error(f"Error getting Delphi markets: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        safe_message = create_safe_error_message(e, include_detail=True)
+        raise HTTPException(status_code=500, detail=safe_message)
 
 
 @router.get("/delphi/markets/{market_id}")
@@ -271,10 +285,12 @@ async def get_delphi_market(market_id: str) -> dict[str, Any]:
             "market": market,
         }
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        safe_message = create_safe_error_message(e, include_detail=True)
+        raise HTTPException(status_code=404, detail=safe_message)
     except Exception as e:
         logger.error(f"Error getting market: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        safe_message = create_safe_error_message(e, include_detail=True)
+        raise HTTPException(status_code=500, detail=safe_message)
 
 
 @router.get("/delphi/markets/{market_id}/outcomes")
@@ -292,10 +308,12 @@ async def get_market_outcomes(market_id: str) -> dict[str, Any]:
             "outcomes": outcomes,
         }
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        safe_message = create_safe_error_message(e, include_detail=True)
+        raise HTTPException(status_code=404, detail=safe_message)
     except Exception as e:
         logger.error(f"Error getting market outcomes: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        safe_message = create_safe_error_message(e, include_detail=True)
+        raise HTTPException(status_code=500, detail=safe_message)
 
 
 @router.get("/delphi/markets/{market_id}/outcome")
@@ -313,10 +331,12 @@ async def get_market_outcome(market_id: str) -> dict[str, Any]:
             "outcome": outcome,
         }
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        safe_message = create_safe_error_message(e, include_detail=True)
+        raise HTTPException(status_code=404, detail=safe_message)
     except Exception as e:
         logger.error(f"Error getting market outcome: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        safe_message = create_safe_error_message(e, include_detail=True)
+        raise HTTPException(status_code=500, detail=safe_message)
 
 
 @router.post("/delphi/bets")
@@ -340,10 +360,12 @@ async def place_bet(request: PlaceBetRequest) -> dict[str, Any]:
             "tx_hash": result["tx_hash"],
         }
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        safe_message = create_safe_error_message(e, include_detail=True)
+        raise HTTPException(status_code=400, detail=safe_message)
     except Exception as e:
         logger.error(f"Error placing bet: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        safe_message = create_safe_error_message(e, include_detail=True)
+        raise HTTPException(status_code=500, detail=safe_message)
 
 
 @router.post("/delphi/bets/{bet_id}/claim")
@@ -366,10 +388,12 @@ async def claim_winnings(bet_id: str) -> dict[str, Any]:
             "tx_hash": result["tx_hash"],
         }
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        safe_message = create_safe_error_message(e, include_detail=True)
+        raise HTTPException(status_code=404, detail=safe_message)
     except Exception as e:
         logger.error(f"Error claiming winnings: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        safe_message = create_safe_error_message(e, include_detail=True)
+        raise HTTPException(status_code=500, detail=safe_message)
 
 
 @router.get("/delphi/bets/{bet_id}")
@@ -387,10 +411,12 @@ async def get_bet(bet_id: str) -> dict[str, Any]:
             "bet": bet,
         }
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        safe_message = create_safe_error_message(e, include_detail=True)
+        raise HTTPException(status_code=404, detail=safe_message)
     except Exception as e:
         logger.error(f"Error getting bet: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        safe_message = create_safe_error_message(e, include_detail=True)
+        raise HTTPException(status_code=500, detail=safe_message)
 
 
 @router.get("/delphi/bets")
@@ -417,4 +443,5 @@ async def list_bets(
         }
     except Exception as e:
         logger.error(f"Error listing bets: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        safe_message = create_safe_error_message(e, include_detail=True)
+        raise HTTPException(status_code=500, detail=safe_message)

@@ -6,7 +6,7 @@ pydantic, allowing the application to work when pydantic_core has issues.
 """
 
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class SimpleSettings:
@@ -104,7 +104,7 @@ class SimpleSettings:
         """Check if running in production environment."""
         return self.environment == "production"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert settings to dictionary for debugging."""
         return {
             "app_name": self.app_name,
@@ -125,7 +125,7 @@ class SimpleSettings:
             "is_production": self.is_production,
         }
 
-    def validate(self) -> List[str]:
+    def validate(self) -> list[str]:
         """Validate configuration and return list of issues."""
         issues = []
 

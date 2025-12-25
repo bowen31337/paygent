@@ -8,8 +8,8 @@ payment commands and interact with the blockchain.
 import logging
 from typing import Any
 
-from pydantic import BaseModel, Field
 from langchain_core.tools import BaseTool
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.services.service_registry import ServiceRegistryService

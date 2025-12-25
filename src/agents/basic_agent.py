@@ -7,15 +7,12 @@ and mock LLM responses for demonstration purposes.
 """
 
 import logging
-import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any
 from uuid import UUID
 
-import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.config import settings
-from src.models.agent_sessions import AgentSession
 from src.services.session_service import SessionService
 
 logger = logging.getLogger(__name__)

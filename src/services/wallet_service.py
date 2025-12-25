@@ -60,6 +60,7 @@ class WalletService:
             try:
                 # Import web3 for blockchain interaction
                 from web3 import Web3
+
                 from src.core.config import settings
 
                 # Connect to Cronos RPC

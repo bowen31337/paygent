@@ -6,13 +6,12 @@ fail to load, using the simple agent implementation.
 """
 
 import logging
-from typing import Any, Dict
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.agents.simple_agent import SimplePaygentAgent
-from src.core.config import settings
 from src.services.session_service import SessionService
 
 logger = logging.getLogger(__name__)

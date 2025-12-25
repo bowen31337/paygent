@@ -6,7 +6,7 @@ agent sessions. It works with the basic agent implementation.
 """
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -35,10 +35,10 @@ class AgentExecutionService:
     async def execute_command(
         self,
         command: str,
-        user_id: Optional[UUID] = None,
-        budget_limit_usd: Optional[float] = None,
+        user_id: UUID | None = None,
+        budget_limit_usd: float | None = None,
         llm_model: str = "mock",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Execute a natural language command using the agent.
 
@@ -83,7 +83,7 @@ class AgentExecutionService:
                 "session_id": str(user_id) if user_id else None,
             }
 
-    async def get_session_status(self, session_id: UUID) -> Dict[str, Any]:
+    async def get_session_status(self, session_id: UUID) -> dict[str, Any]:
         """
         Get the status of an agent session.
 
@@ -116,7 +116,7 @@ class AgentExecutionService:
                 "session_id": str(session_id),
             }
 
-    async def terminate_session(self, session_id: UUID) -> Dict[str, Any]:
+    async def terminate_session(self, session_id: UUID) -> dict[str, Any]:
         """
         Terminate an agent session.
 
@@ -143,7 +143,7 @@ class AgentExecutionService:
                 "session_id": str(session_id),
             }
 
-    async def _get_or_create_session(self, user_id: Optional[UUID]) -> AgentSession:
+    async def _get_or_create_session(self, user_id: UUID | None) -> AgentSession:
         """
         Get or create an agent session.
 
@@ -168,7 +168,7 @@ class AgentExecutionService:
         session = await self.session_service.create_session(session_data)
         return session
 
-    async def list_sessions(self, user_id: Optional[UUID] = None) -> Dict[str, Any]:
+    async def list_sessions(self, user_id: UUID | None = None) -> dict[str, Any]:
         """
         List agent sessions.
 

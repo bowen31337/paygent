@@ -6,7 +6,7 @@ the problematic langchain dependencies, focusing on core functionality.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession

@@ -6,12 +6,11 @@ with Crypto.com services using the MCP protocol.
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 # Import only what we need, avoid problematic dependencies
 from pydantic import BaseModel, Field
 
-from src.core.config import settings
 from src.services.mcp_client import MCPServerClient, get_mcp_client
 
 logger = logging.getLogger(__name__)
@@ -63,7 +62,7 @@ class CryptoComMCPAdapter:
             logger.error(f"Failed to initialize MCP adapter: {e}")
             raise MCPAdapterError(f"Initialization failed: {e}")
 
-    async def _create_tools_from_mcp_capabilities(self) -> List[Any]:
+    async def _create_tools_from_mcp_capabilities(self) -> list[Any]:
         """
         Create LangChain tools based on MCP server capabilities.
 
@@ -96,7 +95,7 @@ class CryptoComMCPAdapter:
                         super().__init__(**kwargs)
                         object.__setattr__(self, 'mcp_client', mcp_client)
 
-                    async def _arun(self, symbol: str) -> Dict[str, Any]:
+                    async def _arun(self, symbol: str) -> dict[str, Any]:
                         """Async implementation of price retrieval."""
                         try:
                             price_data = await self.mcp_client.get_price(symbol)
@@ -114,14 +113,14 @@ class CryptoComMCPAdapter:
                                 "success": False
                             }
 
-                    def _run(self, symbol: str) -> Dict[str, Any]:
+                    def _run(self, symbol: str) -> dict[str, Any]:
                         """Synchronous wrapper for price retrieval."""
                         import asyncio
                         return asyncio.run(self._arun(symbol))
 
                 # Create multiple price tool
                 class GetPricesInput(BaseModel):
-                    symbols: List[str] = Field(..., description="List of trading pair symbols")
+                    symbols: list[str] = Field(..., description="List of trading pair symbols")
 
                 class GetPricesTool(BaseTool):
                     name: str = "get_crypto_prices"
@@ -133,7 +132,7 @@ class CryptoComMCPAdapter:
                         super().__init__(**kwargs)
                         object.__setattr__(self, 'mcp_client', mcp_client)
 
-                    async def _arun(self, symbols: List[str]) -> Dict[str, Any]:
+                    async def _arun(self, symbols: list[str]) -> dict[str, Any]:
                         """Async implementation of multiple price retrieval."""
                         try:
                             prices = await self.mcp_client.get_multiple_prices(symbols)
@@ -157,7 +156,7 @@ class CryptoComMCPAdapter:
                                 "success": False
                             }
 
-                    def _run(self, symbols: List[str]) -> Dict[str, Any]:
+                    def _run(self, symbols: list[str]) -> dict[str, Any]:
                         """Synchronous wrapper for multiple price retrieval."""
                         import asyncio
                         return asyncio.run(self._arun(symbols))
@@ -172,7 +171,7 @@ class CryptoComMCPAdapter:
                         super().__init__(**kwargs)
                         object.__setattr__(self, 'mcp_client', mcp_client)
 
-                    async def _arun(self) -> Dict[str, Any]:
+                    async def _arun(self) -> dict[str, Any]:
                         """Async implementation of market status retrieval."""
                         try:
                             status = await self.mcp_client.get_market_status()
@@ -186,7 +185,7 @@ class CryptoComMCPAdapter:
                                 "success": False
                             }
 
-                    def _run(self) -> Dict[str, Any]:
+                    def _run(self) -> dict[str, Any]:
                         """Synchronous wrapper for market status retrieval."""
                         import asyncio
                         return asyncio.run(self._arun())
@@ -204,7 +203,7 @@ class CryptoComMCPAdapter:
             logger.error(f"Failed to create MCP tools: {e}")
             return []
 
-    async def get_tools(self) -> List[Any]:
+    async def get_tools(self) -> list[Any]:
         """
         Get the list of available LangChain tools.
 
@@ -228,7 +227,7 @@ class CryptoComMCPAdapter:
         except Exception:
             return False
 
-    async def get_server_info(self) -> Dict[str, Any]:
+    async def get_server_info(self) -> dict[str, Any]:
         """
         Get information about the MCP server.
 

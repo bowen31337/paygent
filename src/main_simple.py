@@ -7,9 +7,9 @@ pydantic dependencies, allowing basic functionality when pydantic_core has issue
 
 import logging
 from contextlib import asynccontextmanager
-from typing import Any, Dict
+from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 
 from src.core.simple_config import settings
 

@@ -10,7 +10,8 @@ import json
 import logging
 from typing import Any
 
-from httpx import AsyncClient, Response, TimeoutException as HttpxTimeoutException
+from httpx import AsyncClient, Response
+from httpx import TimeoutException as HttpxTimeoutException
 
 from src.core.config import settings
 from src.core.errors import create_safe_error_message

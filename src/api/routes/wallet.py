@@ -386,7 +386,6 @@ async def sign_eip712(
         EIP712SignResponse: Contains the signature and signer address
     """
     from eth_account import Account
-    from eth_account.messages import encode_typed_data
 
     # Get the agent wallet's private key from config
     # In production, this would be stored securely in a key management system

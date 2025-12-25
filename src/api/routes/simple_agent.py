@@ -5,12 +5,11 @@ This module provides simplified endpoints for executing natural language command
 via the basic agent implementation that doesn't rely on problematic dependencies.
 """
 
-import asyncio
 import json
 from datetime import datetime
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 

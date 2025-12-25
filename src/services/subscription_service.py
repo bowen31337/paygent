@@ -14,7 +14,6 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.agent_sessions import ServiceSubscription
-from src.models.services import Service
 from src.services.cache import CacheService
 
 logger = logging.getLogger(__name__)

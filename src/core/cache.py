@@ -252,6 +252,9 @@ class CacheClient:
             return None
         try:
             value = await self._client.get(key)
+            # Decode bytes to string if needed (for FakeAsyncRedis compatibility)
+            if isinstance(value, bytes):
+                value = value.decode('utf-8')
             return value
         except Exception as e:
             logger.error(f"Cache get error: {e}")

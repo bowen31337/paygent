@@ -639,6 +639,7 @@ async def get_subscription(
 
     # Get service details for endpoint
     from sqlalchemy import select
+
     from src.models.services import Service
 
     stmt = select(Service).where(Service.id == subscription.service_id)
@@ -846,6 +847,7 @@ async def get_session_subscriptions(
 
     # Get service details for each subscription
     from sqlalchemy import select
+
     from src.models.services import Service
 
     result = []

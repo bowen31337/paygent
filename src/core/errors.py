@@ -104,25 +104,105 @@ def create_safe_error_message(
     if settings.debug:
         return str(error)
 
-    # In production, show generic messages
+    # In production, show user-friendly messages with actionable guidance
     error_type = type(error).__name__
+    error_msg_lower = str(error).lower()
 
-    # Map specific error types to safe messages
+    # Map specific error types to safe, user-friendly messages with guidance
     safe_messages = {
-        "ValueError": "Invalid input provided",
-        "ValidationError": "Request validation failed",
-        "AuthenticationError": "Authentication failed",
-        "AuthorizationError": "Insufficient permissions",
-        "NotFoundError": "Resource not found",
-        "ConnectionError": "Service unavailable",
-        "TimeoutError": "Request timed out",
-        "HTTPException": "Request processing error",
-        "SQLAlchemyError": "Database error occurred",
-        "RedisError": "Cache service error",
+        "ValueError": {
+            "message": "Invalid input provided",
+            "guidance": "Please check your input and try again. Make sure all required fields are included and values are in the correct format."
+        },
+        "ValidationError": {
+            "message": "Request validation failed",
+            "guidance": "Please check that all required fields are included and values match the expected format. Refer to the API documentation for details."
+        },
+        "AuthenticationError": {
+            "message": "Authentication failed",
+            "guidance": "Please check your API credentials. Ensure your authentication token is valid and hasn't expired."
+        },
+        "AuthorizationError": {
+            "message": "Insufficient permissions",
+            "guidance": "You don't have permission to perform this action. Please contact support if you believe this is an error."
+        },
+        "NotFoundError": {
+            "message": "Resource not found",
+            "guidance": "The requested resource could not be found. Please verify the ID or URL and try again."
+        },
+        "ConnectionError": {
+            "message": "Service temporarily unavailable",
+            "guidance": "We're unable to connect to one of our services. Please try again in a few moments. If the problem persists, please contact support."
+        },
+        "TimeoutError": {
+            "message": "Request timed out",
+            "guidance": "The request took too long to complete. Please try again. If you're making a large request, consider breaking it into smaller parts."
+        },
+        "HTTPException": {
+            "message": "Request processing error",
+            "guidance": "There was an issue processing your request. Please check your input and try again."
+        },
+        "SQLAlchemyError": {
+            "message": "Database error occurred",
+            "guidance": "We experienced an issue with our database. Our team has been notified. Please try again shortly."
+        },
+        "RedisError": {
+            "message": "Cache service error",
+            "guidance": "We experienced an issue with our cache service. This should resolve automatically. Please try again."
+        },
+        "PaymentError": {
+            "message": "Payment processing failed",
+            "guidance": "Unable to process the payment. Please check your wallet balance and ensure you have sufficient funds. If the problem persists, contact support."
+        },
+        "InsufficientBalanceError": {
+            "message": "Insufficient balance",
+            "guidance": "Your wallet doesn't have enough funds to complete this transaction. Please add more tokens and try again."
+        },
+        "DailyLimitExceededError": {
+            "message": "Daily spending limit exceeded",
+            "guidance": f"You've reached your daily spending limit of ${settings.daily_limit_usd}. Limits reset at midnight UTC. Please try again tomorrow or contact support to increase your limit."
+        },
+        "ServiceNotFoundError": {
+            "message": "Service not found",
+            "guidance": "The requested service could not be found or is not available. Please verify the service details and try again."
+        },
+        "HttpxTimeoutException": {
+            "message": "External service timeout",
+            "guidance": "An external service is taking too long to respond. This may be due to high demand. Please try again in a few moments."
+        },
+        "JSONDecodeError": {
+            "message": "Invalid response format",
+            "guidance": "We received an invalid response from an external service. Our team has been notified. Please try again."
+        },
     }
 
-    # Return safe message or generic fallback
-    return safe_messages.get(error_type, "An error occurred while processing your request")
+    # Enhanced error detection based on error message content
+    if "connection" in error_msg_lower or "connect" in error_msg_lower:
+        return "Service temporarily unavailable. Please check your internet connection and try again."
+
+    if "timeout" in error_msg_lower:
+        return "Request timed out. The service is taking longer than expected. Please try again."
+
+    if "not found" in error_msg_lower:
+        return "Resource not found. Please verify the ID or URL and try again."
+
+    if "balance" in error_msg_lower and "insufficient" in error_msg_lower:
+        return "Insufficient balance. Please add more funds to your wallet and try again."
+
+    if "limit" in error_msg_lower and "exceed" in error_msg_lower:
+        return "You've exceeded a rate limit. Please wait a moment and try again."
+
+    # Return user-friendly message with guidance
+    error_info = safe_messages.get(error_type, {
+        "message": "An unexpected error occurred",
+        "guidance": "We're sorry, but something went wrong. Our team has been notified. Please try again. If the problem persists, please contact support with details about what you were trying to do."
+    })
+
+    # Include guidance if requested
+    if include_detail and error_info.get("guidance"):
+        return f"{error_info['message']}. {error_info['guidance']}"
+
+    return error_info["message"]
 
 
 def create_error_response(
