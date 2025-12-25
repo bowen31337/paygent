@@ -266,9 +266,26 @@ def rate_limit(
         requests_per_minute: Maximum requests per minute
         key_func: Function to generate rate limit key (defaults to IP)
     """
-    def decorator(func):
+    def decorator(func):  # noqa: D417
+        """Apply rate limiting to a function.
+
+        Args:
+            func: Function to rate limit
+
+        Returns:
+            Callable: Rate-limited function wrapper
+        """
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs):  # noqa: D417
+            """Execute function with rate limiting.
+
+            Args:
+                *args: Function arguments
+                **kwargs: Function keyword arguments
+
+            Returns:
+                Any: Function result
+            """
             # Get request from kwargs or args
             request = kwargs.get("request")
             if not request:

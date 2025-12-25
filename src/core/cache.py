@@ -337,9 +337,26 @@ def cache_result(ttl: int = 300):
         async def expensive_operation():
             ...
     """
-    def decorator(func):
+    def decorator(func):  # noqa: D417
+        """Wrap a function with caching.
+
+        Args:
+            func: Async function to cache
+
+        Returns:
+            Callable: Cached function wrapper
+        """
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs):  # noqa: D417
+            """Execute function with caching.
+
+            Args:
+                *args: Function arguments
+                **kwargs: Function keyword arguments
+
+            Returns:
+                Any: Cached or fresh result
+            """
             if not cache_client.available:
                 return await func(*args, **kwargs)
 

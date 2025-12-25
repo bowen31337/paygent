@@ -11,7 +11,8 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from langchain.agents import AgentExecutor, create_openai_tools_agent
+from langchain.agents import create_tool_calling_agent
+from langchain_core.agents import AgentExecutor
 from langchain.memory import ConversationBufferMemory
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -193,7 +194,7 @@ Always be precise and return detailed betting information with risk analysis."""
         ])
 
         # Create agent
-        agent = create_openai_tools_agent(
+        agent = create_tool_calling_agent(
             llm=self.llm,
             tools=self.tools,
             prompt=prompt,

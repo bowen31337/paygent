@@ -679,64 +679,104 @@ async def handle_cancel_message(
 
 
 # Helper functions for sending events to clients
-async def send_thinking_event(session_id: str, data: dict[str, Any]):
-    """Send a thinking event to the client."""
+async def send_thinking_event(session_id: str, data: dict[str, Any]) -> None:
+    """Send a thinking event to the client.
+
+    Args:
+        session_id: Target session identifier
+        data: Event data payload
+    """
     await manager.send_personal_message(
         ThinkingEvent(type="thinking", data=data),
         session_id
     )
 
 
-async def send_tool_call_event(session_id: str, data: dict[str, Any]):
-    """Send a tool call event to the client."""
+async def send_tool_call_event(session_id: str, data: dict[str, Any]) -> None:
+    """Send a tool call event to the client.
+
+    Args:
+        session_id: Target session identifier
+        data: Event data payload
+    """
     await manager.send_personal_message(
         ToolCallEvent(type="tool_call", data=data),
         session_id
     )
 
 
-async def send_tool_result_event(session_id: str, data: dict[str, Any]):
-    """Send a tool result event to the client."""
+async def send_tool_result_event(session_id: str, data: dict[str, Any]) -> None:
+    """Send a tool result event to the client.
+
+    Args:
+        session_id: Target session identifier
+        data: Event data payload
+    """
     await manager.send_personal_message(
         ToolResultEvent(type="tool_result", data=data),
         session_id
     )
 
 
-async def send_approval_required_event(session_id: str, data: dict[str, Any]):
-    """Send an approval required event to the client."""
+async def send_approval_required_event(session_id: str, data: dict[str, Any]) -> None:
+    """Send an approval required event to the client.
+
+    Args:
+        session_id: Target session identifier
+        data: Event data payload
+    """
     await manager.send_personal_message(
         ApprovalRequiredEvent(type="approval_required", data=data),
         session_id
     )
 
 
-async def send_complete_event(session_id: str, data: dict[str, Any]):
-    """Send a complete event to the client."""
+async def send_complete_event(session_id: str, data: dict[str, Any]) -> None:
+    """Send a complete event to the client.
+
+    Args:
+        session_id: Target session identifier
+        data: Event data payload
+    """
     await manager.send_personal_message(
         CompleteEvent(type="complete", data=data),
         session_id
     )
 
 
-async def send_error_event(session_id: str, data: dict[str, Any]):
-    """Send an error event to the client."""
+async def send_error_event(session_id: str, data: dict[str, Any]) -> None:
+    """Send an error event to the client.
+
+    Args:
+        session_id: Target session identifier
+        data: Event data payload
+    """
     await manager.send_personal_message(
         ErrorEvent(type="error", data=data),
         session_id
     )
 
 
-async def send_subagent_start_event(session_id: str, data: dict[str, Any]):
-    """Send a subagent start event to the client."""
+async def send_subagent_start_event(session_id: str, data: dict[str, Any]) -> None:
+    """Send a subagent start event to the client.
+
+    Args:
+        session_id: Target session identifier
+        data: Event data payload
+    """
     await manager.send_personal_message(
         SubagentStartEvent(type="subagent_start", data=data),
         session_id
     )
 
 
-async def send_subagent_end_event(session_id: str, data: dict[str, Any]):
-    """Send a subagent end event to the client."""
+async def send_subagent_end_event(session_id: str, data: dict[str, Any]) -> None:
+    """Send a subagent end event to the client.
+
+    Args:
+        session_id: Target session identifier
+        data: Event data payload
+    """
     await manager.send_personal_message(
         SubagentEndEvent(type="subagent_end", data=data),
         session_id

@@ -414,12 +414,16 @@ async def execute_approved_payment(
 class PaymentStatusResponse(BaseModel):
     """Response for payment status check."""
 
-    tx_hash: str
+    txHash: str
     confirmed: bool
     failed: bool
-    block_number: int | None = None
+    blockNumber: int | None = None
     timestamp: str | None = None
     error: str | None = None
+
+    model_config = {
+        "populate_by_name": True,
+    }
 
 
 @router.get(
@@ -459,15 +463,15 @@ async def get_payment_status(
         # Map our status to workflow status
         if status == "confirmed":
             return PaymentStatusResponse(
-                tx_hash=tx_hash,
+                txHash=tx_hash,
                 confirmed=True,
                 failed=False,
-                block_number=payment.get("block_number", 12345),  # Mock
+                blockNumber=payment.get("block_number", 12345),  # Mock
                 timestamp=payment.get("created_at"),
             )
         elif status == "failed":
             return PaymentStatusResponse(
-                tx_hash=tx_hash,
+                txHash=tx_hash,
                 confirmed=False,
                 failed=True,
                 error=payment.get("error_message", "Payment failed"),
@@ -475,7 +479,7 @@ async def get_payment_status(
             )
         else:  # pending
             return PaymentStatusResponse(
-                tx_hash=tx_hash,
+                txHash=tx_hash,
                 confirmed=False,
                 failed=False,
                 timestamp=payment.get("created_at"),
@@ -493,22 +497,22 @@ async def get_payment_status(
         last_char = tx_hash[-1]
         if last_char in '02468ace':
             return PaymentStatusResponse(
-                tx_hash=tx_hash,
+                txHash=tx_hash,
                 confirmed=True,
                 failed=False,
-                block_number=12345,
+                blockNumber=12345,
                 timestamp=datetime.utcnow().isoformat(),
             )
         elif last_char in '13579bdf':
             return PaymentStatusResponse(
-                tx_hash=tx_hash,
+                txHash=tx_hash,
                 confirmed=False,
                 failed=False,
                 timestamp=datetime.utcnow().isoformat(),
             )
         else:
             return PaymentStatusResponse(
-                tx_hash=tx_hash,
+                txHash=tx_hash,
                 confirmed=False,
                 failed=True,
                 error="Transaction not found",
@@ -516,7 +520,7 @@ async def get_payment_status(
     except Exception as e:
         logger.error(f"Error checking payment status: {e}")
         return PaymentStatusResponse(
-            tx_hash=tx_hash,
+            txHash=tx_hash,
             confirmed=False,
             failed=True,
             error=str(e),
@@ -560,12 +564,28 @@ class SubscriptionProgressRequest(BaseModel):
     renewal_count: int
     next_renewal_date: str
 
+    model_config = {
+        "populate_by_name": True,
+        "alias_generator": lambda s: "".join(
+            word.capitalize() if i > 0 else word
+            for i, word in enumerate(s.split("_"))
+        ),
+    }
+
 
 class SubscriptionSuccessRequest(BaseModel):
     """Request to mark renewal as successful."""
 
     tx_hash: str
     renewal_date: str
+
+    model_config = {
+        "populate_by_name": True,
+        "alias_generator": lambda s: "".join(
+            word.capitalize() if i > 0 else word
+            for i, word in enumerate(s.split("_"))
+        ),
+    }
 
 
 class SubscriptionResponse(BaseModel):

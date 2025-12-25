@@ -33,6 +33,14 @@ class Settings(BaseSettings):
     @field_validator("cors_origins", mode="before")
     @classmethod
     def parse_cors_origins(cls, v: str | list[str]) -> list[str]:
+        """Parse CORS origins from string or list.
+
+        Args:
+            v: CORS origins as string (comma-separated) or list
+
+        Returns:
+            list[str]: List of CORS origin URLs
+        """
         if isinstance(v, str):
             if not v.strip():
                 return ["http://localhost:3000", "http://localhost:8000"]

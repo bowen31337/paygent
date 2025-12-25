@@ -346,6 +346,10 @@ class EIP712SignRequest(BaseModel):
     primaryType: str
     message: dict[str, Any]
 
+    model_config = {
+        "populate_by_name": True,
+    }
+
 
 class EIP712SignResponse(BaseModel):
     """Response from EIP-712 signature generation."""

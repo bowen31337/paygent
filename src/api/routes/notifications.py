@@ -26,13 +26,25 @@ class RenewalFailureRequest(BaseModel):
     error: str = Field(..., description="Error message")
     timestamp: str = Field(..., description="ISO timestamp of failure")
 
+    model_config = {
+        "populate_by_name": True,
+        "alias_generator": lambda s: "".join(
+            word.capitalize() if i > 0 else word
+            for i, word in enumerate(s.split("_"))
+        ),
+    }
+
 
 class RenewalFailureResponse(BaseModel):
     """Response for renewal failure notification."""
 
     success: bool
     message: str
-    subscription_id: str
+    subscriptionId: str
+
+    model_config = {
+        "populate_by_name": True,
+    }
 
 
 class NotificationResponse(BaseModel):
@@ -88,7 +100,7 @@ async def send_renewal_failure_notification(
         return RenewalFailureResponse(
             success=True,
             message="Renewal failure notification sent successfully",
-            subscription_id=request.subscription_id,
+            subscriptionId=request.subscription_id,
         )
 
     except Exception as e:

@@ -391,8 +391,25 @@ def track_performance(operation_name: str | None = None):
         async def my_function():
             pass
     """
-    def decorator(func):
-        async def wrapper(*args, **kwargs):
+    def decorator(func):  # noqa: D417
+        """Wrap a function with performance tracking.
+
+        Args:
+            func: Async function to track
+
+        Returns:
+            Callable: Tracked function wrapper
+        """
+        async def wrapper(*args, **kwargs):  # noqa: D417
+            """Execute function with performance tracking.
+
+            Args:
+                *args: Function arguments
+                **kwargs: Function keyword arguments
+
+            Returns:
+                Any: Function result
+            """
             op_name = operation_name or f"{func.__module__}.{func.__name__}"
             with time_operation(op_name):
                 return await func(*args, **kwargs)

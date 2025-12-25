@@ -85,9 +85,24 @@ performance_optimizer = PerformanceOptimizer()
 def performance_monitor(func: Callable) -> Callable:
     """
     Decorator to monitor API endpoint performance.
+
+    Args:
+        func: Function to monitor
+
+    Returns:
+        Callable: Monitored function wrapper
     """
     @wraps(func)
-    async def wrapper(*args, **kwargs):
+    async def wrapper(*args, **kwargs):  # noqa: D417
+        """Execute function with performance monitoring.
+
+        Args:
+            *args: Function arguments
+            **kwargs: Function keyword arguments
+
+        Returns:
+            Any: Function result
+        """
         start_time = time.time()
         endpoint = getattr(func, '__name__', 'unknown')
 
@@ -104,8 +119,22 @@ def performance_monitor(func: Callable) -> Callable:
 def fast_cache(ttl: int = 60):
     """
     Decorator for fast caching with optimized TTL for performance.
+
+    Args:
+        ttl: Time to live in seconds (default: 60)
+
+    Returns:
+        Callable: Decorator function
     """
     def decorator(func: Callable) -> Callable:
+        """Apply fast caching to a function.
+
+        Args:
+            func: Function to cache
+
+        Returns:
+            Callable: Cached function
+        """
         return cache_result(ttl=ttl)(func)
     return decorator
 
@@ -116,10 +145,25 @@ async def bulk_operation_executor(
 ) -> list[Any]:
     """
     Execute multiple operations concurrently with rate limiting.
+
+    Args:
+        operations: List of async callables to execute
+        max_concurrent: Maximum concurrent operations
+
+    Returns:
+        list[Any]: List of results
     """
     semaphore = asyncio.Semaphore(max_concurrent)
 
     async def execute_with_semaphore(op: Callable):
+        """Execute a single operation with semaphore.
+
+        Args:
+            op: Operation to execute
+
+        Returns:
+            Any: Operation result
+        """
         async with semaphore:
             return await op()
 

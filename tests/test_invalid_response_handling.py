@@ -30,6 +30,8 @@ class TestInvalidResponseHandling:
         mock_response.status_code = 200
         mock_response.headers = {"content-type": "application/json"}
         mock_response.text = "{invalid json data"
+        mock_response.content = b"{invalid json data"
+        mock_response.json.side_effect = json.JSONDecodeError("Expecting value", "{invalid json data", 0)
 
         # Mock the client.get to return invalid JSON
         with patch.object(x402_service.client, 'get', return_value=mock_response):
@@ -198,11 +200,14 @@ class TestInvalidResponseHandling:
         invalid_response.status_code = 200
         invalid_response.headers = {"content-type": "application/json"}
         invalid_response.text = "{invalid json}"
+        invalid_response.content = b"{invalid json}"
+        invalid_response.json.side_effect = json.JSONDecodeError("Expecting value", "{invalid json}", 0)
 
         valid_response = MagicMock(spec=Response)
         valid_response.status_code = 200
         valid_response.headers = {"content-type": "application/json"}
         valid_response.text = '{"status": "success"}'
+        valid_response.content = b'{"status": "success"}'
         valid_response.json.return_value = {"status": "success"}
 
         # Mock the client.get to fail first, succeed second
