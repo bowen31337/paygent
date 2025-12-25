@@ -306,7 +306,12 @@ class AgentExecutorEnhanced:
 
             try:
                 # Execute with timeout
-                async def execute_with_timeout():
+                async def execute_with_timeout() -> dict[str, Any]:
+                    """Execute the parsed command with appropriate handler.
+
+                    Returns:
+                        dict[str, Any]: Execution result with success status and data
+                    """
                     if parsed.intent == "payment":
                         return await self._execute_payment_with_logging(
                             parsed, budget_limit_usd

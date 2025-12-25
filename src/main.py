@@ -33,9 +33,15 @@ logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):  # noqa: ARG001
+async def lifespan(app: FastAPI) -> None:  # noqa: ARG001
     """
     Application lifespan handler for startup and shutdown events.
+
+    Args:
+        app: The FastAPI application instance
+
+    Yields:
+        None: Control back to FastAPI after startup
     """
     # Startup
     logger.info(f"Starting {settings.app_name} v{settings.app_version}")

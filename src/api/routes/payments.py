@@ -36,6 +36,24 @@ class PaymentInfo(BaseModel):
     status: str = Field(..., description="pending, confirmed, or failed")
     created_at: str
 
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "id": "123e4567-e89b-12d3-a456-426614174000",
+                    "agent_wallet": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+                    "service_id": "123e4567-e89b-12d3-a456-426614174001",
+                    "recipient": "https://api.example.com/service",
+                    "amount": 10.0,
+                    "token": "USDC",
+                    "tx_hash": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+                    "status": "confirmed",
+                    "created_at": "2025-01-15T10:30:00Z"
+                }
+            ]
+        }
+    }
+
 
 class PaymentListResponse(BaseModel):
     """Response for listing payments."""
@@ -64,6 +82,19 @@ class ExecuteX402Request(BaseModel):
     amount: float = Field(..., gt=0, description="Amount to pay")
     token: str = Field(..., description="Token address for payment")
     service_id: UUID | None = Field(default=None, description="Service ID for reputation tracking")
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "service_url": "https://api.marketdata.example.com/v1/price",
+                    "amount": 0.50,
+                    "token": "USDC",
+                    "service_id": "123e4567-e89b-12d3-a456-426614174000"
+                }
+            ]
+        }
+    }
 
 
 class ExecuteX402Response(BaseModel):
@@ -503,6 +534,23 @@ class SubscriptionInfo(BaseModel):
     renewal_interval: int  # days
     next_renewal_date: str
     status: str = Field(..., description="active, paused, or cancelled")
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "id": "sub-123",
+                    "user_id": "user-456",
+                    "service_id": "https://api.example.com",
+                    "amount": "10.0",
+                    "token": "USDC",
+                    "renewal_interval": 30,
+                    "next_renewal_date": "2025-02-15T00:00:00Z",
+                    "status": "active"
+                }
+            ]
+        }
+    }
 
 
 class SubscriptionProgressRequest(BaseModel):

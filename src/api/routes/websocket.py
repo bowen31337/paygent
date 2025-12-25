@@ -57,8 +57,14 @@ class ConnectionManager:
         self.user_sessions: dict[str, str] = {}  # user_id -> session_id
         self.execution_tasks: dict[str, asyncio.Task] = {}  # session_id -> task
 
-    async def connect(self, websocket: WebSocket, session_id: str, user_id: str):
-        """Connect a new WebSocket client."""
+    async def connect(self, websocket: WebSocket, session_id: str, user_id: str) -> None:
+        """Connect a new WebSocket client.
+
+        Args:
+            websocket: The WebSocket connection
+            session_id: Unique session identifier
+            user_id: User identifier
+        """
         await websocket.accept()
         self.active_connections[session_id] = websocket
         self.user_sessions[user_id] = session_id
@@ -66,8 +72,13 @@ class ConnectionManager:
         metrics_collector.record_websocket_connection()
         logger.info(f"WebSocket connected for session {session_id}, user {user_id}")
 
-    def disconnect(self, session_id: str, user_id: str):
-        """Disconnect a WebSocket client."""
+    def disconnect(self, session_id: str, user_id: str) -> None:
+        """Disconnect a WebSocket client.
+
+        Args:
+            session_id: Unique session identifier
+            user_id: User identifier
+        """
         if session_id in self.active_connections:
             del self.active_connections[session_id]
         if user_id in self.user_sessions:
@@ -80,8 +91,13 @@ class ConnectionManager:
             del self.execution_tasks[session_id]
         logger.info(f"WebSocket disconnected for session {session_id}, user {user_id}")
 
-    async def send_personal_message(self, message: dict[str, Any] | BaseModel, session_id: str):
-        """Send a message to a specific client."""
+    async def send_personal_message(self, message: dict[str, Any] | BaseModel, session_id: str) -> None:
+        """Send a message to a specific client.
+
+        Args:
+            message: Message to send (dict or BaseModel)
+            session_id: Target session identifier
+        """
         if session_id in self.active_connections:
             websocket = self.active_connections[session_id]
             try:
@@ -100,8 +116,12 @@ class ConnectionManager:
                 # Remove broken connection
                 self.disconnect(session_id, self.get_user_id_by_session(session_id))
 
-    async def broadcast(self, message: dict[str, Any] | BaseModel):
-        """Broadcast a message to all connected clients."""
+    async def broadcast(self, message: dict[str, Any] | BaseModel) -> None:
+        """Broadcast a message to all connected clients.
+
+        Args:
+            message: Message to broadcast (dict or BaseModel)
+        """
         # Convert to dict if needed
         if isinstance(message, BaseModel):
             message_dict = message.model_dump(mode='json')
@@ -128,8 +148,13 @@ class ConnectionManager:
                 return user_id
         return None
 
-    def register_execution_task(self, session_id: str, task: asyncio.Task):
-        """Register an active execution task for a session."""
+    def register_execution_task(self, session_id: str, task: asyncio.Task) -> None:
+        """Register an active execution task for a session.
+
+        Args:
+            session_id: Session identifier
+            task: Asyncio task to register
+        """
         self.execution_tasks[session_id] = task
 
     def get_execution_task(self, session_id: str) -> asyncio.Task | None:
@@ -145,7 +170,7 @@ async def websocket_endpoint(
     websocket: WebSocket,
     session_id: str,
     token: str | None = None
-):
+) -> None:
     """
     WebSocket endpoint for real-time agent execution and HITL workflows.
 
@@ -266,8 +291,16 @@ async def handle_websocket_message(
     session_id: str,
     user_id: str,
     db: AsyncSession
-):
-    """Handle incoming WebSocket messages based on type."""
+) -> None:
+    """Handle incoming WebSocket messages based on type.
+
+    Args:
+        websocket: WebSocket connection
+        message: Parsed WebSocket message
+        session_id: Session identifier
+        user_id: User identifier
+        db: Database session
+    """
     message_type = message.type
 
     if message_type == "execute":
@@ -296,8 +329,15 @@ async def handle_execute_message(
     session_id: str,
     user_id: str,
     db: AsyncSession
-):
-    """Handle execute command message with streaming events."""
+) -> None:
+    """Handle execute command message with streaming events.
+
+    Args:
+        message: WebSocket message containing execute command
+        session_id: Session identifier
+        user_id: User identifier
+        db: Database session
+    """
     execute_msg = ExecuteMessage.parse_obj(message.data)
 
     # Create execution log entry
@@ -423,8 +463,15 @@ async def handle_approve_message(
     session_id: str,
     user_id: str,
     db: AsyncSession
-):
-    """Handle approval message for pending requests."""
+) -> None:
+    """Handle approval message for pending requests.
+
+    Args:
+        message: WebSocket message containing approval
+        session_id: Session identifier
+        user_id: User identifier
+        db: Database session
+    """
     approve_msg = ApproveMessage.parse_obj(message.data)
 
     approval_service = ApprovalService(db)
@@ -469,8 +516,15 @@ async def handle_reject_message(
     session_id: str,
     user_id: str,
     db: AsyncSession
-):
-    """Handle rejection message for pending requests."""
+) -> None:
+    """Handle rejection message for pending requests.
+
+    Args:
+        message: WebSocket message containing rejection
+        session_id: Session identifier
+        user_id: User identifier
+        db: Database session
+    """
     reject_msg = RejectMessage.parse_obj(message.data)
 
     approval_service = ApprovalService(db)
@@ -515,8 +569,15 @@ async def handle_edit_message(
     session_id: str,
     user_id: str,
     db: AsyncSession
-):
-    """Handle edit and approve message for pending requests."""
+) -> None:
+    """Handle edit and approve message for pending requests.
+
+    Args:
+        message: WebSocket message containing edit
+        session_id: Session identifier
+        user_id: User identifier
+        db: Database session
+    """
     edit_msg = EditMessage.parse_obj(message.data)
 
     approval_service = ApprovalService(db)
@@ -568,8 +629,15 @@ async def handle_cancel_message(
     session_id: str,
     user_id: str,
     db: AsyncSession
-):
-    """Handle cancellation message for ongoing execution."""
+) -> None:
+    """Handle cancellation message for ongoing execution.
+
+    Args:
+        message: WebSocket message containing cancellation
+        session_id: Session identifier
+        user_id: User identifier
+        db: Database session
+    """
     cancel_msg = CancelMessage.parse_obj(message.data)
 
     try:

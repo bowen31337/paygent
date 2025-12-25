@@ -6,6 +6,7 @@ payment execution, EIP-712 signature generation, and facilitator integration.
 """
 
 import asyncio
+import json
 import logging
 from typing import Any
 
@@ -27,6 +28,31 @@ class X402PaymentService:
         self.client = AsyncClient(timeout=30.0)
         self.retry_attempts = 3
         self.retry_delay = 1.0
+
+    def _safe_parse_json(self, response: Response) -> dict[str, Any] | None:
+        """
+        Safely parse JSON from HTTP response with error handling.
+
+        Args:
+            response: HTTP response object
+
+        Returns:
+            Parsed JSON dict or None if parsing fails
+        """
+        try:
+            if not response.content:
+                logger.warning("Empty response body received")
+                return None
+
+            data = response.json()
+            return data
+        except json.JSONDecodeError as e:
+            logger.warning(f"Invalid JSON in response: {e}")
+            logger.debug(f"Response content (first 200 chars): {response.text[:200]}")
+            return None
+        except Exception as e:
+            logger.warning(f"Failed to parse response JSON: {e}")
+            return None
 
     async def execute_payment(
         self,
@@ -148,22 +174,53 @@ class X402PaymentService:
                             continue  # Retry if payment failed
 
                     elif response.status_code == 200:
-                        # No payment required
+                        # No payment required - safely parse response
+                        response_data = self._safe_parse_json(response)
+                        if response_data is None and response.content:
+                            # JSON parsing failed but there's content
+                            logger.warning("Response data could not be parsed as JSON")
+                            return {
+                                "success": False,
+                                "error": "invalid_response_format",
+                                "message": "Service returned an invalid response format. Please contact support.",
+                            }
+
                         return {
                             "success": True,
                             "payment_id": None,
                             "tx_hash": None,
                             "status": "no_payment_required",
                             "message": "Service does not require payment",
-                            "data": response.json() if response.content else None,
+                            "data": response_data,
+                        }
+
+                    elif response.status_code == 429:
+                        # Rate limit exceeded
+                        retry_after = response.headers.get("Retry-After", "60")
+                        return {
+                            "success": False,
+                            "error": "rate_limited",
+                            "message": f"Service rate limit exceeded. Please try again in {retry_after} seconds.",
+                        }
+
+                    elif response.status_code >= 500:
+                        # Server errors - these might be temporary
+                        error_data = self._safe_parse_json(response)
+                        error_msg = error_data.get("error", "Service error") if error_data else "Service error"
+                        return {
+                            "success": False,
+                            "error": f"HTTP {response.status_code}",
+                            "message": f"Service is currently unavailable ({response.status_code}). Please try again later. Error: {error_msg}",
                         }
 
                     else:
                         # Other HTTP errors
+                        error_data = self._safe_parse_json(response)
+                        error_msg = error_data.get("error", "Unknown error") if error_data else "Unknown error"
                         return {
                             "success": False,
                             "error": f"HTTP {response.status_code}",
-                            "message": f"Service returned error: {response.status_code}",
+                            "message": f"Service returned error: {response.status_code} - {error_msg}",
                         }
 
                 except HttpxTimeoutException as e:

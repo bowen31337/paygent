@@ -214,7 +214,8 @@ class TestTimeoutConfiguration:
         """Test that x402 service has configurable timeout."""
         service = X402PaymentService()
         # Verify timeout is configured (30 seconds by default)
-        assert service.client.timeout == 30.0
+        # httpx.Timeout object is returned, check the read timeout
+        assert service.client.timeout.read == 30.0
 
     @pytest.mark.asyncio
     async def test_custom_timeout_in_service(self):
@@ -222,10 +223,10 @@ class TestTimeoutConfiguration:
         # This would be tested if custom timeout configuration is added
         # For now, verify default is reasonable
         service = X402PaymentService()
-        assert 1.0 <= service.client.timeout <= 60.0  # Between 1 second and 1 minute
+        assert 1.0 <= service.client.timeout.read <= 60.0  # Between 1 second and 1 minute
 
     def test_mcp_client_timeout_configuration(self):
         """Test that MCP client has configurable timeout."""
         client = MCPServerClient()
         # Verify timeout is configured (30 seconds by default)
-        assert client.session.timeout == 30.0
+        assert client.session.timeout.read == 30.0

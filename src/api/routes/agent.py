@@ -213,8 +213,10 @@ async def execute_command_stream(
     )
 
     async def event_generator():
-        """
-        Generator function that yields Server-Sent Events.
+        """Generator function that yields Server-Sent Events.
+
+        Yields:
+            str: Server-Sent Event formatted string
         """
         try:
             # Event 1: Thinking
