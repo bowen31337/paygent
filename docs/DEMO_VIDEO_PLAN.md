@@ -2,9 +2,10 @@
 
 ## 🎬 Video Overview
 
-**Duration:** 3-5 minutes (optimal for hackathon attention spans)  
+**Duration:** 4.5-6 minutes (expanded to cover full DeFi protocol suite)  
 **Format:** Screen recording with voiceover + chatbot interface  
-**Key Differentiator:** Full ReAct cycle with chain-of-thought + testnet transaction logs
+**Environment:** 🟢 **Cronos Testnet** (real blockchain, test tokens)  
+**Key Differentiator:** Full ReAct cycle with chain-of-thought + live testnet transaction logs
 
 ---
 
@@ -59,7 +60,44 @@ The demo will showcase the complete **ReAct (Reasoning + Acting)** cycle to demo
 
 ---
 
-## 📹 Recording Setup Recommendations
+## � Live Demo: Cronos Testnet Configuration
+
+> **All live demo transactions will be executed on Cronos Testnet to showcase real blockchain interactions without risking real funds.**
+
+### Testnet Prerequisites
+
+| Requirement | Details |
+|-------------|---------|
+| **Network** | Cronos Testnet (Chain ID: 338) |
+| **RPC URL** | `https://evm-t3.cronos.org` |
+| **Block Explorer** | `https://explorer.cronos.org/testnet` |
+| **Faucet (CRO)** | https://cronos.org/faucet |
+| **Faucet (devUSDC.e)** | https://faucet.cronos.org |
+
+### Agent Wallet Setup
+```bash
+# Environment variables required for live demo
+NETWORK=cronos-testnet
+AGENT_WALLET_PRIVATE_KEY=<testnet-wallet-private-key>
+CRONOS_TESTNET_RPC=https://evm-t3.cronos.org
+```
+
+### Pre-Demo Checklist
+- [ ] Agent wallet funded with testnet CRO (for gas)
+- [ ] Agent wallet funded with devUSDC.e (for x402 payments)
+- [ ] VVS Finance testnet contracts accessible
+- [ ] x402 Facilitator testnet endpoint configured
+- [ ] Backend API running on port 8000
+- [ ] Demo UI running on port 3000/5173
+
+### Demo Mode vs Live Mode Toggle
+The demo UI supports both modes:
+- **📺 Demo Mode**: Pre-recorded scenarios with mock data (for offline demos)
+- **🔴 Live Mode**: Real testnet transactions with actual blockchain confirmation
+
+---
+
+## �📹 Recording Setup Recommendations
 
 ### Split Screen Layout (Recommended)
 ```
@@ -89,7 +127,38 @@ The demo will showcase the complete **ReAct (Reasoning + Acting)** cycle to demo
 
 ---
 
-## 🎯 Demo Scenarios (5 Key Features)
+## 🎯 Demo Scenarios (9 Scenes)
+
+### Video Scene Summary
+
+| Scene | Name | Duration | 📺 Demo Mode | 🔴 Live Mode |
+|-------|------|----------|-------------|--------------|
+| 1 | Introduction | 30s | ✅ | — |
+| 2 | x402 Payment + ReAct | 75s | ✅ | ✅ |
+| 3 | VVS Swap + HITL | 90s | ✅ | ✅ |
+| 4 | Error Recovery | 60s | ✅ | ⚠️ Simulated |
+| 5 | MCP Service Discovery | 45s | ✅ | ⚠️ Mock |
+| 6 | Multi-Step Subagents | 60s | ✅ | ⚠️ Mock |
+| 7 | Moonlander Perpetuals | 45s | ✅ | ⚠️ Mock |
+| 8 | Delphi Predictions | 45s | ✅ | ⚠️ Mock |
+| 9 | Conclusion | 30s | ✅ | — |
+
+**Total Duration:** ~8 minutes (can compress to 5-6 min by shortening pauses)
+
+### Live Testnet Transactions Available
+
+The following scenarios will execute **real transactions on Cronos Testnet**:
+
+| Scenario | Testnet Contracts Used | Expected TX |
+|----------|----------------------|-------------|
+| **x402 Payment** | devUSDC.e, x402 Facilitator | ERC-20 transfer |
+| **VVS Swap** | VVS Router, Token pairs | Swap via Router |
+| **Balance Check** | Agent wallet | Read-only |
+| **VVS Quote** | VVS Router | Read-only |
+
+> **Note:** Moonlander and Delphi scenarios use mock data in the current implementation as testnet contracts for these protocols are not yet available.
+
+---
 
 ### Scene 1: Introduction (30 seconds)
 **Visual:** Paygent logo + architecture diagram  
@@ -97,7 +166,7 @@ The demo will showcase the complete **ReAct (Reasoning + Acting)** cycle to demo
 > "Paygent is the first AI-native payment orchestration platform for Cronos. 
 > It enables AI agents to autonomously discover, negotiate, and execute payments 
 > using the x402 protocol. Watch how our agent reasons, plans, acts, and reflects 
-> through each task."
+> through each task—all on Cronos Testnet with real blockchain transactions."
 
 ---
 
@@ -557,14 +626,181 @@ The demo will showcase the complete **ReAct (Reasoning + Acting)** cycle to demo
 ```
 
 **Display highlights:**
-- `write_todos` breakdown with 7+ steps
+- `write_todos` breakdown with 8 steps
 - Subagent spawning (VVS-Trader, Moonlander-Trader, Research-Agent)
 - Parallel execution visualization
+- HITL approval for investment
 - Final reflection with investment summary
 
 ---
 
-### Scene 7: Conclusion (30 seconds)
+### Scene 7: Moonlander Perpetual Trading (45 seconds)
+**User Input:**
+```
+"Open a 5x long position on CRO/USD with $100 and set a 5% stop-loss"
+```
+
+**Full ReAct Display:**
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│  🤔 REASONING                                                         │
+│  ┌─────────────────────────────────────────────────────────────────┐ │
+│  │ User wants a leveraged perpetual position on Moonlander.        │ │
+│  │                                                                  │ │
+│  │ Analysis:                                                        │ │
+│  │ • Position: 5x Long CRO-PERP                                    │ │
+│  │ • Collateral: $100 USD → Effective exposure: $500               │ │
+│  │ • Risk management: 5% stop-loss required                        │ │
+│  │                                                                  │ │
+│  │ This is high-risk. I'll verify price via Crypto.com MCP,        │ │
+│  │ calculate liquidation price, and require HITL approval.         │ │
+│  └─────────────────────────────────────────────────────────────────┘ │
+│                                                                       │
+│  ⚡ ACTION                                                            │
+│  ┌─────────────────────────────────────────────────────────────────┐ │
+│  │ Tool: crypto_com_mcp.get_price                                   │ │
+│  │ Args: { symbol: "CRO/USD", source: "Crypto.com Market Data" }   │ │
+│  └─────────────────────────────────────────────────────────────────┘ │
+│                                                                       │
+│  👁️ OBSERVATION                                                       │
+│  ┌─────────────────────────────────────────────────────────────────┐ │
+│  │ CRO/USD: $0.2345 (+2.4% 24h) - Source: Crypto.com MCP           │ │
+│  └─────────────────────────────────────────────────────────────────┘ │
+│                                                                       │
+│  ⚡ ACTION                                                            │
+│  ┌─────────────────────────────────────────────────────────────────┐ │
+│  │ Tool: moonlander_connector.get_market_info                       │ │
+│  │ Args: { market: "CRO-PERP" }                                     │ │
+│  └─────────────────────────────────────────────────────────────────┘ │
+│                                                                       │
+│  👁️ OBSERVATION                                                       │
+│  ┌─────────────────────────────────────────────────────────────────┐ │
+│  │ Funding Rate: +0.01% / 8h | Open Interest: $2.4M                │ │
+│  │ Mark Price: $0.2344 | Index Price: $0.2345                      │ │
+│  └─────────────────────────────────────────────────────────────────┘ │
+│                                                                       │
+│  ┌─────────────────────────────────────────────────────────────────┐ │
+│  │  🚨 HUMAN APPROVAL REQUIRED                                     │ │
+│  │  ═══════════════════════════════════════════════════════════   │ │
+│  │                                                                  │ │
+│  │  Action: Moonlander Perpetual Long Position                     │ │
+│  │                                                                  │ │
+│  │  ┌─────────────────────────────────────────────────────────┐   │ │
+│  │  │  Position:       5x LONG CRO-PERP                        │   │ │
+│  │  │  Collateral:     $100 USDC                               │   │ │
+│  │  │  Effective Size: $500 (2,131 CRO)                        │   │ │
+│  │  │  Entry Price:    $0.2345                                 │   │ │
+│  │  │  Stop-Loss:      $0.2228 (-5%)                           │   │ │
+│  │  │  Liquidation:    $0.1989 (-15.2%)                        │   │ │
+│  │  └─────────────────────────────────────────────────────────┘   │ │
+│  │                                                                  │ │
+│  │  Reason: Leveraged positions require approval.                  │ │
+│  │                                                                  │ │
+│  │  [✅ Approve]    [✏️ Edit]    [❌ Reject]                        │ │
+│  │                                                                  │ │
+│  └─────────────────────────────────────────────────────────────────┘ │
+│                                                                       │
+│  🔄 REFLECTION                                                        │
+│  ┌─────────────────────────────────────────────────────────────────┐ │
+│  │ ✅ Position opened successfully                                  │ │
+│  │ • 5x Long CRO-PERP @ $0.2345                                     │ │
+│  │ • Stop-loss set at $0.2228                                       │ │
+│  │ • Liquidation price: $0.1989                                     │ │
+│  └─────────────────────────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+**Narration:**
+> "Paygent integrates with Moonlander for perpetual trading. The agent uses 
+> Crypto.com MCP for real-time price data, calculates risk metrics including 
+> liquidation price, and requires human approval before opening leveraged positions."
+
+---
+
+### Scene 8: Delphi Prediction Market (45 seconds)
+**User Input:**
+```
+"Place a $25 prediction on BTC reaching $100k by end of January"
+```
+
+**Full ReAct Display:**
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│  🤔 REASONING                                                         │
+│  ┌─────────────────────────────────────────────────────────────────┐ │
+│  │ User wants to participate in a prediction market on Delphi.     │ │
+│  │                                                                  │ │
+│  │ Analysis:                                                        │ │
+│  │ • Prediction: BTC reaches $100k by January 31                   │ │
+│  │ • Stake: $25 USDC                                                │ │
+│  │ • Protocol: Delphi prediction markets on Cronos                 │ │
+│  │                                                                  │ │
+│  │ I'll check current BTC price via Crypto.com MCP, find the       │ │
+│  │ matching market on Delphi, and present for approval.            │ │
+│  └─────────────────────────────────────────────────────────────────┘ │
+│                                                                       │
+│  ⚡ ACTION                                                            │
+│  ┌─────────────────────────────────────────────────────────────────┐ │
+│  │ Tool: crypto_com_mcp.get_price                                   │ │
+│  │ Args: { symbol: "BTC/USD" }                                      │ │
+│  └─────────────────────────────────────────────────────────────────┘ │
+│                                                                       │
+│  👁️ OBSERVATION                                                       │
+│  ┌─────────────────────────────────────────────────────────────────┐ │
+│  │ BTC/USD: $94,250 (+1.2% 24h) - Source: Crypto.com MCP           │ │
+│  └─────────────────────────────────────────────────────────────────┘ │
+│                                                                       │
+│  ⚡ ACTION                                                            │
+│  ┌─────────────────────────────────────────────────────────────────┐ │
+│  │ Tool: delphi_connector.get_markets                               │ │
+│  │ Args: { query: "BTC 100k January", category: "crypto" }         │ │
+│  └─────────────────────────────────────────────────────────────────┘ │
+│                                                                       │
+│  👁️ OBSERVATION                                                       │
+│  ┌─────────────────────────────────────────────────────────────────┐ │
+│  │ Market: Will BTC reach $100k by Jan 31, 2026?                   │ │
+│  │ YES Odds: 65% | NO Odds: 35% | Volume: $45,230                  │ │
+│  └─────────────────────────────────────────────────────────────────┘ │
+│                                                                       │
+│  ┌─────────────────────────────────────────────────────────────────┐ │
+│  │  🚨 HUMAN APPROVAL REQUIRED                                     │ │
+│  │  ═══════════════════════════════════════════════════════════   │ │
+│  │                                                                  │ │
+│  │  Action: Delphi Prediction Market                                │ │
+│  │                                                                  │ │
+│  │  ┌─────────────────────────────────────────────────────────┐   │ │
+│  │  │  Market:         BTC reaches $100k by Jan 31            │   │ │
+│  │  │  Your Prediction: YES                                    │   │ │
+│  │  │  Stake:          $25 USDC                                │   │ │
+│  │  │  Current Odds:   65%                                     │   │ │
+│  │  │  Potential Payout: $38.46 (1.54x)                        │   │ │
+│  │  │  Current BTC:    $94,250 (+6.1% to target)              │   │ │
+│  │  └─────────────────────────────────────────────────────────┘   │ │
+│  │                                                                  │ │
+│  │  Reason: Prediction markets are speculative.                    │ │
+│  │                                                                  │ │
+│  │  [✅ Approve]    [❌ Reject]                                      │ │
+│  │                                                                  │ │
+│  └─────────────────────────────────────────────────────────────────┘ │
+│                                                                       │
+│  🔄 REFLECTION                                                        │
+│  ┌─────────────────────────────────────────────────────────────────┐ │
+│  │ ✅ Prediction placed successfully                                │ │
+│  │ • Market: BTC $100k by Jan 31                                    │ │
+│  │ • Shares: 38.46 YES @ $0.65 each                                │ │
+│  │ • Max payout: $38.46 if correct                                  │ │
+│  └─────────────────────────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+**Narration:**
+> "Delphi integration enables prediction market participation. The agent 
+> queries current prices via Crypto.com MCP, finds matching markets, 
+> calculates potential payouts, and requires approval before placing bets."
+
+---
+
+### Scene 9: Conclusion (30 seconds)
 **Visual:** Summary slide
 
 ```
@@ -577,6 +813,9 @@ The demo will showcase the complete **ReAct (Reasoning + Acting)** cycle to demo
 │  ✅ Observation  - Result processing and validation             │
 │  ✅ Reflection   - Self-evaluation and success metrics          │
 │  ✅ Feedback     - Error recovery and adaptive retry            │
+│                                                                  │
+│  DeFi Protocols: VVS Finance │ Moonlander │ Delphi              │
+│  Data Source: Crypto.com Market Data MCP                        │
 │                                                                  │
 │  Built on: deepagents + x402 + Crypto.com Ecosystem             │
 │                                                                  │

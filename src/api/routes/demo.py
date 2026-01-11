@@ -24,6 +24,8 @@ from src.services.crypto_com_sdk import get_crypto_com_sdk
 from src.services.x402_service import X402PaymentService
 from src.connectors.vvs import VVSFinanceConnector
 from src.core.config import settings
+from src.connectors.moonlander import get_moonlander_connector
+from src.connectors.delphi import get_delphi_connector
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -136,6 +138,18 @@ async def execute_demo_stream(
                     yield event
             elif scenario == "balance_check":
                 async for event in execute_balance_check_live(request.params, explorer_url):
+                    yield event
+            elif scenario == "mcp_discovery":
+                async for event in execute_mcp_discovery_live(request.params, explorer_url):
+                    yield event
+            elif scenario == "defi_research":
+                async for event in execute_defi_research_live(request.params, explorer_url):
+                    yield event
+            elif scenario == "moonlander_perp":
+                async for event in execute_moonlander_perp_live(request.params, explorer_url):
+                    yield event
+            elif scenario == "delphi_prediction":
+                async for event in execute_delphi_prediction_live(request.params, explorer_url):
                     yield event
             else:
                 yield format_sse("error", {"message": f"Unknown scenario: {scenario}"})

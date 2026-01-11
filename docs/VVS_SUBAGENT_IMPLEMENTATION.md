@@ -73,7 +73,7 @@ All swap commands successfully parsed:
 - `tests/integration/test_vvs_subagent.py` - Comprehensive testing script
 - `tests/unit/test_vvs_basic.py` - Basic structure testing
 - `tests/unit/test_vvs_api.py` - API endpoint testing
-- `vvs_implementation_summary.py` - Implementation documentation
+- `scripts/vvs_implementation_summary.py` - Implementation documentation
 - `tests/e2e/test_detection_final.py` - Detection logic verification
 
 ### Modified Files

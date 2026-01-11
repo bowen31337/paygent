@@ -182,7 +182,7 @@ For questions about the implementation or deployment:
 
 - **Code Repository**: [GitHub Link]
 - **API Documentation**: `/docs` endpoint
-- **Technical Documentation**: `README.md` and `DEVELOPMENT.md`
+- **Technical Documentation**: `README.md` and `docs/DEVELOPMENT.md`
 - **Test Suite**: `tests/` directory with comprehensive coverage
 
 ---

@@ -1864,7 +1864,7 @@
     "passes": true,
     "is_dev_done": true,
     "is_qa_passed": true,
-    "notes": "\u2705 COMPLETE: Contract verification feature implemented with automated verification script (verify-contracts.js), comprehensive documentation (CONTRACT_VERIFICATION_GUIDE.md), and Cronoscan integration. Supports verification of all Paygent contracts (AgentWallet, PaymentRouter, ServiceRegistry, MockToken) with retry logic and detailed reporting."
+    "notes": "\u2705 COMPLETE: Contract verification feature implemented with automated verification script (verify-contracts.js), comprehensive documentation (docs/CONTRACT_VERIFICATION_GUIDE.md), and Cronoscan integration. Supports verification of all Paygent contracts (AgentWallet, PaymentRouter, ServiceRegistry, MockToken) with retry logic and detailed reporting."
   },
   {
     "category": "functional",

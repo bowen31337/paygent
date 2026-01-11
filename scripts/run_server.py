@@ -7,12 +7,14 @@ This script sets up the Python path and starts the FastAPI server.
 
 import os
 import sys
+from pathlib import Path
 
-# Add the src directory to the path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Add the project root to the path (go up one level from scripts/)
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
 
 # Set environment variables from .env if it exists
-env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
+env_path = project_root / '.env'
 if os.path.exists(env_path):
     from dotenv import load_dotenv
     load_dotenv(env_path)

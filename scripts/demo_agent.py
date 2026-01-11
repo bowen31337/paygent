@@ -6,7 +6,13 @@ This script demonstrates how the AI agent processes natural language commands
 and executes various payment and blockchain operations.
 """
 
+import sys
+from pathlib import Path
 from uuid import uuid4
+
+# Add the project root to Python path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
 
 from src.agents.main_agent import PaygentAgent
 from src.agents.tools import create_agent_tools

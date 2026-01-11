@@ -180,18 +180,37 @@ I will proceed without requiring human approval since the amount is within the a
 • Slippage tolerance: 1% maximum
 • Amount: $100 USD (exceeds $50 HITL threshold)
 
-This transaction requires human approval before execution. I'll first get a price quote from VVS Router, then request user confirmation before submitting the transaction.`
+This transaction requires human approval before execution. I'll first verify the current market price via Crypto.com MCP, then get a price quote from VVS Router, and request user confirmation before submitting the transaction.`
             },
             {
                 type: 'planning',
                 todos: [
-                    { text: 'Query VVS Router for USDC→CRO price quote', status: 'completed' },
-                    { text: 'Calculate minimum output with 1% slippage protection', status: 'completed' },
-                    { text: 'Request HITL approval (amount exceeds $50 threshold)', status: 'in-progress' },
+                    { text: 'Verify CRO price via Crypto.com MCP', status: 'in-progress' },
+                    { text: 'Query VVS Router for USDC→CRO price quote', status: 'pending' },
+                    { text: 'Calculate minimum output with 1% slippage protection', status: 'pending' },
+                    { text: 'Request HITL approval (amount exceeds $50 threshold)', status: 'pending' },
                     { text: 'Build and submit swap transaction', status: 'pending' },
-                    { text: 'Monitor transaction confirmation', status: 'pending' },
                     { text: 'Verify received amount and report to user', status: 'pending' }
                 ]
+            },
+            {
+                type: 'action',
+                tool: {
+                    name: 'crypto_com_mcp.get_price',
+                    args: { symbol: 'CRO/USD', source: 'Crypto.com Market Data MCP' }
+                }
+            },
+            {
+                type: 'observation',
+                result: {
+                    success: true,
+                    data: {
+                        symbol: 'CRO/USD',
+                        price: '$0.2350',
+                        '24h_change': '+1.8%',
+                        source: 'Crypto.com MCP'
+                    }
+                }
             },
             {
                 type: 'action',
@@ -277,6 +296,7 @@ This transaction requires human approval before execution. I'll first get a pric
             }
         ],
         logs: [
+            { time: '12:31:14', level: 'info', message: 'crypto_com_mcp.get_price(CRO/USD) → $0.2350' },
             { time: '12:31:15', level: 'info', message: 'GET /vvs/quote?from=USDC&to=CRO&amount=100' },
             { time: '12:31:15', level: 'info', message: 'VVS Router.getAmountsOut() → 425.5 CRO' },
             { time: '12:31:16', level: 'warn', message: 'HITL: Approval requested (amount > threshold)' },
@@ -427,15 +447,21 @@ Retrying with adjusted parameters...`
         phases: [
             {
                 type: 'reasoning',
-                content: `User needs real-time BTC price data. I should query the MCP registry to find compatible services, compare pricing, and recommend the best option based on features and reputation.`
+                content: `User needs real-time BTC price data. I should query the MCP registry to find compatible services, compare pricing, and recommend the best option based on features and reputation.
+
+**Analysis:**
+• Category: market-data
+• Features required: real-time, BTC support
+• Evaluation criteria: pricing, latency, reputation score
+• Native Cronos integration preferred`
             },
             {
                 type: 'planning',
                 todos: [
-                    { text: 'Query MCP Service Registry', status: 'completed' },
-                    { text: 'Filter by category: market-data, feature: real-time', status: 'completed' },
-                    { text: 'Compare pricing and reputation scores', status: 'completed' },
-                    { text: 'Generate recommendation', status: 'completed' }
+                    { text: 'Query MCP Service Registry', status: 'in-progress' },
+                    { text: 'Filter by category: market-data, feature: real-time', status: 'pending' },
+                    { text: 'Compare pricing and reputation scores', status: 'pending' },
+                    { text: 'Generate recommendation', status: 'pending' }
                 ]
             },
             {
@@ -451,8 +477,44 @@ Retrying with adjusted parameters...`
                     success: true,
                     data: {
                         services_found: 3,
-                        top_match: 'Crypto.com Premium Data',
-                        details: 'See recommendations below'
+                        registry: 'MCP Global Registry',
+                        query_latency: '45ms'
+                    }
+                }
+            },
+            {
+                type: 'planning',
+                todos: [
+                    { text: 'Query MCP Service Registry', status: 'completed' },
+                    { text: 'Filter by category: market-data, feature: real-time', status: 'completed' },
+                    { text: 'Compare pricing and reputation scores', status: 'in-progress' },
+                    { text: 'Generate recommendation', status: 'pending' }
+                ]
+            },
+            {
+                type: 'action',
+                tool: {
+                    name: 'service_registry.compare',
+                    args: { service_ids: ['crypto-com-premium', 'chainlink-feed', 'defi-pulse'] }
+                }
+            },
+            {
+                type: 'observation',
+                result: {
+                    success: true,
+                    data: {
+                        'service_1': '🥇 Crypto.com Premium Data',
+                        'rating_1': '★★★★★ (5.0)',
+                        'price_1': '$0.001/call',
+                        'features_1': 'Real-time, Order books, Analytics',
+                        'service_2': '🥈 ChainLink Price Feed',
+                        'rating_2': '★★★★☆ (4.5)',
+                        'price_2': '$0.0005/call',
+                        'features_2': 'Multi-chain, Oracle verified',
+                        'service_3': '🥉 DeFi Pulse API',
+                        'rating_3': '★★★★☆ (4.2)',
+                        'price_3': '$0.002/call',
+                        'features_3': 'DeFi TVL, Protocol metrics'
                     }
                 }
             },
@@ -460,22 +522,532 @@ Retrying with adjusted parameters...`
                 type: 'reflection',
                 reflection: {
                     success: true,
-                    summary: 'Found 3 MCP-compatible services',
+                    summary: 'Best match: Crypto.com Premium Data',
                     metrics: [
-                        '1. Crypto.com Premium Data (★★★★★) - $0.001/call - RECOMMENDED',
-                        '2. ChainLink Price Feed (★★★★☆) - $0.0005/call - Multi-chain',
-                        '3. DeFi Pulse API (★★★★☆) - $0.002/call - DeFi-focused'
+                        'Highest reputation score (5.0 stars)',
+                        'Competitive pricing ($0.001/call)',
+                        'Native Cronos ecosystem integration',
+                        'Includes order books and analytics',
+                        'Low latency: ~12ms response time'
                     ]
                 }
             }
         ],
         logs: [
             { time: '12:33:01', level: 'info', message: 'GET /mcp/discover?category=market-data' },
-            { time: '12:33:01', level: 'info', message: 'Found 3 MCP-compatible services' },
-            { time: '12:33:02', level: 'info', message: 'Comparing pricing and reputation...' },
-            { time: '12:33:02', level: 'success', message: '✅ Recommendation ready' }
+            { time: '12:33:01', level: 'info', message: 'MCP Registry: Querying global service index...' },
+            { time: '12:33:01', level: 'success', message: 'Found 3 MCP-compatible services' },
+            { time: '12:33:02', level: 'info', message: 'Fetching reputation scores...' },
+            { time: '12:33:02', level: 'info', message: 'Comparing pricing tiers...' },
+            { time: '12:33:02', level: 'success', message: '✅ Recommendation: Crypto.com Premium Data' }
         ],
-        finalMessage: 'I found 3 MCP-compatible market data services. I recommend Crypto.com Premium Data for the best combination of price, reliability, and native Cronos integration.'
+        finalMessage: 'I found 3 MCP-compatible market data services. I recommend **Crypto.com Premium Data** (★★★★★) for the best combination of price ($0.001/call), reliability, and native Cronos integration.'
+    },
+
+    defi_research: {
+        prompt: "Research Cronos DeFi yields and invest $50 in the best opportunity",
+        phases: [
+            {
+                type: 'reasoning',
+                content: `Complex DeFi investment request requiring multi-step research and execution.
+
+**Analysis:**
+• Task: Research DeFi yields across Cronos ecosystem
+• Investment amount: $50 USD
+• Scope: VVS Finance, Moonlander, Ferro, Tectonic
+• This task requires spawning multiple specialized subagents
+
+I will decompose this into subtasks and coordinate multiple specialist agents for parallel research, then execute the best opportunity.`
+            },
+            {
+                type: 'planning',
+                todos: [
+                    { text: 'Spawn Research-Agent for yield data collection', status: 'completed' },
+                    { text: 'Spawn VVS-Trader subagent for VVS pools', status: 'completed' },
+                    { text: 'Spawn Moonlander-Trader subagent for lending rates', status: 'completed' },
+                    { text: 'Parallel: Collect yield data from all protocols', status: 'in-progress' },
+                    { text: 'Aggregate and compare yields', status: 'pending' },
+                    { text: 'HITL: Present top opportunity for approval', status: 'pending' },
+                    { text: 'Execute investment via best protocol', status: 'pending' },
+                    { text: 'Verify position and report summary', status: 'pending' }
+                ]
+            },
+            {
+                type: 'action',
+                tool: {
+                    name: 'orchestrator.spawn_subagent',
+                    args: {
+                        agents: [
+                            { name: 'Research-Agent', task: 'Collect TVL, APY data' },
+                            { name: 'VVS-Trader', task: 'Query VVS liquidity pools' },
+                            { name: 'Moonlander-Trader', task: 'Query lending/borrowing rates' }
+                        ]
+                    }
+                }
+            },
+            {
+                type: 'observation',
+                result: {
+                    success: true,
+                    data: {
+                        subagents_spawned: 3,
+                        status: 'All agents active',
+                        execution_mode: 'PARALLEL'
+                    }
+                }
+            },
+            {
+                type: 'action',
+                tool: {
+                    name: 'subagent.VVS-Trader.query',
+                    args: { pools: ['USDC-CRO', 'USDC-VVS', 'CRO-ATOM'] }
+                }
+            },
+            {
+                type: 'observation',
+                result: {
+                    success: true,
+                    data: {
+                        agent: 'VVS-Trader',
+                        'USDC-CRO LP': '28.5% APY',
+                        'USDC-VVS LP': '45.2% APY',
+                        'CRO-ATOM LP': '18.7% APY',
+                        tvl: '$12.4M'
+                    }
+                }
+            },
+            {
+                type: 'action',
+                tool: {
+                    name: 'subagent.Moonlander-Trader.query',
+                    args: { markets: ['USDC', 'CRO'] }
+                }
+            },
+            {
+                type: 'observation',
+                result: {
+                    success: true,
+                    data: {
+                        agent: 'Moonlander-Trader',
+                        'USDC Supply': '8.2% APY',
+                        'CRO Supply': '5.4% APY',
+                        'USDC Borrow': '-12.5% APY',
+                        utilization: '72%'
+                    }
+                }
+            },
+            {
+                type: 'planning',
+                todos: [
+                    { text: 'Spawn Research-Agent for yield data collection', status: 'completed' },
+                    { text: 'Spawn VVS-Trader subagent for VVS pools', status: 'completed' },
+                    { text: 'Spawn Moonlander-Trader subagent for lending rates', status: 'completed' },
+                    { text: 'Parallel: Collect yield data from all protocols', status: 'completed' },
+                    { text: 'Aggregate and compare yields', status: 'completed' },
+                    { text: 'HITL: Present top opportunity for approval', status: 'in-progress' },
+                    { text: 'Execute investment via best protocol', status: 'pending' },
+                    { text: 'Verify position and report summary', status: 'pending' }
+                ]
+            },
+            {
+                type: 'hitl',
+                hitl: {
+                    action: 'DeFi Investment - VVS USDC-VVS LP',
+                    details: [
+                        { label: 'Best Opportunity', value: 'VVS Finance USDC-VVS LP' },
+                        { label: 'APY', value: '45.2%' },
+                        { label: 'Investment', value: '$50.00' },
+                        { label: 'Est. Annual Return', value: '$22.60' },
+                        { label: 'Risk Level', value: 'Medium (IL exposure)' }
+                    ],
+                    reason: 'Investment amount requires approval. VVS USDC-VVS LP offers highest yield with acceptable risk.'
+                }
+            },
+            {
+                type: 'observation',
+                result: {
+                    success: true,
+                    data: {
+                        hitl_status: '✅ APPROVED by user',
+                        timestamp: '12:35:42'
+                    }
+                }
+            },
+            {
+                type: 'action',
+                tool: {
+                    name: 'vvs_connector.add_liquidity',
+                    args: {
+                        pool: 'USDC-VVS',
+                        amount_usd: 50,
+                        slippage: 1.0
+                    }
+                }
+            },
+            {
+                type: 'observation',
+                result: {
+                    success: true,
+                    data: {
+                        status: '✅ LP POSITION CREATED',
+                        lp_tokens: '12.45 USDC-VVS LP',
+                        pool_share: '0.0004%',
+                        entry_price: 'USDC=$1.00, VVS=$0.0012'
+                    },
+                    txHash: '0xd4e5f6a7b8c9012345678901234567890abcdef1234567890abcdef12345678'
+                }
+            },
+            {
+                type: 'reflection',
+                reflection: {
+                    success: true,
+                    summary: 'DeFi Investment completed via multi-agent coordination',
+                    metrics: [
+                        '3 subagents coordinated in parallel',
+                        '4 protocols analyzed (VVS, Moonlander, Ferro, Tectonic)',
+                        'Best opportunity: VVS USDC-VVS LP @ 45.2% APY',
+                        '$50 invested → 12.45 LP tokens received',
+                        'Est. annual return: $22.60',
+                        'HITL approval obtained before execution'
+                    ]
+                }
+            }
+        ],
+        logs: [
+            { time: '12:34:01', level: 'info', message: 'Task decomposition: DeFi yield research' },
+            { time: '12:34:02', level: 'info', message: 'Spawning subagent: Research-Agent' },
+            { time: '12:34:02', level: 'info', message: 'Spawning subagent: VVS-Trader' },
+            { time: '12:34:02', level: 'info', message: 'Spawning subagent: Moonlander-Trader' },
+            { time: '12:34:03', level: 'info', message: '[PARALLEL] Executing yield queries...' },
+            { time: '12:34:05', level: 'success', message: 'VVS-Trader: Found 3 pools, best 45.2% APY' },
+            { time: '12:34:05', level: 'success', message: 'Moonlander-Trader: USDC supply 8.2% APY' },
+            { time: '12:34:06', level: 'info', message: 'Aggregating results from 3 agents...' },
+            { time: '12:34:07', level: 'warn', message: 'HITL: Investment approval requested' },
+            { time: '12:35:42', level: 'success', message: 'HITL: Approved by user' },
+            { time: '12:35:43', level: 'info', message: 'VVS Router.addLiquidity() executing...' },
+            { time: '12:35:45', level: 'success', message: 'TX: 0xd4e5f6a7b8c9...', txHash: '0xd4e5f6a7b8c9012345678901234567890abcdef1234567890abcdef12345678' },
+            { time: '12:35:46', level: 'success', message: '✅ LP position created: 12.45 tokens' }
+        ],
+        finalMessage: 'Investment complete! I coordinated 3 subagents to research yields across Cronos DeFi. Best opportunity: VVS USDC-VVS LP at 45.2% APY. Invested $50 and received 12.45 LP tokens.',
+        txLink: 'https://explorer.cronos.org/testnet/tx/0xd4e5f6a7b8c9012345678901234567890abcdef1234567890abcdef12345678'
+    },
+
+    moonlander_perp: {
+        prompt: "Open a 5x long position on CRO/USD with $100 and set a 5% stop-loss",
+        phases: [
+            {
+                type: 'reasoning',
+                content: `User wants to open a leveraged perpetual position on Moonlander.
+
+**Analysis:**
+• Position: 5x Long on CRO/USD
+• Collateral: $100 USD
+• Risk management: 5% stop-loss
+• Effective exposure: $500
+
+This is a high-risk leveraged trade. I'll query current funding rates, calculate liquidation price, and require HITL approval before execution.`
+            },
+            {
+                type: 'planning',
+                todos: [
+                    { text: 'Query Crypto.com MCP for current CRO price', status: 'completed' },
+                    { text: 'Fetch Moonlander funding rate and open interest', status: 'in-progress' },
+                    { text: 'Calculate liquidation price and risk metrics', status: 'pending' },
+                    { text: 'HITL: Present position for approval', status: 'pending' },
+                    { text: 'Open long position with stop-loss', status: 'pending' },
+                    { text: 'Confirm position and report to user', status: 'pending' }
+                ]
+            },
+            {
+                type: 'action',
+                tool: {
+                    name: 'crypto_com_mcp.get_price',
+                    args: { symbol: 'CRO/USD', source: 'Crypto.com Market Data MCP' }
+                }
+            },
+            {
+                type: 'observation',
+                result: {
+                    success: true,
+                    data: {
+                        symbol: 'CRO/USD',
+                        price: '$0.2345',
+                        '24h_change': '+2.4%',
+                        source: 'Crypto.com MCP'
+                    }
+                }
+            },
+            {
+                type: 'action',
+                tool: {
+                    name: 'moonlander_connector.get_market_info',
+                    args: { market: 'CRO-PERP' }
+                }
+            },
+            {
+                type: 'observation',
+                result: {
+                    success: true,
+                    data: {
+                        funding_rate: '+0.01% / 8h',
+                        open_interest: '$2.4M',
+                        mark_price: '$0.2344',
+                        index_price: '$0.2345'
+                    }
+                }
+            },
+            {
+                type: 'planning',
+                todos: [
+                    { text: 'Query Crypto.com MCP for current CRO price', status: 'completed' },
+                    { text: 'Fetch Moonlander funding rate and open interest', status: 'completed' },
+                    { text: 'Calculate liquidation price and risk metrics', status: 'completed' },
+                    { text: 'HITL: Present position for approval', status: 'in-progress' },
+                    { text: 'Open long position with stop-loss', status: 'pending' },
+                    { text: 'Confirm position and report to user', status: 'pending' }
+                ]
+            },
+            {
+                type: 'hitl',
+                hitl: {
+                    action: 'Moonlander Perpetual Long Position',
+                    details: [
+                        { label: 'Position', value: '5x LONG CRO-PERP' },
+                        { label: 'Collateral', value: '$100 USDC' },
+                        { label: 'Effective Size', value: '$500 (2,131 CRO)' },
+                        { label: 'Entry Price', value: '$0.2345' },
+                        { label: 'Liquidation Price', value: '$0.1989 (-15.2%)' },
+                        { label: 'Stop-Loss', value: '$0.2228 (-5%)' },
+                        { label: 'Funding Rate', value: '+0.01% / 8h' }
+                    ],
+                    reason: 'Leveraged positions require approval. 5x leverage with $100 collateral creates $500 exposure.'
+                }
+            },
+            {
+                type: 'observation',
+                result: {
+                    success: true,
+                    data: {
+                        hitl_status: '✅ APPROVED by user',
+                        timestamp: '12:40:15'
+                    }
+                }
+            },
+            {
+                type: 'action',
+                tool: {
+                    name: 'moonlander_connector.open_long',
+                    args: {
+                        market: 'CRO-PERP',
+                        collateral: 100,
+                        leverage: 5,
+                        stop_loss_pct: 5
+                    }
+                }
+            },
+            {
+                type: 'observation',
+                result: {
+                    success: true,
+                    data: {
+                        status: '✅ POSITION OPENED',
+                        position_id: 'ML-12345',
+                        entry_price: '$0.2345',
+                        size: '2,131 CRO',
+                        stop_loss_set: '$0.2228'
+                    },
+                    txHash: '0xmoonlander123456789abcdef0123456789abcdef0123456789abcdef01234567'
+                }
+            },
+            {
+                type: 'reflection',
+                reflection: {
+                    success: true,
+                    summary: 'Moonlander perpetual long position opened successfully',
+                    metrics: [
+                        'Position: 5x Long CRO-PERP @ $0.2345',
+                        'Size: $500 (2,131 CRO)',
+                        'Stop-loss: $0.2228 (-5%)',
+                        'Liquidation: $0.1989 (-15.2%)',
+                        'Funding rate: +0.01% / 8h (long pays short)',
+                        'HITL approval obtained'
+                    ]
+                }
+            }
+        ],
+        logs: [
+            { time: '12:39:01', level: 'info', message: 'crypto_com_mcp.get_price(CRO/USD)' },
+            { time: '12:39:01', level: 'success', message: 'CRO/USD: $0.2345 (+2.4%)' },
+            { time: '12:39:02', level: 'info', message: 'moonlander.get_market_info(CRO-PERP)' },
+            { time: '12:39:02', level: 'info', message: 'Funding rate: +0.01%, OI: $2.4M' },
+            { time: '12:39:03', level: 'info', message: 'Calculating risk metrics...' },
+            { time: '12:39:04', level: 'warn', message: 'HITL: Leveraged position approval required' },
+            { time: '12:40:15', level: 'success', message: 'HITL: Approved by user' },
+            { time: '12:40:16', level: 'info', message: 'moonlander.open_long() executing...' },
+            { time: '12:40:18', level: 'success', message: 'Position opened: ML-12345' },
+            { time: '12:40:19', level: 'info', message: 'Setting stop-loss at $0.2228...' },
+            { time: '12:40:20', level: 'success', message: '✅ 5x Long CRO-PERP active', txHash: '0xmoonlander123...' }
+        ],
+        finalMessage: 'Position opened! 5x Long CRO-PERP with $100 collateral. Entry: $0.2345, Stop-loss: $0.2228 (-5%), Liquidation: $0.1989. Monitor your position on Moonlander.',
+        txLink: 'https://explorer.cronos.org/testnet/tx/0xmoonlander123456789abcdef0123456789abcdef0123456789abcdef01234567'
+    },
+
+    delphi_prediction: {
+        prompt: "Place a $25 prediction on BTC reaching $100k by end of January",
+        phases: [
+            {
+                type: 'reasoning',
+                content: `User wants to participate in a prediction market on Delphi.
+
+**Analysis:**
+• Prediction: BTC reaches $100k by end of January
+• Stake: $25 USD
+• Protocol: Delphi prediction markets on Cronos
+
+I'll query available markets, check current odds, and present the prediction for approval before placing.`
+            },
+            {
+                type: 'planning',
+                todos: [
+                    { text: 'Query Crypto.com MCP for current BTC price', status: 'completed' },
+                    { text: 'Search Delphi for matching prediction market', status: 'in-progress' },
+                    { text: 'Get current odds and market liquidity', status: 'pending' },
+                    { text: 'HITL: Present prediction for approval', status: 'pending' },
+                    { text: 'Place prediction on Delphi', status: 'pending' },
+                    { text: 'Confirm prediction and report to user', status: 'pending' }
+                ]
+            },
+            {
+                type: 'action',
+                tool: {
+                    name: 'crypto_com_mcp.get_price',
+                    args: { symbol: 'BTC/USD', source: 'Crypto.com Market Data MCP' }
+                }
+            },
+            {
+                type: 'observation',
+                result: {
+                    success: true,
+                    data: {
+                        symbol: 'BTC/USD',
+                        price: '$94,250',
+                        '24h_change': '+1.2%',
+                        source: 'Crypto.com MCP'
+                    }
+                }
+            },
+            {
+                type: 'action',
+                tool: {
+                    name: 'delphi_connector.get_markets',
+                    args: { query: 'BTC 100k January', category: 'crypto' }
+                }
+            },
+            {
+                type: 'observation',
+                result: {
+                    success: true,
+                    data: {
+                        market_id: 'DELPHI-BTC-100K-JAN',
+                        question: 'Will BTC reach $100,000 by January 31, 2026?',
+                        yes_odds: '65%',
+                        no_odds: '35%',
+                        total_volume: '$45,230',
+                        closes: '2026-01-31 23:59 UTC'
+                    }
+                }
+            },
+            {
+                type: 'planning',
+                todos: [
+                    { text: 'Query Crypto.com MCP for current BTC price', status: 'completed' },
+                    { text: 'Search Delphi for matching prediction market', status: 'completed' },
+                    { text: 'Get current odds and market liquidity', status: 'completed' },
+                    { text: 'HITL: Present prediction for approval', status: 'in-progress' },
+                    { text: 'Place prediction on Delphi', status: 'pending' },
+                    { text: 'Confirm prediction and report to user', status: 'pending' }
+                ]
+            },
+            {
+                type: 'hitl',
+                hitl: {
+                    action: 'Delphi Prediction Market',
+                    details: [
+                        { label: 'Market', value: 'BTC reaches $100k by Jan 31' },
+                        { label: 'Your Prediction', value: 'YES' },
+                        { label: 'Stake', value: '$25 USDC' },
+                        { label: 'Current YES Odds', value: '65%' },
+                        { label: 'Potential Payout', value: '$38.46 (1.54x)' },
+                        { label: 'Current BTC Price', value: '$94,250' },
+                        { label: 'Target', value: '$100,000 (+6.1%)' }
+                    ],
+                    reason: 'Prediction markets are speculative. $25 stake for potential $38.46 payout if BTC hits $100k.'
+                }
+            },
+            {
+                type: 'observation',
+                result: {
+                    success: true,
+                    data: {
+                        hitl_status: '✅ APPROVED by user',
+                        timestamp: '12:42:30'
+                    }
+                }
+            },
+            {
+                type: 'action',
+                tool: {
+                    name: 'delphi_connector.place_prediction',
+                    args: {
+                        market_id: 'DELPHI-BTC-100K-JAN',
+                        outcome: 'YES',
+                        amount: 25
+                    }
+                }
+            },
+            {
+                type: 'observation',
+                result: {
+                    success: true,
+                    data: {
+                        status: '✅ PREDICTION PLACED',
+                        position_id: 'DELPHI-POS-78901',
+                        shares: '38.46 YES shares',
+                        avg_price: '$0.65 per share'
+                    },
+                    txHash: '0xdelphi789012345678901234567890abcdef0123456789abcdef0123456789ab'
+                }
+            },
+            {
+                type: 'reflection',
+                reflection: {
+                    success: true,
+                    summary: 'Delphi prediction placed successfully',
+                    metrics: [
+                        'Market: BTC $100k by January 31',
+                        'Position: YES with $25 stake',
+                        'Shares: 38.46 @ $0.65 each',
+                        'Max payout: $38.46 if YES wins',
+                        'Current BTC: $94,250 (+6.1% to target)',
+                        'Market closes: Jan 31, 2026'
+                    ]
+                }
+            }
+        ],
+        logs: [
+            { time: '12:41:01', level: 'info', message: 'crypto_com_mcp.get_price(BTC/USD)' },
+            { time: '12:41:01', level: 'success', message: 'BTC/USD: $94,250 (+1.2%)' },
+            { time: '12:41:02', level: 'info', message: 'delphi.get_markets(BTC 100k)' },
+            { time: '12:41:03', level: 'success', message: 'Found: DELPHI-BTC-100K-JAN' },
+            { time: '12:41:03', level: 'info', message: 'YES odds: 65%, Volume: $45k' },
+            { time: '12:41:04', level: 'warn', message: 'HITL: Prediction approval required' },
+            { time: '12:42:30', level: 'success', message: 'HITL: Approved by user' },
+            { time: '12:42:31', level: 'info', message: 'delphi.place_prediction() executing...' },
+            { time: '12:42:33', level: 'success', message: 'Prediction placed: 38.46 shares' },
+            { time: '12:42:34', level: 'success', message: '✅ Position DELPHI-POS-78901 active', txHash: '0xdelphi789...' }
+        ],
+        finalMessage: 'Prediction placed! You bet $25 on BTC reaching $100k by Jan 31. If correct, you\'ll receive $38.46. Track your position on Delphi.',
+        txLink: 'https://explorer.cronos.org/testnet/tx/0xdelphi789012345678901234567890abcdef0123456789abcdef0123456789ab'
     }
 }
 
@@ -656,8 +1228,30 @@ export default function App() {
     const [isLiveMode, setIsLiveMode] = useState(false)
     const [livePhases, setLivePhases] = useState<Phase[]>([])
     const [currentTodos, setCurrentTodos] = useState<TodoItem[]>([])
+    const [liveConfig, setLiveConfig] = useState<{
+        enabled: boolean;
+        network: string;
+        wallet_address: string | null;
+        has_private_key: boolean;
+    } | null>(null)
     const chatRef = useRef<HTMLDivElement>(null)
     const logsRef = useRef<HTMLDivElement>(null)
+
+    // Fetch live config on mount
+    useEffect(() => {
+        const fetchLiveConfig = async () => {
+            try {
+                const response = await fetch('/api/demo/config')
+                if (response.ok) {
+                    const config = await response.json()
+                    setLiveConfig(config)
+                }
+            } catch (error) {
+                console.warn('Could not fetch live config:', error)
+            }
+        }
+        fetchLiveConfig()
+    }, [])
 
     // Auto-scroll chat
     useEffect(() => {
@@ -939,6 +1533,11 @@ export default function App() {
     }
 
     const toggleLiveMode = () => {
+        // Check if live mode is available
+        if (!isLiveMode && liveConfig && !liveConfig.has_private_key) {
+            alert('⚠️ Live Mode Unavailable\n\nNo wallet private key configured.\nPlease set AGENT_WALLET_PRIVATE_KEY in .env to enable live testnet transactions.')
+            return
+        }
         setIsLiveMode(!isLiveMode)
         setMessages([])
         setLogs([])
@@ -967,6 +1566,22 @@ export default function App() {
                         }}>
                             <span className="network-dot" style={{ background: '#ef4444' }}></span>
                             🔴 LIVE MODE
+                        </div>
+                    )}
+                    <div className="network-badge" style={{
+                        background: 'rgba(34, 197, 94, 0.15)',
+                        borderColor: 'rgba(34, 197, 94, 0.3)',
+                        color: '#22c55e'
+                    }}>
+                        💰 Budget: $950/$1,000
+                    </div>
+                    {liveConfig?.wallet_address && (
+                        <div className="network-badge" style={{
+                            background: 'rgba(99, 102, 241, 0.15)',
+                            borderColor: 'rgba(99, 102, 241, 0.3)',
+                            color: '#818cf8'
+                        }}>
+                            🔑 {liveConfig.wallet_address.slice(0, 6)}...{liveConfig.wallet_address.slice(-4)}
                         </div>
                     )}
                 </div>
@@ -1001,6 +1616,9 @@ export default function App() {
                                 <option value="vvs_swap">VVS Swap + HITL</option>
                                 <option value="error_recovery">Error Recovery</option>
                                 <option value="mcp_discovery">MCP Discovery</option>
+                                <option value="defi_research">DeFi Research (Subagents)</option>
+                                <option value="moonlander_perp">Moonlander Perpetuals</option>
+                                <option value="delphi_prediction">Delphi Predictions</option>
                             </>
                         )}
                     </select>

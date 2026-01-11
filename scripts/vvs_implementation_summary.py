@@ -15,6 +15,9 @@ def check_implementation():
     print("🚀 VVS Subagent Implementation Summary")
     print("=" * 60)
 
+    # Get project root (go up one level from scripts/)
+    project_root = Path(__file__).parent.parent
+
     # Check 1: File structure
     print("📁 File Structure:")
     required_files = [
@@ -24,7 +27,8 @@ def check_implementation():
     ]
 
     for file_path in required_files:
-        if Path(file_path).exists():
+        full_path = project_root / file_path
+        if full_path.exists():
             print(f"   ✅ {file_path}")
         else:
             print(f"   ❌ {file_path} - MISSING")
@@ -33,7 +37,7 @@ def check_implementation():
 
     # Check 2: VVS Subagent Implementation
     print("🤖 VVS Trader Subagent Implementation:")
-    vvs_file = Path("src/agents/vvs_trader_subagent.py")
+    vvs_file = project_root / "src/agents/vvs_trader_subagent.py"
 
     if vvs_file.exists():
         content = vvs_file.read_text()
@@ -56,7 +60,7 @@ def check_implementation():
 
     # Check 3: Main Agent Integration
     print("🔗 Main Agent Integration:")
-    main_agent_file = Path("src/agents/main_agent.py")
+    main_agent_file = project_root / "src/agents/main_agent.py"
 
     if main_agent_file.exists():
         content = main_agent_file.read_text()
@@ -79,7 +83,7 @@ def check_implementation():
 
     # Check 4: Agent Executor Integration
     print("⚙️ Agent Executor Integration:")
-    executor_file = Path("src/agents/agent_executor_enhanced.py")
+    executor_file = project_root / "src/agents/agent_executor_enhanced.py"
 
     if executor_file.exists():
         content = executor_file.read_text()
