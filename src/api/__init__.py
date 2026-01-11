@@ -12,6 +12,7 @@ from src.api.routes import (
     approvals,
     cache,
     defi,
+    demo,
     logs,
     metrics,
     notifications,
@@ -37,5 +38,7 @@ router.include_router(defi.router, prefix="/defi")
 router.include_router(metrics.router, prefix="", tags=["Monitoring"])
 router.include_router(cache.router, prefix="/cache", tags=["Cache"])
 router.include_router(notifications.router, prefix="/notifications", tags=["Notifications"])
+router.include_router(demo.router, prefix="/demo", tags=["Demo"])
 
 __all__ = ["router"]
+

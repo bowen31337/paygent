@@ -1,322 +1,295 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-
 /**
  * @title ServiceRegistry
- * @dev Decentralized service registry for AI agent services
- * Allows service providers to register, update, and manage their services
- * Supports reputation tracking and pricing information
+ * @dev Registry contract for managing services and their reputations
  */
-contract ServiceRegistry is Ownable, ReentrancyGuard {
+contract ServiceRegistry {
+    // State variables
+    address public owner;
+    uint256 public reputationRequired;
+    uint256 public defaultStake;
+
+    // Structs
+    struct Service {
+        string name;
+        string description;
+        string endpoint;
+        string pricingModel; // "pay-per-call", "subscription", "metered"
+        uint256 priceAmount;
+        string priceToken;
+        bool mcpCompatible;
+        uint256 reputationScore;
+        uint256 totalCalls;
+        address serviceOwner;
+        uint256 registrationTime;
+        bool active;
+    }
+
+    // Mappings
+    mapping(bytes32 => Service) public services;
+    mapping(address => bytes32[]) public serviceOwners;
+    mapping(bytes32 => uint256) public serviceStakes;
+
     // Events
     event ServiceRegistered(
         bytes32 indexed serviceId,
-        address indexed owner,
         string name,
-        string serviceUrl,
-        uint256 pricePerCall,
-        uint256 timestamp
+        address indexed owner,
+        uint256 stake
     );
-    event ServiceUpdated(
-        bytes32 indexed serviceId,
-        string newServiceUrl,
-        uint256 newPrice,
-        uint256 timestamp
-    );
-    event ServiceDeactivated(bytes32 indexed serviceId, uint256 timestamp);
-    event ReputationUpdated(
-        bytes32 indexed serviceId,
-        uint256 newRating,
-        uint256 totalCalls
-    );
-    event PricingModelUpdated(
-        bytes32 indexed serviceId,
-        PricingModel newModel
-    );
-    event SubscriptionCreated(
-        bytes32 indexed serviceId,
-        address indexed subscriber,
-        uint256 expiresAt
-    );
-    event SubscriptionRenewed(
-        bytes32 indexed serviceId,
-        address indexed subscriber,
-        uint256 newExpiresAt
-    );
-
-    enum PricingModel {
-        METERED,    // Pay per call
-        SUBSCRIPTION // Flat rate subscription
-    }
-
-    struct Service {
-        bytes32 id;
-        address owner;
-        string name;
-        string serviceUrl;
-        uint256 pricePerCall;
-        uint256 reputation; // 0-1000 scale (1000 = 5.0 stars)
-        uint256 totalCalls;
-        bool isActive;
-        PricingModel pricingModel;
-        uint256 subscriptionPrice; // Price per subscription period
-        uint256 subscriptionPeriod; // Duration in days
-    }
-
-    struct Subscription {
-        address subscriber;
-        bytes32 serviceId;
-        uint256 expiresAt;
-        bool isActive;
-    }
-
-    // Service storage
-    mapping(bytes32 => Service) public services;
-    mapping(bytes32 => mapping(address => Subscription)) public subscriptions;
-    mapping(address => bytes32[]) public userServices; // Services owned by user
-    mapping(address => bytes32[]) public userSubscriptions; // Services subscribed by user
-
-    uint256 public serviceCount;
-
-    // Constants
-    uint256 public constant MAX_REPUTATION = 1000; // 5.0 stars * 200
-    uint256 public constant MIN_REPUTATION = 0;
+    event ServiceUpdated(bytes32 indexed serviceId, string description);
+    event ServiceDeactivated(bytes32 indexed serviceId);
+    event ReputationUpdated(bytes32 indexed serviceId, uint256 newScore);
+    event StakeDeposited(bytes32 indexed serviceId, uint256 amount);
+    event StakeWithdrawn(bytes32 indexed serviceId, uint256 amount);
 
     // Modifiers
-    modifier onlyServiceOwner(bytes32 _serviceId) {
-        require(services[_serviceId].owner == msg.sender, "Not service owner");
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner can call this function");
         _;
     }
 
-    modifier serviceExists(bytes32 _serviceId) {
-        require(services[_serviceId].owner != address(0), "Service does not exist");
-        _;
-    }
-
-    modifier serviceActive(bytes32 _serviceId) {
-        require(services[_serviceId].isActive, "Service is not active");
+    modifier onlyServiceOwner(bytes32 serviceId) {
+        require(services[serviceId].serviceOwner == msg.sender, "Not service owner");
         _;
     }
 
     /**
-     * @dev Register a new service
+     * @dev Constructor
+     * @param _owner Address of the registry owner
+     * @param _reputationRequired Minimum reputation score required
+     * @param _defaultStake Default stake amount for registration
+     */
+    constructor(
+        address _owner,
+        uint256 _reputationRequired,
+        uint256 _defaultStake
+    ) {
+        owner = _owner;
+        reputationRequired = _reputationRequired;
+        defaultStake = _defaultStake;
+    }
+
+    // ==================== External Functions ====================
+
+    /**
+     * @dev Registers a new service in the registry
+     * @param name Service name
+     * @param description Service description
+     * @param endpoint Service endpoint URL
+     * @param pricingModel Pricing model (pay-per-call, subscription, metered)
+     * @param priceAmount Price amount
+     * @param priceToken Price token symbol
+     * @param mcpCompatible Whether service is MCP compatible
+     * @return serviceId The unique service ID
      */
     function registerService(
-        string calldata _name,
-        string calldata _serviceUrl,
-        uint256 _pricePerCall,
-        PricingModel _pricingModel,
-        uint256 _subscriptionPrice,
-        uint256 _subscriptionPeriod
-    ) external nonReentrant returns (bytes32) {
-        require(bytes(_name).length > 0, "Name required");
-        require(bytes(_serviceUrl).length > 0, "URL required");
-        require(_pricePerCall >= 0, "Invalid price");
+        string calldata name,
+        string calldata description,
+        string calldata endpoint,
+        string calldata pricingModel,
+        uint256 priceAmount,
+        string calldata priceToken,
+        bool mcpCompatible
+    ) external payable returns (bytes32) {
+        require(msg.value >= defaultStake, "Insufficient stake");
+        require(bytes(name).length > 0, "Name cannot be empty");
+        require(bytes(endpoint).length > 0, "Endpoint cannot be empty");
 
-        bytes32 serviceId = keccak256(abi.encodePacked(_name, msg.sender, block.timestamp));
+        bytes32 serviceId = keccak256(abi.encodePacked(endpoint, msg.sender));
+        require(services[serviceId].serviceOwner == address(0), "Service already registered");
 
-        Service storage newService = services[serviceId];
-        newService.id = serviceId;
-        newService.owner = msg.sender;
-        newService.name = _name;
-        newService.serviceUrl = _serviceUrl;
-        newService.pricePerCall = _pricePerCall;
-        newService.reputation = 500; // Start with 2.5 stars
-        newService.totalCalls = 0;
-        newService.isActive = true;
-        newService.pricingModel = _pricingModel;
-        newService.subscriptionPrice = _subscriptionPrice;
-        newService.subscriptionPeriod = _subscriptionPeriod;
+        services[serviceId] = Service({
+            name: name,
+            description: description,
+            endpoint: endpoint,
+            pricingModel: pricingModel,
+            priceAmount: priceAmount,
+            priceToken: priceToken,
+            mcpCompatible: mcpCompatible,
+            reputationScore: 50, // Starting reputation
+            totalCalls: 0,
+            serviceOwner: msg.sender,
+            registrationTime: block.timestamp,
+            active: true
+        });
 
-        userServices[msg.sender].push(serviceId);
-        serviceCount++;
+        serviceStakes[serviceId] = msg.value;
+        serviceOwners[msg.sender].push(serviceId);
 
-        emit ServiceRegistered(
-            serviceId,
-            msg.sender,
-            _name,
-            _serviceUrl,
-            _pricePerCall,
-            block.timestamp
-        );
-
+        emit ServiceRegistered(serviceId, name, msg.sender, msg.value);
         return serviceId;
     }
 
     /**
-     * @dev Update service information
+     * @dev Updates an existing service's details
+     * @param serviceId The service ID to update
+     * @param description New description
+     * @param priceAmount New price amount
+     * @param priceToken New price token
      */
     function updateService(
-        bytes32 _serviceId,
-        string calldata _newServiceUrl,
-        uint256 _newPrice
-    ) external onlyServiceOwner(_serviceId) serviceExists(_serviceId) {
-        services[_serviceId].serviceUrl = _newServiceUrl;
-        services[_serviceId].pricePerCall = _newPrice;
+        bytes32 serviceId,
+        string calldata description,
+        uint256 priceAmount,
+        string calldata priceToken
+    ) external onlyServiceOwner(serviceId) {
+        Service storage service = services[serviceId];
+        require(service.active, "Service is not active");
 
-        emit ServiceUpdated(_serviceId, _newServiceUrl, _newPrice, block.timestamp);
+        service.description = description;
+        service.priceAmount = priceAmount;
+        service.priceToken = priceToken;
+
+        emit ServiceUpdated(serviceId, description);
     }
 
     /**
-     * @dev Deactivate a service
+     * @dev Deactivates a service
+     * @param serviceId The service ID to deactivate
      */
-    function deactivateService(bytes32 _serviceId) external onlyServiceOwner(_serviceId) serviceExists(_serviceId) {
-        services[_serviceId].isActive = false;
-        emit ServiceDeactivated(_serviceId, block.timestamp);
+    function deactivateService(bytes32 serviceId) external onlyServiceOwner(serviceId) {
+        services[serviceId].active = false;
+        emit ServiceDeactivated(serviceId);
     }
 
     /**
-     * @dev Reactivate a service
+     * @dev Activates a service
+     * @param serviceId The service ID to activate
      */
-    function reactivateService(bytes32 _serviceId) external onlyServiceOwner(_serviceId) serviceExists(_serviceId) {
-        services[_serviceId].isActive = true;
-        emit ServiceDeactivated(_serviceId, block.timestamp);
+    function activateService(bytes32 serviceId) external onlyServiceOwner(serviceId) {
+        services[serviceId].active = true;
     }
 
     /**
-     * @dev Update pricing model
+     * @dev Updates a service's reputation score
+     * @param serviceId The service ID to update
+     * @param scoreChange Amount to change reputation (positive or negative)
      */
-    function updatePricingModel(
-        bytes32 _serviceId,
-        PricingModel _newModel
-    ) external onlyServiceOwner(_serviceId) serviceExists(_serviceId) {
-        services[_serviceId].pricingModel = _newModel;
-        emit PricingModelUpdated(_serviceId, _newModel);
-    }
+    function updateReputation(bytes32 serviceId, int256 scoreChange) external onlyOwner {
+        Service storage service = services[serviceId];
+        require(service.active, "Service is not active");
 
-    /**
-     * @dev Update service reputation (called by payment/execution contract)
-     * Only callable by authorized contracts (in production, would use access control)
-     */
-    function updateReputation(bytes32 _serviceId, uint256 _rating) external serviceExists(_serviceId) {
-        // In production, restrict to authorized payment contracts
-        require(_rating <= 500, "Rating must be <= 500 (5.0 stars)");
-
-        Service storage service = services[_serviceId];
-        uint256 oldReputation = service.reputation;
-        uint256 totalCalls = service.totalCalls;
-
-        // Moving average: ((current * total) + new) / (total + 1)
-        service.reputation = ((oldReputation * totalCalls) + _rating) / (totalCalls + 1);
-        service.totalCalls++;
-
-        emit ReputationUpdated(_serviceId, service.reputation, service.totalCalls);
-    }
-
-    /**
-     * @dev Create a subscription for a service
-     * @param _serviceId Service to subscribe to
-     */
-    function createSubscription(bytes32 _serviceId) external payable serviceExists(_serviceId) serviceActive(_serviceId) {
-        Service storage service = services[_serviceId];
-        require(service.pricingModel == PricingModel.SUBSCRIPTION, "Service is not subscription-based");
-        require(msg.value >= service.subscriptionPrice, "Insufficient payment");
-
-        uint256 expiresAt = block.timestamp + (service.subscriptionPeriod * 1 days);
-
-        Subscription storage sub = subscriptions[_serviceId][msg.sender];
-        sub.subscriber = msg.sender;
-        sub.serviceId = _serviceId;
-        sub.expiresAt = expiresAt;
-        sub.isActive = true;
-
-        // Track user subscription
-        bool alreadySubscribed = false;
-        for (uint i = 0; i < userSubscriptions[msg.sender].length; i++) {
-            if (userSubscriptions[msg.sender][i] == _serviceId) {
-                alreadySubscribed = true;
-                break;
+        // Update reputation (clamped between 0 and 100)
+        if (scoreChange > 0) {
+            service.reputationScore = uint256(int256(service.reputationScore) + scoreChange);
+            if (service.reputationScore > 100) {
+                service.reputationScore = 100;
+            }
+        } else {
+            if (int256(service.reputationScore) + scoreChange < 0) {
+                service.reputationScore = 0;
+            } else {
+                service.reputationScore = uint256(int256(service.reputationScore) + scoreChange);
             }
         }
-        if (!alreadySubscribed) {
-            userSubscriptions[msg.sender].push(_serviceId);
-        }
 
-        emit SubscriptionCreated(_serviceId, msg.sender, expiresAt);
+        emit ReputationUpdated(serviceId, service.reputationScore);
     }
 
     /**
-     * @dev Renew an existing subscription
+     * @dev Increments the call count for a service
+     * @param serviceId The service ID to increment
      */
-    function renewSubscription(bytes32 _serviceId) external payable serviceExists(_serviceId) {
-        Service storage service = services[_serviceId];
-        require(service.pricingModel == PricingModel.SUBSCRIPTION, "Service is not subscription-based");
-        require(msg.value >= service.subscriptionPrice, "Insufficient payment");
-
-        Subscription storage sub = subscriptions[_serviceId][msg.sender];
-        require(sub.isActive, "No active subscription");
-
-        // Extend from current expiration or from now if expired
-        uint256 newExpiry = block.timestamp + (service.subscriptionPeriod * 1 days);
-        if (sub.expiresAt > block.timestamp) {
-            newExpiry = sub.expiresAt + (service.subscriptionPeriod * 1 days);
-        }
-
-        sub.expiresAt = newExpiry;
-        sub.isActive = true;
-
-        emit SubscriptionRenewed(_serviceId, msg.sender, newExpiry);
+    function incrementCallCount(bytes32 serviceId) external {
+        // This could be called by PaymentRouter or other authorized contracts
+        require(services[serviceId].active, "Service is not active");
+        services[serviceId].totalCalls++;
     }
 
     /**
-     * @dev Check if a subscription is active
+     * @dev Deposits additional stake for a service
+     * @param serviceId The service ID to deposit stake for
      */
-    function isSubscribed(bytes32 _serviceId, address _subscriber) external view returns (bool) {
-        Subscription storage sub = subscriptions[_serviceId][_subscriber];
-        return sub.isActive && sub.expiresAt > block.timestamp;
+    function depositStake(bytes32 serviceId) external payable {
+        require(services[serviceId].serviceOwner == msg.sender, "Not service owner");
+        require(msg.value > 0, "Must deposit positive amount");
+
+        serviceStakes[serviceId] += msg.value;
+        emit StakeDeposited(serviceId, msg.value);
     }
 
     /**
-     * @dev Get service details
+     * @dev Withdraws stake from a service
+     * @param serviceId The service ID to withdraw stake from
+     * @param amount Amount to withdraw
      */
-    function getService(bytes32 _serviceId) external view returns (Service memory) {
-        return services[_serviceId];
+    function withdrawStake(bytes32 serviceId, uint256 amount) external onlyServiceOwner(serviceId) {
+        require(serviceStakes[serviceId] >= amount, "Insufficient stake");
+        require(services[serviceId].active, "Cannot withdraw from inactive service");
+
+        serviceStakes[serviceId] -= amount;
+        payable(msg.sender).transfer(amount);
+
+        emit StakeWithdrawn(serviceId, amount);
+    }
+
+    // ==================== View Functions ====================
+
+    /**
+     * @dev Gets the stake amount for a service
+     * @param serviceId The service ID
+     * @return The staked amount
+     */
+    function getStake(bytes32 serviceId) external view returns (uint256) {
+        return serviceStakes[serviceId];
     }
 
     /**
-     * @dev Get services owned by an address
+     * @dev Gets complete service details
+     * @param serviceId The service ID
+     * @return name Service name
+     * @return description Service description
+     * @return endpoint Service endpoint
+     * @return pricingModel Pricing model
+     * @return priceAmount Price amount
+     * @return priceToken Price token
+     * @return mcpCompatible MCP compatibility
+     * @return reputationScore Reputation score
+     * @return totalCalls Total call count
+     * @return serviceOwner Service owner address
+     * @return registrationTime Registration timestamp
+     * @return active Active status
      */
-    function getServicesByOwner(address _owner) external view returns (bytes32[] memory) {
-        return userServices[_owner];
+    function getService(bytes32 serviceId) external view returns (
+        string memory name,
+        string memory description,
+        string memory endpoint,
+        string memory pricingModel,
+        uint256 priceAmount,
+        string memory priceToken,
+        bool mcpCompatible,
+        uint256 reputationScore,
+        uint256 totalCalls,
+        address serviceOwner,
+        uint256 registrationTime,
+        bool active
+    ) {
+        Service storage service = services[serviceId];
+        return (
+            service.name,
+            service.description,
+            service.endpoint,
+            service.pricingModel,
+            service.priceAmount,
+            service.priceToken,
+            service.mcpCompatible,
+            service.reputationScore,
+            service.totalCalls,
+            service.serviceOwner,
+            service.registrationTime,
+            service.active
+        );
     }
 
     /**
-     * @dev Get services subscribed by an address
+     * @dev Gets all service IDs owned by an address
+     * @param owner The owner address
+     * @return Array of service IDs
      */
-    function getSubscriptionsByUser(address _user) external view returns (bytes32[] memory) {
-        return userSubscriptions[_user];
-    }
-
-    /**
-     * @dev Get subscription details
-     */
-    function getSubscription(bytes32 _serviceId, address _subscriber) external view returns (Subscription memory) {
-        return subscriptions[_serviceId][_subscriber];
-    }
-
-    /**
-     * @dev Get total service count
-     */
-    function getTotalServices() external view returns (uint256) {
-        return serviceCount;
-    }
-
-    /**
-     * @dev Calculate service price based on pricing model
-     */
-    function calculateServicePrice(bytes32 _serviceId, bool _isSubscribed) external view returns (uint256) {
-        Service memory service = services[_serviceId];
-
-        if (service.pricingModel == PricingModel.SUBSCRIPTION) {
-            if (_isSubscribed) {
-                return 0; // Free for subscribers
-            }
-            return service.subscriptionPrice;
-        }
-
-        return service.pricePerCall;
+    function getServiceIdsByOwner(address owner) external view returns (bytes32[] memory) {
+        return serviceOwners[owner];
     }
 }

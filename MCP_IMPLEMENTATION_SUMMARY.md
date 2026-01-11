@@ -91,12 +91,12 @@ print(f"Price: {result['price']}")
 ## Testing and Verification
 
 ### Test Files Created
-- `test_mcp_config.py`: Basic configuration testing
-- `test_mcp_sync.py`: Synchronous functionality testing
-- `test_mcp_schema.py`: Schema compliance verification
-- `test_mcp_performance.py`: Performance testing
-- `test_mcp_integration.py`: Comprehensive integration testing
-- `test_mcp_final.py`: Final verification test
+- `tests/unit/test_mcp_config.py`: Basic configuration testing
+- `tests/unit/test_mcp_sync.py`: Synchronous functionality testing
+- `tests/unit/test_mcp_schema.py`: Schema compliance verification
+- `tests/unit/test_mcp_performance.py`: Performance testing
+- `tests/integration/test_mcp_integration.py`: Comprehensive integration testing
+- `tests/integration/test_mcp_final.py`: Final verification test
 
 ### Test Results
 - ✅ All basic functionality tests passed

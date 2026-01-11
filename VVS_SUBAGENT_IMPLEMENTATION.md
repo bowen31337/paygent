@@ -70,11 +70,11 @@ All swap commands successfully parsed:
 
 ### New Files
 - `src/agents/vvs_trader_subagent.py` - Complete VVS subagent implementation
-- `test_vvs_subagent.py` - Comprehensive testing script
-- `test_vvs_basic.py` - Basic structure testing
-- `test_vvs_api.py` - API endpoint testing
+- `tests/integration/test_vvs_subagent.py` - Comprehensive testing script
+- `tests/unit/test_vvs_basic.py` - Basic structure testing
+- `tests/unit/test_vvs_api.py` - API endpoint testing
 - `vvs_implementation_summary.py` - Implementation documentation
-- `test_detection_final.py` - Detection logic verification
+- `tests/e2e/test_detection_final.py` - Detection logic verification
 
 ### Modified Files
 - `src/agents/main_agent.py` - Added VVS subagent integration

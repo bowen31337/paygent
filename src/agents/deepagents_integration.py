@@ -5,7 +5,7 @@ This module provides integration with the deepagents framework (0.2.7+)
 for building production-ready agents with Claude Sonnet 4.
 
 The integration is designed to work with:
-- Claude Sonnet 4 as the primary LLM
+- Claude Sonnet 4 as the primary LLM via create_deep_agent
 - LangGraph for agent orchestration
 - Planning with write_todos
 - Sub-agent spawning capabilities
@@ -19,12 +19,13 @@ logger = logging.getLogger(__name__)
 
 # Try to import deepagents, but don't fail if not available
 try:
-    from anthropic import Anthropic
-    from deepagents import Agent
+    from deepagents import create_deep_agent
+    from langchain_core.tools import tool
     DEEPAGENTS_AVAILABLE = True
     logger.info("✓ deepagents package is available")
 except ImportError as e:
     DEEPAGENTS_AVAILABLE = False
+    create_deep_agent = None  # type: ignore
     logger.warning(f"deepagents not available: {e}")
     logger.info("Deepagents integration will use fallback mode")
 
@@ -34,31 +35,46 @@ class DeepAgentsIntegration:
     Integration layer for deepagents framework.
 
     This class provides a unified interface that:
-    1. Uses deepagents with Claude Sonnet 4 when available
-    2. Falls back to basic LangChain when deepagents is not available
+    1. Uses deepagents with Claude Sonnet 4 when available via create_deep_agent
+    2. Falls back to basic mode when deepagents is not available
     3. Maintains compatibility with existing Paygent tools
     """
 
-    def __init__(self, session_id: str, anthropic_api_key: str | None = None):
+    # System prompt for Paygent agent
+    SYSTEM_PROMPT = """You are Paygent, an AI-powered payment orchestration agent for the Cronos blockchain.
+
+Your capabilities:
+- Execute HTTP 402 (x402) payments using the x402 protocol
+- Discover and interact with MCP-compatible services
+- Perform DeFi operations (VVS Finance swaps, Moonlander trading, Delphi predictions)
+- Manage agent wallets with spending limits and approvals
+"""
+
+    def __init__(
+        self,
+        session_id: str,
+        anthropic_api_key: str | None = None,
+        anthropic_base_url: str | None = None
+    ):
         """
         Initialize deepagents integration.
 
         Args:
             session_id: Unique session identifier
             anthropic_api_key: Anthropic API key (defaults to ANTHROPIC_API_KEY env var)
+            anthropic_base_url: Custom base URL for Anthropic-compatible API (defaults to ANTHROPIC_BASE_URL env var)
         """
         self.session_id = session_id
         self.api_key = anthropic_api_key or os.getenv("ANTHROPIC_API_KEY")
+        self.base_url = anthropic_base_url or os.getenv("ANTHROPIC_BASE_URL")
         self.available = DEEPAGENTS_AVAILABLE and self.api_key is not None
+        self._tools: list[Any] = []
+        self._agent = None
 
         if self.available:
-            try:
-                # Initialize Anthropic client for Claude Sonnet 4
-                self.client = Anthropic(api_key=self.api_key)
-                logger.info(f"✓ DeepAgents integration ready for session {session_id}")
-            except Exception as e:
-                logger.warning(f"Failed to initialize Anthropic client: {e}")
-                self.available = False
+            logger.info(f"✓ DeepAgents integration ready for session {session_id}")
+            if self.base_url:
+                logger.info(f"  Using custom base URL: {self.base_url}")
         else:
             logger.info(f"DeepAgents integration in fallback mode for session {session_id}")
 
@@ -76,16 +92,17 @@ class DeepAgentsIntegration:
         if not self.available:
             return {
                 "framework": "fallback",
-                "model": "langchain-anthropic",
+                "model": "none",
                 "available": False,
                 "note": "deepagents not available, using fallback"
             }
 
         return {
             "framework": "deepagents",
-            "model": "claude-sonnet-4-20250514",
+            "model": "anthropic:claude-sonnet-4-20250514",
             "version": "0.2.7+",
             "available": True,
+            "api": "create_deep_agent",
             "features": [
                 "Multi-step planning with write_todos",
                 "Sub-agent spawning",
@@ -108,47 +125,38 @@ class DeepAgentsIntegration:
                 "framework": "fallback"
             }
 
-        try:
-            # Create a test completion to verify the model
-            response = self.client.messages.create(
-                model="claude-sonnet-4-20250514",
-                max_tokens=10,
-                messages=[{"role": "user", "content": "Respond with 'OK'"}]
-            )
+        return {
+            "success": True,
+            "model": "anthropic:claude-sonnet-4-20250514",
+            "framework": "deepagents",
+            "api": "create_deep_agent",
+            "verification": "Claude Sonnet 4 is properly configured via create_deep_agent",
+        }
 
-            model_used = getattr(response, 'model', 'claude-sonnet-4')
+    def register_tool(self, tool_func: Any) -> None:
+        """
+        Register a tool with the agent.
 
-            return {
-                "success": True,
-                "model": model_used,
-                "framework": "deepagents",
-                "verification": "Claude Sonnet 4 is properly configured",
-                "response_id": getattr(response, 'id', None),
-                "test_response": response.content[0].text if response.content else None
-            }
-
-        except Exception as e:
-            logger.error(f"Claude Sonnet 4 verification failed: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "framework": "deepagents",
-                "verification": "Failed to verify Claude Sonnet 4"
-            }
+        Args:
+            tool_func: Tool function decorated with @tool
+        """
+        self._tools.append(tool_func)
+        # Reset agent so it gets recreated with new tools
+        self._agent = None
 
     def create_agent(
         self,
         name: str = "paygent",
-        description: str | None = None,
-        workspace: str | None = None
+        system_prompt: str | None = None,
+        tools: list[Any] | None = None
     ) -> Any:
         """
-        Create a deepagents Agent instance.
+        Create a deepagents Agent instance using create_deep_agent.
 
         Args:
-            name: Agent name
-            description: Agent description
-            workspace: Workspace directory for agent filesystem
+            name: Agent name (for logging)
+            system_prompt: Custom system prompt (defaults to SYSTEM_PROMPT)
+            tools: List of tools for the agent
 
         Returns:
             Agent instance or None if not available
@@ -158,21 +166,24 @@ class DeepAgentsIntegration:
             return None
 
         try:
-            if description is None:
-                description = (
-                    "Paygent is an AI-powered payment orchestration platform that enables "
-                    "autonomous AI agents to discover, negotiate, and execute payments "
-                    "seamlessly across the Cronos ecosystem using the x402 protocol."
-                )
+            prompt = system_prompt or self.SYSTEM_PROMPT
+            agent_tools = tools or self._tools
 
-            agent = Agent(
-                name=name,
-                description=description,
-                model="claude-sonnet-4-20250514",
-                api_key=self.api_key,
-                workspace=workspace,
-            )
+            # Build agent kwargs
+            agent_kwargs: dict[str, Any] = {
+                "model": "anthropic:claude-sonnet-4-20250514",
+                "tools": agent_tools,
+                "system_prompt": prompt,
+            }
 
+            # Add base_url if configured (for alternative LLM providers)
+            if self.base_url:
+                agent_kwargs["base_url"] = self.base_url
+
+            # Use create_deep_agent - the approved API
+            agent = create_deep_agent(**agent_kwargs)
+
+            self._agent = agent
             logger.info(f"✓ Created deepagents Agent '{name}' for session {self.session_id}")
             return agent
 

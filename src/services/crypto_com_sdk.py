@@ -7,11 +7,22 @@ spending limit management.
 """
 
 import logging
+import os
 from typing import Any
+
+from dotenv import load_dotenv
+from web3 import Web3
 
 from src.core.config import settings
 
+# Load environment variables from .env
+load_dotenv()
+
 logger = logging.getLogger(__name__)
+
+# Cronos Testnet RPC
+CRONOS_TESTNET_RPC = "https://evm-t3.cronos.org"
+CRONOS_MAINNET_RPC = "https://evm.cronos.org"
 
 
 class CryptoComAgentSDKError(Exception):
@@ -37,51 +48,112 @@ class CryptoComAgentSDK:
         """
         self.api_key = api_key or settings.crypto_com_api_key
         self.base_url = "https://api.crypto.com/ai-agent"
-        self.wallet_address = settings.default_wallet_address
+        
+        # Get private key from environment
+        self.private_key = os.getenv("AGENT_WALLET_PRIVATE_KEY")
+        
+        # Initialize Web3 with Cronos testnet
+        self.rpc_url = os.getenv("CRONOS_RPC_URL", CRONOS_TESTNET_RPC)
+        self.w3 = Web3(Web3.HTTPProvider(self.rpc_url))
+        
+        # Derive wallet address from private key
+        if self.private_key:
+            try:
+                # Ensure private key has 0x prefix
+                pk = self.private_key if self.private_key.startswith("0x") else f"0x{self.private_key}"
+                account = self.w3.eth.account.from_key(pk)
+                self.wallet_address = account.address
+                logger.info(f"Wallet address derived: {self.wallet_address}")
+            except Exception as e:
+                logger.warning(f"Could not derive wallet address from private key: {e}")
+                self.wallet_address = settings.default_wallet_address
+        else:
+            self.wallet_address = settings.default_wallet_address
 
         if not self.api_key:
             raise CryptoComAgentSDKError("Crypto.com API key is required")
 
-        logger.info("Crypto.com AI Agent SDK initialized")
+        logger.info(f"Crypto.com AI Agent SDK initialized with wallet: {self.wallet_address}")
 
     async def check_balance(self, tokens: list[str] | None = None) -> dict[str, Any]:
         """
         Check wallet balance for specified tokens.
 
         Args:
-            tokens: List of token symbols to check (e.g., ["CRO", "USDC"])
+            tokens: List of token symbols to check (e.g., ["CRO", "USDC", "tUSDC"])
 
         Returns:
             Dict containing balance information for each token
-
-        Example:
-            {
-                "CRO": {"balance": 100.0, "usd_value": 50.0},
-                "USDC": {"balance": 500.0, "usd_value": 500.0}
-            }
         """
         try:
-            # This would integrate with the actual Crypto.com AI Agent SDK
-            # For now, return mock data structure
-
             if not tokens:
                 tokens = ["CRO", "USDC"]
 
             balances = {}
-
-            # Mock implementation - in real implementation, this would call
-            # the Crypto.com AI Agent SDK
-            for token in tokens:
-                # This is where the actual SDK call would go
-                balances[token] = {
-                    "balance": 100.0,  # Mock value
-                    "usd_value": 50.0,  # Mock value
-                    "token": token,
-                    "wallet_address": self.wallet_address
+            
+            # Ensure wallet address is properly checksummed
+            checksum_address = self.w3.to_checksum_address(self.wallet_address)
+            
+            # tUSDC contract address on Cronos testnet (from vvs-testnet.json)
+            TUSDC_ADDRESS = "0x1C4719F10f0ADc7A8AcBC688Ecb1AfE1611D16ED"
+            
+            # Minimal ERC20 ABI for balanceOf
+            ERC20_ABI = [
+                {
+                    "constant": True,
+                    "inputs": [{"name": "_owner", "type": "address"}],
+                    "name": "balanceOf",
+                    "outputs": [{"name": "balance", "type": "uint256"}],
+                    "type": "function"
+                },
+                {
+                    "constant": True,
+                    "inputs": [],
+                    "name": "decimals",
+                    "outputs": [{"name": "", "type": "uint8"}],
+                    "type": "function"
                 }
+            ]
 
-            logger.info(f"Retrieved balances for {len(tokens)} tokens")
-            return balances
+            for token in tokens:
+                token_upper = token.upper()
+                if token_upper == "CRO":
+                    # Get native CRO balance from chain
+                    try:
+                        balance_wei = self.w3.eth.get_balance(checksum_address)
+                        balance = float(self.w3.from_wei(balance_wei, "ether"))
+                        balances["CRO"] = balance
+                        logger.info(f"CRO balance: {balance}")
+                    except Exception as e:
+                        logger.error(f"Failed to get CRO balance: {e}")
+                        balances["CRO"] = 0.0
+                elif token_upper in ("USDC", "TUSDC"):
+                    # Query real tUSDC balance from ERC20 contract
+                    try:
+                        tusdc_contract = self.w3.eth.contract(
+                            address=self.w3.to_checksum_address(TUSDC_ADDRESS),
+                            abi=ERC20_ABI
+                        )
+                        balance_raw = tusdc_contract.functions.balanceOf(checksum_address).call()
+                        # tUSDC has 6 decimals
+                        balance = float(balance_raw) / 1e6
+                        # Store under both keys for compatibility
+                        balances["tUSDC"] = balance
+                        balances["USDC"] = balance
+                        logger.info(f"tUSDC balance: {balance}")
+                    except Exception as e:
+                        logger.error(f"Failed to get tUSDC balance: {e}")
+                        balances["tUSDC"] = 0.0
+                        balances["USDC"] = 0.0
+                else:
+                    balances[token] = 0.0
+
+            logger.info(f"Retrieved balances: {balances}")
+            return {
+                "balances": balances,
+                "wallet_address": self.wallet_address,
+                "network": "Cronos Testnet" if "t3" in self.rpc_url else "Cronos Mainnet",
+            }
 
         except Exception as e:
             logger.error(f"Failed to check balance: {e}")

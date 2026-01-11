@@ -441,17 +441,3 @@ class ServiceRegistryService:
         except Exception as e:
             logger.error(f"Failed to get service stats: {e}")
             return {"error": str(e)}
-
-
-class MCPClient:
-    """Client for interacting with MCP-compatible services."""
-
-    def __init__(self, service_registry: ServiceRegistryService):
-        """
-        Initialize MCP client.
-
-        Args:
-            service_registry: Service registry service
-        """
-        self.service_registry = service_registry
-        self.client = None  # TODO: Implement MCP client

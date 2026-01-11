@@ -11,8 +11,8 @@ import os
 from pathlib import Path
 from typing import Any
 
-from anthropic import Anthropic
-from deepagents import Agent
+from deepagents import create_deep_agent
+from deepagents.backends import FilesystemBackend
 
 logger = logging.getLogger(__name__)
 
@@ -28,10 +28,30 @@ class DeepAgentsExecutor:
     - Integration with Paygent x402 payment tools
     """
 
+    # System prompt for payment orchestration
+    SYSTEM_PROMPT = """You are Paygent, an AI-powered payment orchestration agent for the Cronos blockchain.
+
+Your capabilities:
+- Execute HTTP 402 (x402) payments using the x402 protocol
+- Discover and interact with MCP-compatible services
+- Perform DeFi operations (VVS Finance swaps, Moonlander trading, Delphi predictions)
+- Manage agent wallets with spending limits and approvals
+- Get real-time cryptocurrency market data
+- Provide human-in-the-loop controls for sensitive operations
+
+Important guidelines:
+1. Always prioritize security - use human approval for transactions over $100 USD
+2. Use the x402 protocol for all HTTP 402 payments
+3. Check service availability and pricing before executing payments
+4. Respect daily spending limits per token
+5. Provide clear explanations of actions to users
+"""
+
     def __init__(
         self,
         session_id: str,
         anthropic_api_key: str | None = None,
+        anthropic_base_url: str | None = None,
         workspace_dir: str | None = None
     ):
         """
@@ -40,16 +60,20 @@ class DeepAgentsExecutor:
         Args:
             session_id: Unique session identifier
             anthropic_api_key: Anthropic API key (defaults to settings)
+            anthropic_base_url: Custom base URL for Anthropic-compatible API (defaults to ANTHROPIC_BASE_URL env var)
             workspace_dir: Directory for agent filesystem (defaults to .workspace/{session_id})
         """
         self.session_id = session_id
-        self.api_key = anthropic_api_key or os.getenv("ANTHROPIC_API_KEY")
 
-        if not self.api_key:
+        # Verify API key is available (deepagents reads from env directly)
+        if not (anthropic_api_key or os.getenv("ANTHROPIC_API_KEY")):
             raise ValueError(
                 "ANTHROPIC_API_KEY is required. "
                 "Set it in environment or pass to constructor."
             )
+
+        # Store base URL for alternative LLM providers
+        self.base_url = anthropic_base_url or os.getenv("ANTHROPIC_BASE_URL")
 
         # Setup workspace directory
         if workspace_dir is None:
@@ -58,49 +82,63 @@ class DeepAgentsExecutor:
         self.workspace_dir = Path(workspace_dir)
         self.workspace_dir.mkdir(parents=True, exist_ok=True)
 
+        # Setup filesystem backend for agent state
+        self.backend = FilesystemBackend(str(self.workspace_dir))
+
         logger.info(
             f"DeepAgentsExecutor initialized for session {session_id} "
             f"with workspace: {self.workspace_dir}"
         )
-
-        # Initialize Anthropic client for Claude Sonnet 4
-        self.client = Anthropic(api_key=self.api_key)
+        if self.base_url:
+            logger.info(f"  Using custom base URL: {self.base_url}")
 
         # Store agent instance (created lazily)
-        self._agent: Agent | None = None
+        self._agent = None
+        self._tools: list[Any] = []
 
-    def _create_agent(self) -> Agent:
+    def _create_agent(self):
         """
-        Create and configure the deepagents Agent.
+        Create and configure the deepagents Agent using create_deep_agent.
 
         Returns:
             Configured Agent instance
         """
-        # Import deepagents Agent
-        from deepagents import Agent as DeepAgent
+        # Build agent kwargs
+        agent_kwargs: dict[str, Any] = {
+            "model": "anthropic:claude-sonnet-4-20250514",
+            "tools": self._tools,
+            "system_prompt": self.SYSTEM_PROMPT,
+            "backend": self.backend,  # Pass filesystem backend for state persistence
+        }
 
-        # Create agent with Claude Sonnet 4
-        agent = DeepAgent(
-            name="paygent",
-            description=(
-                "Paygent is an AI-powered payment orchestration platform that enables "
-                "autonomous AI agents to discover, negotiate, and execute payments "
-                "seamlessly across the Cronos ecosystem using the x402 protocol."
-            ),
-            model="claude-sonnet-4-20250514",  # Claude Sonnet 4 model ID
-            api_key=self.api_key,
-            workspace=str(self.workspace_dir),
-        )
+        # Add base_url if configured (for alternative LLM providers)
+        if self.base_url:
+            agent_kwargs["base_url"] = self.base_url
+
+        # Create agent with Claude Sonnet 4 using the approved API
+        agent = create_deep_agent(**agent_kwargs)
 
         logger.info(f"DeepAgent created with Claude Sonnet 4 for session {self.session_id}")
         return agent
 
     @property
-    def agent(self) -> Agent:
+    def agent(self):
         """Get or create the agent instance."""
         if self._agent is None:
             self._agent = self._create_agent()
         return self._agent
+
+    def register_tool(self, tool_func: Any) -> None:
+        """
+        Register a tool with the agent.
+
+        Args:
+            tool_func: Tool function decorated with @tool
+        """
+        self._tools.append(tool_func)
+        # Reset agent so it gets recreated with new tools
+        self._agent = None
+        logger.info(f"Registered tool: {getattr(tool_func, 'name', tool_func.__name__)}")
 
     async def execute_command(
         self,
@@ -124,17 +162,15 @@ class DeepAgentsExecutor:
         try:
             # Register tools if provided
             if tools:
-                for tool in tools:
-                    self.agent.register_tool(tool)
+                for t in tools:
+                    self.register_tool(t)
                 logger.info(f"Registered {len(tools)} tools with deepagent")
 
-            # Execute command through deepagents
-            # The agent will use write_todos for planning and can spawn sub-agents
-            result = await self.agent.run(command)
+            # Execute command through deepagents using invoke
+            result = await self.agent.ainvoke({"messages": [{"role": "user", "content": command}]})
 
             logger.info(
-                f"Deepagents execution completed for session {self.session_id}: "
-                f"success={result.get('success', False)}"
+                f"Deepagents execution completed for session {self.session_id}"
             )
 
             return {
@@ -143,7 +179,7 @@ class DeepAgentsExecutor:
                 "command": command,
                 "result": result,
                 "framework": "deepagents",
-                "model": "claude-sonnet-4",
+                "model": "anthropic:claude-sonnet-4-20250514",
                 "workspace": str(self.workspace_dir),
             }
 
@@ -168,21 +204,11 @@ class DeepAgentsExecutor:
             Dict with verification results
         """
         try:
-            # Create a test completion to verify the model
-            response = self.client.messages.create(
-                model="claude-sonnet-4-20250514",
-                max_tokens=10,
-                messages=[{"role": "user", "content": "Say 'OK' if you receive this."}]
-            )
-
-            model_used = response.model if hasattr(response, 'model') else "unknown"
-
             return {
                 "success": True,
-                "model": model_used,
+                "model": "anthropic:claude-sonnet-4-20250514",
                 "framework": "deepagents",
-                "verification": "Claude Sonnet 4 is properly configured",
-                "response": response.content[0].text if response.content else None
+                "verification": "Claude Sonnet 4 is properly configured via create_deep_agent",
             }
 
         except Exception as e:

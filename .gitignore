@@ -229,10 +229,4 @@ typecheck/
 .uv/
 uv.lock
 
-
-# Experimental files (WIP)
-src/agents/planner.py
-src/x402/mock_facilitator.py
-src/x404/signature.py
-tests/test_x402_payment.py
-
+.next/

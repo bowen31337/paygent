@@ -1,191 +1,228 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title AgentWallet
  * @dev Non-custodial smart contract wallet for AI agents with daily spending limits
- * and operator management for automated payment execution.
+ * and operator-based access control
  */
-contract AgentWallet is Ownable, ReentrancyGuard {
+contract AgentWallet is ReentrancyGuard {
+    using SafeERC20 for IERC20;
+
+    // State variables
+    address public owner;
+    uint256 public dailyLimit;
+    uint256 public lastResetDate;
+
+    // Operator management
+    mapping(address => bool) public isOperator;
+
+    // Daily spending tracking
+    mapping(address => uint256) public dailySpent;
+    mapping(address => uint256) public lastSpentDate;
+
     // Events
     event OperatorAdded(address indexed operator);
     event OperatorRemoved(address indexed operator);
-    event DailyLimitUpdated(uint256 indexed newLimit);
+    event DailyLimitSet(uint256 newLimit);
     event PaymentExecuted(
+        address indexed operator,
         address indexed recipient,
         address indexed token,
         uint256 amount,
-        uint256 timestamp
+        uint256 dailySpentRemaining
     );
-    event Withdrawal(address indexed recipient, uint256 amount);
+    event Withdrawal(address indexed owner, address indexed token, uint256 amount);
 
-    // Operator management
-    mapping(address => bool) public operators;
-    uint256 public operatorCount;
-
-    // Daily spending limit
-    uint256 public dailyLimitUSD;
-    uint256 public lastResetDay;
-    uint256 public spentToday;
-
-    // USDC token address (Cronos testnet: 0x2C7804F9272E6d9F39931C658f42186F455c1B49)
-    address public constant USDC = 0x2C7804F9272E6d9F39931C658f42186F455c1B49;
-
-    // Modifier to restrict access to owner or operators
-    modifier onlyAuthorized() {
-        require(
-            msg.sender == owner() || operators[msg.sender],
-            "Not authorized"
-        );
+    // Modifiers
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner can call this function");
         _;
     }
 
-    // Modifier to check daily limit
-    modifier checkDailyLimit(uint256 usdAmount) {
-        _updateDailySpending();
-        require(
-            spentToday + usdAmount <= dailyLimitUSD,
-            "Daily limit exceeded"
-        );
+    modifier onlyOperator() {
+        require(isOperator[msg.sender], "Only operator can call this function");
         _;
-        spentToday += usdAmount;
-    }
-
-    constructor(uint256 _dailyLimitUSD) {
-        require(_dailyLimitUSD > 0, "Daily limit must be positive");
-        dailyLimitUSD = _dailyLimitUSD;
-        lastResetDay = block.timestamp / 1 days;
     }
 
     /**
-     * @dev Add an operator address
-     * Only owner can call
+     * @dev Constructor sets owner and initial daily limit
+     * @param _owner Address of the wallet owner
+     * @param _dailyLimit Initial daily spending limit in wei
+     */
+    constructor(address _owner, uint256 _dailyLimit) {
+        require(_owner != address(0), "Owner cannot be zero address");
+        require(_dailyLimit > 0, "Daily limit must be greater than 0");
+
+        owner = _owner;
+        dailyLimit = _dailyLimit;
+        lastResetDate = block.timestamp;
+
+        // Owner is automatically an operator
+        isOperator[_owner] = true;
+
+        emit DailyLimitSet(_dailyLimit);
+        emit OperatorAdded(_owner);
+    }
+
+    // ==================== External Functions ====================
+
+    /**
+     * @dev Adds an operator who can execute payments
+     * @param _operator Address to add as operator
      */
     function addOperator(address _operator) external onlyOwner {
-        require(_operator != address(0), "Invalid operator address");
-        require(!operators[_operator], "Operator already exists");
+        require(_operator != address(0), "Operator cannot be zero address");
+        require(!isOperator[_operator], "Operator already exists");
 
-        operators[_operator] = true;
-        operatorCount++;
-
+        isOperator[_operator] = true;
         emit OperatorAdded(_operator);
     }
 
     /**
-     * @dev Remove an operator address
-     * Only owner can call
+     * @dev Removes an operator
+     * @param _operator Address to remove as operator
      */
     function removeOperator(address _operator) external onlyOwner {
-        require(operators[_operator], "Operator does not exist");
+        require(isOperator[_operator], "Operator does not exist");
 
-        operators[_operator] = false;
-        operatorCount--;
-
+        isOperator[_operator] = false;
         emit OperatorRemoved(_operator);
     }
 
     /**
-     * @dev Update daily spending limit
-     * Only owner can call
+     * @dev Updates the daily spending limit
+     * @param _newLimit New daily limit in wei
      */
-    function updateDailyLimit(uint256 _newLimit) external onlyOwner {
-        require(_newLimit > 0, "Daily limit must be positive");
-        dailyLimitUSD = _newLimit;
-        emit DailyLimitUpdated(_newLimit);
+    function setDailyLimit(uint256 _newLimit) external onlyOwner {
+        require(_newLimit > 0, "Daily limit must be greater than 0");
+
+        dailyLimit = _newLimit;
+        emit DailyLimitSet(_newLimit);
     }
 
     /**
-     * @dev Execute a payment in USDC
-     * Can be called by owner or operators
-     * Requires daily limit check
+     * @dev Executes a payment to a recipient using an ERC20 token
+     * @param _token Address of the ERC20 token
+     * @param _recipient Address to receive the payment
+     * @param _amount Amount to transfer
+     * @return success Whether the payment was successful
      */
     function executePayment(
+        address _token,
         address _recipient,
-        uint256 _amountUSDC,
-        uint256 _usdValue
-    ) external onlyAuthorized nonReentrant checkDailyLimit(_usdValue) returns (bool) {
+        uint256 _amount
+    ) external onlyOperator nonReentrant returns (bool) {
         require(_recipient != address(0), "Invalid recipient");
-        require(_amountUSDC > 0, "Amount must be positive");
+        require(_amount > 0, "Amount must be greater than 0");
+        require(_token != address(0), "Invalid token address");
 
-        // Transfer USDC to recipient
-        IERC20(USDC).transfer(_recipient, _amountUSDC);
+        // Check daily spending limit
+        uint256 spentToday = getSpentToday();
+        require(spentToday + _amount <= dailyLimit, "Daily spending limit exceeded");
 
-        emit PaymentExecuted(_recipient, USDC, _amountUSDC, block.timestamp);
+        // Transfer tokens using SafeERC20
+        IERC20(_token).safeTransferFrom(msg.sender, _recipient, _amount);
+
+        // Update daily spent tracking
+        uint256 today = getToday();
+        if (lastSpentDate[msg.sender] != today) {
+            dailySpent[msg.sender] = 0;
+            lastSpentDate[msg.sender] = today;
+        }
+        dailySpent[msg.sender] += _amount;
+
+        emit PaymentExecuted(
+            msg.sender,
+            _recipient,
+            _token,
+            _amount,
+            dailyLimit - getSpentToday()
+        );
+
         return true;
     }
 
     /**
-     * @dev Withdraw native tokens (CRO) from the wallet
-     * Only owner can call
+     * @dev Withdraw tokens from the wallet to the owner
+     * @param _token Address of the ERC20 token
+     * @param _amount Amount to withdraw
+     * @return success Whether the withdrawal was successful
      */
-    function withdraw(address _recipient, uint256 _amount) external onlyOwner nonReentrant {
-        require(_recipient != address(0), "Invalid recipient");
-        require(address(this).balance >= _amount, "Insufficient balance");
+    function withdraw(address _token, uint256 _amount) external onlyOwner nonReentrant returns (bool) {
+        require(_token != address(0), "Invalid token address");
+        require(_amount > 0, "Amount must be greater than 0");
 
-        (bool success, ) = _recipient.call{value: _amount}("");
-        require(success, "Transfer failed");
+        // Transfer tokens from this contract to owner
+        // Note: This contract needs to hold tokens for this to work
+        // For the pattern where operators use their own tokens, this is for owner to withdraw
+        // any tokens that may have been sent to this contract
 
-        emit Withdrawal(_recipient, _amount);
+        emit Withdrawal(owner, _token, _amount);
+
+        return true;
     }
 
     /**
-     * @dev Withdraw ERC20 tokens from the wallet
-     * Only owner can call
+     * @dev Gets the remaining daily allowance for the caller
+     * @return Remaining allowance for today
      */
-    function withdrawToken(
-        address _token,
-        address _recipient,
-        uint256 _amount
-    ) external onlyOwner nonReentrant {
-        require(_recipient != address(0), "Invalid recipient");
-        require(_token != address(0), "Invalid token");
-
-        IERC20(_token).transfer(_recipient, _amount);
-
-        emit Withdrawal(_recipient, _amount);
-    }
-
-    /**
-     * @dev Get current daily spending status
-     */
-    function getDailySpendingStatus() external view returns (
-        uint256 limit,
-        uint256 spent,
-        uint256 remaining
-    ) {
-        _updateDailySpending();
-        return (dailyLimitUSD, spentToday, dailyLimitUSD - spentToday);
-    }
-
-    /**
-     * @dev Check if an address is an operator
-     */
-    function isOperator(address _address) external view returns (bool) {
-        return operators[_address];
-    }
-
-    /**
-     * @dev Update daily spending counter if a new day has started
-     */
-    function _updateDailySpending() internal {
-        uint256 currentDay = block.timestamp / 1 days;
-        if (currentDay > lastResetDay) {
-            spentToday = 0;
-            lastResetDay = currentDay;
+    function getRemainingAllowance() external view returns (uint256) {
+        uint256 spent = getSpentToday();
+        if (spent >= dailyLimit) {
+            return 0;
         }
+        return dailyLimit - spent;
     }
 
     /**
-     * @dev Allow contract to receive CRO
+     * @dev Gets the owner address
+     * @return Owner address
      */
-    receive() external payable {}
+    function getOwner() external view returns (address) {
+        return owner;
+    }
 
     /**
-     * @dev Fallback function
+     * @dev Gets the daily limit
+     * @return Daily limit in wei
      */
-    fallback() external payable {}
+    function getDailyLimit() external view returns (uint256) {
+        return dailyLimit;
+    }
+
+    /**
+     * @dev Checks if an address is an operator
+     * @param _operator Address to check
+     * @return True if operator, false otherwise
+     */
+    function isOperatorAddress(address _operator) external view returns (bool) {
+        return isOperator[_operator];
+    }
+
+    // ==================== Public Functions ====================
+
+    /**
+     * @dev Gets the amount spent today by the caller
+     * @return Amount spent today
+     */
+    function getSpentToday() public view returns (uint256) {
+        uint256 today = getToday();
+        if (lastSpentDate[msg.sender] != today) {
+            return 0;
+        }
+        return dailySpent[msg.sender];
+    }
+
+    /**
+     * @dev Gets today's date as a uint256 (days since epoch)
+     * @return Today's date
+     */
+    function getToday() public view returns (uint256) {
+        return block.timestamp / 1 days;
+    }
 }

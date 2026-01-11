@@ -2,204 +2,34 @@
 Main AI Agent for Paygent.
 
 This module implements the core AI agent that handles natural language payment commands
-using LangChain framework with Claude and OpenAI models.
+using the deepagents create_deep_agent API with Claude Sonnet 4.
 """
 
 import logging
+import re
 from typing import Any
 from uuid import UUID
 
-# TODO: Fix langchain compatibility - AgentExecutor moved/removed in 1.2.0
-# from langchain.agents import create_agent
-# from langchain_core.agents import AgentExecutor
-# from langchain.chains import create_history_aware_retriever, create_retrieval_chain
-# from langchain.chains.combine_documents import create_stuff_documents_chain
-
-# Compatibility layer for langchain 1.x
-try:
-    from langchain.memory import ConversationBufferMemory
-except ImportError:
-    # langchain 1.x moved memory to langchain_community
-    from langchain_core.chat_history import InMemoryChatMessageHistory
-    from langchain_core.messages import AIMessage, HumanMessage
-
-    class ConversationBufferMemory:  # type: ignore
-        """Compatibility wrapper for langchain 1.x memory."""
-
-        def __init__(self, memory_key: str = "chat_history", return_messages: bool = True, session_id: str = ""):
-            """
-            Initialize the memory wrapper.
-
-            Args:
-                memory_key: Key for storing chat history
-                return_messages: Whether to return messages
-                session_id: Session identifier for memory isolation
-            """
-            self.memory_key = memory_key
-            self.return_messages = return_messages
-            self.session_id = session_id
-            self.chat_history = InMemoryChatMessageHistory()
-
-        def save_context(self, inputs: dict[str, Any], outputs: dict[str, Any]) -> None:
-            """Save context to memory."""
-            if "input" in inputs:
-                self.chat_history.add_message(HumanMessage(inputs["input"]))
-            if "output" in outputs:
-                self.chat_history.add_message(AIMessage(outputs["output"]))
-
-        def load_memory_variables(self, kwargs: dict[str, Any]) -> dict[str, Any]:
-            """Load memory variables."""
-            return {self.memory_key: self.chat_history.messages}
-from langchain_core.callbacks import BaseCallbackHandler
-from langchain_core.prompts import (
-    ChatPromptTemplate,
-    MessagesPlaceholder,
-)
-from langchain_openai import ChatOpenAI
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.agents.vvs_trader_subagent import VVSTraderSubagent
-from src.core.config import settings
 from src.services.session_service import SessionService
 from src.tools.market_data_tools import get_market_data_tools
+from src.utils.llm import get_model_string
 
 logger = logging.getLogger(__name__)
 
-
-class AgentCallbackHandler(BaseCallbackHandler):
-    """Custom callback handler for agent execution events."""
-
-    def __init__(self, session_id: UUID):
-        """
-        Initialize the callback handler.
-
-        Args:
-            session_id: Unique identifier for the agent session
-        """
-        self.session_id = session_id
-        self.events = []
-
-    def on_tool_start(
-        self, serialized: dict[str, Any], input_str: str, **kwargs: Any  # noqa: ARG002
-    ) -> Any:
-        """Called when a tool is started."""
-        event = {
-            "type": "tool_call",
-            "tool_name": serialized["name"],
-            "tool_input": input_str,
-        }
-        self.events.append(event)
-        logger.info(f"Session {self.session_id}: Tool call - {event}")
-
-    def on_tool_end(self, output: str, **kwargs: Any) -> Any:  # noqa: ARG002
-        """Called when a tool finishes."""
-        event = {
-            "type": "tool_result",
-            "tool_output": output,
-        }
-        self.events.append(event)
-        logger.info(f"Session {self.session_id}: Tool result - {event}")
-
-    def on_agent_action(self, action: Any, **kwargs: Any) -> Any:  # noqa: ARG002
-        """Called when the agent takes an action."""
-        event = {
-            "type": "thinking",
-            "action": str(action),
-        }
-        self.events.append(event)
-        logger.info(f"Session {self.session_id}: Agent thinking - {event}")
+# Try to import deepagents
+try:
+    from deepagents import create_deep_agent
+    DEEPAGENTS_AVAILABLE = True
+except ImportError:
+    DEEPAGENTS_AVAILABLE = False
+    create_deep_agent = None  # type: ignore
 
 
-class PaygentAgent:
-    """Main AI agent for processing payment commands."""
-
-    def __init__(
-        self,
-        db: AsyncSession,
-        session_id: UUID,
-        llm_model: str = "anthropic/claude-sonnet-4",
-    ):
-        """
-        Initialize the Paygent agent.
-
-        Args:
-            db: Database session
-            session_id: Session ID for this execution
-            llm_model: LLM model to use (anthropic/claude-sonnet-4 or openai/gpt-4)
-        """
-        self.db = db
-        self.session_id = session_id
-        self.session_service = SessionService(db)
-        self.llm_model = llm_model
-
-        # Initialize LLM
-        self.llm = self._initialize_llm()
-
-        # Initialize memory
-        self.memory = ConversationBufferMemory(
-            memory_key="chat_history",
-            return_messages=True,
-            session_id=str(session_id),
-        )
-
-        # Initialize tools
-        self.tools = get_market_data_tools()
-
-        # Initialize agent
-        self.agent_executor = self._create_agent()
-
-    def _initialize_llm(self):
-        """Initialize the LLM with automatic fallback.
-
-        Tries to initialize Claude Sonnet 4 first, falls back to GPT-4 if unavailable.
-        """
-        # Try Anthropic Claude first
-        if "anthropic" in self.llm_model and settings.anthropic_api_key:
-            try:
-                from langchain_anthropic import ChatAnthropic
-
-                llm = ChatAnthropic(
-                    model="claude-sonnet-4",
-                    temperature=0.1,
-                    max_tokens=4000,
-                    api_key=settings.anthropic_api_key,
-                )
-                logger.info(f"Initialized Anthropic Claude Sonnet 4 for session {self.session_id}")
-                return llm
-            except Exception as e:
-                logger.warning(f"Failed to initialize Claude Sonnet 4: {e}. Trying fallback...")
-
-        # Fallback to OpenAI GPT-4
-        if settings.openai_api_key:
-            try:
-                llm = ChatOpenAI(
-                    model="gpt-4",
-                    temperature=0.1,
-                    max_tokens=4000,
-                    api_key=settings.openai_api_key,
-                )
-                logger.info(f"Initialized OpenAI GPT-4 (fallback) for session {self.session_id}")
-                return llm
-            except Exception as e:
-                logger.error(f"Failed to initialize GPT-4 fallback: {e}")
-
-        # If all else fails, raise an error
-        raise ValueError(
-            "Unable to initialize any LLM. Please configure ANTHROPIC_API_KEY or OPENAI_API_KEY."
-        )
-
-    def _create_agent(self):
-        """
-        Create the AI agent with tools and memory.
-
-        Returns:
-            Agent executor (mock for now - TODO: fix langchain compatibility)
-        """
-        # TODO: Implement new langchain agent using create_agent
-        # For now, return a simple mock to allow server startup
-        return None
-        # System prompt for payment orchestration
-        system_prompt = """You are Paygent, an AI-powered payment orchestration agent for the Cronos blockchain.
+# System prompt for Paygent agent
+PAYGENT_SYSTEM_PROMPT = """You are Paygent, an AI-powered payment orchestration agent for the Cronos blockchain.
 
 Your capabilities:
 - Execute HTTP 402 (x402) payments using the x402 protocol
@@ -208,16 +38,6 @@ Your capabilities:
 - Manage agent wallets with spending limits and approvals
 - Get real-time cryptocurrency market data from Crypto.com Market Data MCP Server
 - Provide human-in-the-loop controls for sensitive operations
-
-Available tools:
-- x402_payment: Execute HTTP 402 payments with EIP-712 signatures
-- discover_services: Find MCP-compatible services with pricing
-- check_balance: Check token balances in agent wallet
-- transfer_tokens: Transfer tokens between wallets
-- get_approval: Request human approval for sensitive operations
-- get_crypto_price: Get current cryptocurrency price from MCP server
-- get_crypto_prices: Get multiple cryptocurrency prices efficiently
-- get_market_status: Get market status and server information
 
 Important guidelines:
 1. Always prioritize security - use human approval for transactions over $100 USD
@@ -244,40 +64,73 @@ Example commands you should handle:
 
 Always be helpful, accurate, and security-conscious."""
 
-        from langchain.agents import create_tool_calling_agent
-        from langchain_core.agents import AgentExecutor
 
-        # Create agent prompt
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", system_prompt),
-            MessagesPlaceholder(variable_name="chat_history"),
-            ("human", "{input}"),
-            MessagesPlaceholder(variable_name="agent_scratchpad"),
-        ])
+class PaygentAgent:
+    """Main AI agent for processing payment commands using deepagents."""
 
-        # Create agent
-        agent = create_tool_calling_agent(
-            llm=self.llm,
-            tools=self.tools,
-            prompt=prompt,
+    def __init__(
+        self,
+        db: AsyncSession,
+        session_id: UUID,
+        llm_model: str = "anthropic/claude-sonnet-4",
+    ):
+        """
+        Initialize the Paygent agent.
+
+        Args:
+            db: Database session
+            session_id: Session ID for this execution
+            llm_model: LLM model to use (anthropic/claude-sonnet-4 or openai/gpt-4)
+        """
+        self.db = db
+        self.session_id = session_id
+        self.session_service = SessionService(db)
+        self.llm_model = llm_model
+        self.available = DEEPAGENTS_AVAILABLE
+
+        # Initialize tools
+        self.tools = get_market_data_tools()
+
+        # Create agent lazily
+        self._agent = None
+
+        logger.info(
+            f"PaygentAgent initialized for session {session_id}, "
+            f"DeepAgents: {self.available}"
         )
 
-        # Create agent executor
-        agent_executor = AgentExecutor(
-            agent=agent,
+    def _create_agent(self):
+        """
+        Create the AI agent using create_deep_agent.
+
+        Returns:
+            Agent instance or None if not available
+        """
+        if not self.available:
+            logger.warning("DeepAgents not available, agent creation skipped")
+            return None
+
+        agent = create_deep_agent(
+            model=get_model_string(self.llm_model),
             tools=self.tools,
-            memory=self.memory,
-            verbose=True,
-            handle_parsing_errors=True,
-            max_iterations=10,
+            system_prompt=PAYGENT_SYSTEM_PROMPT,
         )
 
-        return agent_executor
+        logger.info(f"Created deepagents agent for session {self.session_id}")
+        return agent
 
-    async def add_tool(self, tool) -> None:
+    @property
+    def agent(self):
+        """Get or create the agent instance."""
+        if self._agent is None and self.available:
+            self._agent = self._create_agent()
+        return self._agent
+
+    async def add_tool(self, tool_func) -> None:
         """Add a tool to the agent."""
-        self.tools.append(tool)
-        self.agent_executor.tools = self.tools
+        self.tools.append(tool_func)
+        # Reset agent so it gets recreated with new tools
+        self._agent = None
 
     async def execute_command(
         self, command: str, budget_limit_usd: float | None = None
@@ -300,25 +153,33 @@ Always be helpful, accurate, and security-conscious."""
                 logger.info(f"Spawning VVS trader subagent for swap command: {command}")
                 return await self._execute_with_vvs_subagent(command, budget_limit_usd)
 
-            # Regular execution for non-swap commands
-            # Prepare input
-            input_data = {
-                "input": command,
-                "budget_limit_usd": budget_limit_usd,
-            }
+            # Use deepagents agent if available
+            if self.available and self.agent:
+                result = await self.agent.ainvoke({
+                    "messages": [{"role": "user", "content": command}]
+                })
 
-            # Execute command
-            result = await self.agent_executor.ainvoke(input_data)
+                # Extract result from agent response
+                output = self._extract_result(result)
 
-            # Update session
-            await self.session_service.update_session_last_active(self.session_id)
+                # Update session
+                await self.session_service.update_session_last_active(self.session_id)
 
-            return {
-                "success": True,
-                "result": result["output"],
-                "session_id": str(self.session_id),
-                "total_cost_usd": 0.0,  # TODO: Calculate actual cost
-            }
+                return {
+                    "success": True,
+                    "result": output,
+                    "session_id": str(self.session_id),
+                    "framework": "deepagents",
+                    "total_cost_usd": 0.0,
+                }
+            else:
+                # Fallback when deepagents not available
+                return {
+                    "success": False,
+                    "error": "DeepAgents not available",
+                    "session_id": str(self.session_id),
+                    "framework": "fallback",
+                }
 
         except Exception as e:
             logger.error(f"Session {self.session_id}: Command execution failed - {e}")
@@ -327,6 +188,15 @@ Always be helpful, accurate, and security-conscious."""
                 "error": str(e),
                 "session_id": str(self.session_id),
             }
+
+    def _extract_result(self, result: Any) -> str:
+        """Extract the result string from agent response."""
+        if isinstance(result, dict):
+            messages = result.get("messages", [])
+            if messages:
+                last_message = messages[-1]
+                return getattr(last_message, "content", str(last_message))
+        return str(result)
 
     def _should_use_vvs_subagent(self, command: str) -> bool:
         """
@@ -364,7 +234,6 @@ Always be helpful, accurate, and security-conscious."""
         # Check for token symbols that indicate a swap
         # More flexible pattern to match token pairs
         token_pattern = r"\b(?:CRO|USDC|USDT|BTC|ETH|BNB)\s+(?:for|to|into)\s+(?:CRO|USDC|USDT|BTC|ETH|BNB)\b"
-        import re
         has_token_pattern = bool(re.search(token_pattern, command_lower, re.IGNORECASE))
 
         # Use VVS subagent if:
@@ -457,8 +326,6 @@ Always be helpful, accurate, and security-conscious."""
         Returns:
             Dict with parsing result and parameters
         """
-        import re
-
         try:
             # Pattern to extract amount, from_token, to_token
             # Examples: "swap 100 USDC for CRO", "exchange 50 CRO to USDC"

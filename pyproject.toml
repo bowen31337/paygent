@@ -35,10 +35,7 @@ dependencies = [
     "fastapi>=0.109.0",
     "uvicorn[standard]>=0.27.0",
     "python-multipart>=0.0.6",
-    # AI/Agent Framework
-    "langchain>=0.1.0",
-    "langchain-anthropic>=0.1.0",
-    "langchain-openai>=0.0.5",
+    # AI/Agent Framework - Uses deepagents with create_deep_agent API
     "deepagents>=0.2.7",
     # Database
     "sqlalchemy[asyncio]>=2.0.0",
@@ -61,7 +58,8 @@ dependencies = [
     "passlib[bcrypt]>=1.7.4",
     # Websockets
     "websockets>=12.0",
-    "langchain-core>=1.2.5",
+    # langchain-core for @tool decorator (approved pattern)
+    "langchain-core>=0.2.0",
     "cryptography>=46.0.3",
     "aiofiles>=25.1.0",
     "psutil>=7.2.0",

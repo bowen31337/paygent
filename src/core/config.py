@@ -63,6 +63,8 @@ class Settings(BaseSettings):
     # LLM Configuration
     anthropic_api_key: str | None = Field(default=None, description="Anthropic API key for Claude")
     openai_api_key: str | None = Field(default=None, description="OpenAI API key for fallback")
+    anthropic_base_url: str | None = Field(default=None, description="Custom base URL for Anthropic-compatible API")
+    openai_base_url: str | None = Field(default=None, description="Custom base URL for OpenAI-compatible API")
     default_model: str = "claude-sonnet-4-20250514"
     fallback_model: str = "gpt-4"
 

@@ -8,6 +8,7 @@
     "deploy:local": "hardhat run scripts/deploy.js --network localhost",
     "deploy:testnet": "hardhat run scripts/deploy.js --network cronosTestnet",
     "deploy:mainnet": "hardhat run scripts/deploy.js --network cronosMainnet",
+    "deploy:vvs-testnet": "hardhat run scripts/deploy-vvs-testnet.js --network cronosTestnet",
     "verify": "hardhat etherscan-verify --api-key $CRONOSCAN_API_KEY"
   },
   "devDependencies": {
