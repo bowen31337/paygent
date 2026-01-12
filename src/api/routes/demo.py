@@ -805,3 +805,583 @@ Note: HITL approval would be required in production for amounts > $50."""
             "success": False,
             "message": f"Swap failed: {e}",
         })
+
+
+async def execute_mcp_discovery_live(params: dict, explorer_url: str):
+    """Execute MCP service discovery with ReAct phases."""
+    
+    query = params.get("query", "BTC price real-time")
+    category = params.get("category", "market-data")
+    
+    # REASONING
+    yield format_sse("reasoning", {
+        "content": f"""User needs real-time market data services. Querying the MCP registry to find compatible services.
+
+**Analysis:**
+• Query: {query}
+• Category: {category}
+• Evaluation criteria: pricing, latency, reputation score
+• Native Cronos integration preferred
+
+I will query the MCP Service Registry and compare available services."""
+    })
+    await asyncio.sleep(0.8)
+    
+    # PLANNING
+    yield format_sse("planning", {
+        "todos": [
+            {"text": "Query MCP Service Registry", "status": "in-progress"},
+            {"text": f"Filter by category: {category}", "status": "pending"},
+            {"text": "Compare pricing and reputation scores", "status": "pending"},
+            {"text": "Generate recommendation", "status": "pending"},
+        ]
+    })
+    await asyncio.sleep(0.5)
+    
+    # ACTION: Query registry
+    yield format_sse("action", {
+        "tool": {
+            "name": "service_registry.discover",
+            "args": {"category": category, "query": query}
+        }
+    })
+    await asyncio.sleep(0.5)
+    
+    # OBSERVATION: Found services
+    yield format_sse("observation", {
+        "success": True,
+        "data": {
+            "services_found": 3,
+            "registry": "MCP Global Registry",
+            "query_latency": "45ms"
+        }
+    })
+    await asyncio.sleep(0.3)
+    
+    # Updated planning
+    yield format_sse("planning", {
+        "todos": [
+            {"text": "Query MCP Service Registry", "status": "completed"},
+            {"text": f"Filter by category: {category}", "status": "completed"},
+            {"text": "Compare pricing and reputation scores", "status": "in-progress"},
+            {"text": "Generate recommendation", "status": "pending"},
+        ]
+    })
+    await asyncio.sleep(0.3)
+    
+    # ACTION: Compare services
+    yield format_sse("action", {
+        "tool": {
+            "name": "service_registry.compare",
+            "args": {"service_ids": ["crypto-com-premium", "chainlink-feed", "defi-pulse"]}
+        }
+    })
+    await asyncio.sleep(0.5)
+    
+    # OBSERVATION: Service comparison
+    yield format_sse("observation", {
+        "success": True,
+        "data": {
+            "service_1": "🥇 Crypto.com Premium Data",
+            "rating_1": "★★★★★ (5.0)",
+            "price_1": "$0.001/call",
+            "features_1": "Real-time, Order books, Analytics",
+            "service_2": "🥈 ChainLink Price Feed",
+            "rating_2": "★★★★☆ (4.5)",
+            "price_2": "$0.0005/call",
+            "features_2": "Multi-chain, Oracle verified",
+            "service_3": "🥉 DeFi Pulse API",
+            "rating_3": "★★★★☆ (4.2)",
+            "price_3": "$0.002/call",
+            "features_3": "DeFi TVL, Protocol metrics"
+        }
+    })
+    await asyncio.sleep(0.3)
+    
+    # REFLECTION
+    yield format_sse("reflection", {
+        "success": True,
+        "summary": "Best match: Crypto.com Premium Data",
+        "metrics": [
+            "Highest reputation score (5.0 stars)",
+            "Competitive pricing ($0.001/call)",
+            "Native Cronos ecosystem integration",
+            "Includes order books and analytics",
+            "Low latency: ~12ms response time"
+        ]
+    })
+    
+    yield format_sse("complete", {
+        "success": True,
+        "message": "Found 3 MCP-compatible services. Recommend Crypto.com Premium Data (★★★★★) for best combination of price ($0.001/call), reliability, and native Cronos integration."
+    })
+
+
+async def execute_defi_research_live(params: dict, explorer_url: str):
+    """Execute DeFi yield research with subagent simulation."""
+    
+    investment_amount = params.get("amount", 50)
+    
+    # REASONING
+    yield format_sse("reasoning", {
+        "content": f"""Complex DeFi investment request requiring multi-step research and execution.
+
+**Analysis:**
+• Task: Research DeFi yields across Cronos ecosystem
+• Investment amount: ${investment_amount} USD
+• Scope: VVS Finance, Moonlander, Ferro, Tectonic
+• This task requires spawning multiple specialized subagents
+
+I will decompose this into subtasks and coordinate multiple specialist agents for parallel research."""
+    })
+    await asyncio.sleep(0.8)
+    
+    # PLANNING
+    yield format_sse("planning", {
+        "todos": [
+            {"text": "Spawn Research-Agent for yield data collection", "status": "completed"},
+            {"text": "Spawn VVS-Trader subagent for VVS pools", "status": "completed"},
+            {"text": "Spawn Moonlander-Trader subagent for lending rates", "status": "completed"},
+            {"text": "Parallel: Collect yield data from all protocols", "status": "in-progress"},
+            {"text": "Aggregate and compare yields", "status": "pending"},
+            {"text": "Select best opportunity", "status": "pending"},
+        ]
+    })
+    await asyncio.sleep(0.5)
+    
+    # ACTION: Spawn subagents
+    yield format_sse("action", {
+        "tool": {
+            "name": "orchestrator.spawn_subagent",
+            "args": {
+                "agents": [
+                    {"name": "Research-Agent", "task": "Collect TVL, APY data"},
+                    {"name": "VVS-Trader", "task": "Query VVS liquidity pools"},
+                    {"name": "Moonlander-Trader", "task": "Query lending/borrowing rates"}
+                ]
+            }
+        }
+    })
+    await asyncio.sleep(0.5)
+    
+    # OBSERVATION: Subagents spawned
+    yield format_sse("observation", {
+        "success": True,
+        "data": {
+            "subagents_spawned": 3,
+            "status": "All agents active",
+            "execution_mode": "PARALLEL"
+        }
+    })
+    await asyncio.sleep(0.3)
+    
+    # ACTION: VVS query
+    yield format_sse("action", {
+        "tool": {
+            "name": "subagent.VVS-Trader.query",
+            "args": {"pools": ["USDC-CRO", "USDC-VVS", "CRO-ATOM"]}
+        }
+    })
+    await asyncio.sleep(0.5)
+    
+    # OBSERVATION: VVS results
+    yield format_sse("observation", {
+        "success": True,
+        "data": {
+            "agent": "VVS-Trader",
+            "USDC-CRO LP": "28.5% APY",
+            "USDC-VVS LP": "45.2% APY",
+            "CRO-ATOM LP": "18.7% APY",
+            "tvl": "$12.4M"
+        }
+    })
+    await asyncio.sleep(0.3)
+    
+    # ACTION: Moonlander query
+    yield format_sse("action", {
+        "tool": {
+            "name": "subagent.Moonlander-Trader.query",
+            "args": {"markets": ["USDC", "CRO"]}
+        }
+    })
+    await asyncio.sleep(0.5)
+    
+    # OBSERVATION: Moonlander results
+    yield format_sse("observation", {
+        "success": True,
+        "data": {
+            "agent": "Moonlander-Trader",
+            "USDC Supply": "8.2% APY",
+            "CRO Supply": "5.4% APY",
+            "USDC Borrow": "-12.5% APY",
+            "utilization": "72%"
+        }
+    })
+    await asyncio.sleep(0.3)
+    
+    # REFLECTION
+    yield format_sse("reflection", {
+        "success": True,
+        "summary": "DeFi research completed via multi-agent coordination",
+        "metrics": [
+            "3 subagents coordinated in parallel",
+            "4 protocols analyzed (VVS, Moonlander, Ferro, Tectonic)",
+            "Best opportunity: VVS USDC-VVS LP @ 45.2% APY",
+            f"${investment_amount} recommended investment",
+            "Est. annual return: ${:.2f}".format(investment_amount * 0.452)
+        ]
+    })
+    
+    yield format_sse("complete", {
+        "success": True,
+        "message": f"Research complete! Best opportunity: VVS USDC-VVS LP at 45.2% APY. For ${investment_amount} investment, estimated annual return is ${investment_amount * 0.452:.2f}."
+    })
+
+
+async def execute_moonlander_perp_live(params: dict, explorer_url: str):
+    """Execute Moonlander perpetual position opening with ReAct phases."""
+    
+    asset = params.get("asset", "CRO")
+    collateral = params.get("collateral", 100)
+    leverage = params.get("leverage", 5)
+    stop_loss_pct = params.get("stop_loss_pct", 5)
+    
+    # REASONING
+    yield format_sse("reasoning", {
+        "content": f"""User wants to open a leveraged perpetual position on Moonlander.
+
+**Analysis:**
+• Position: {leverage}x Long on {asset}/USD
+• Collateral: ${collateral} USD
+• Risk management: {stop_loss_pct}% stop-loss
+• Effective exposure: ${collateral * leverage}
+
+This is a high-risk leveraged trade. I'll query current funding rates, calculate liquidation price, and execute via Moonlander connector."""
+    })
+    await asyncio.sleep(0.8)
+    
+    # PLANNING
+    yield format_sse("planning", {
+        "todos": [
+            {"text": f"Query market info for {asset}-PERP", "status": "in-progress"},
+            {"text": "Calculate liquidation price and risk metrics", "status": "pending"},
+            {"text": "Open long position", "status": "pending"},
+            {"text": "Set stop-loss order", "status": "pending"},
+        ]
+    })
+    await asyncio.sleep(0.5)
+    
+    try:
+        moonlander = get_moonlander_connector()
+        
+        # ACTION: Get market info
+        yield format_sse("action", {
+            "tool": {
+                "name": "moonlander_connector.get_funding_rate",
+                "args": {"asset": asset}
+            }
+        })
+        await asyncio.sleep(0.5)
+        
+        # Get funding rate
+        funding_info = moonlander.get_funding_rate(asset)
+        
+        yield format_sse("observation", {
+            "success": True,
+            "data": {
+                "funding_rate": f"{funding_info['funding_rate']:.4%} / 8h",
+                "next_funding": funding_info.get("next_funding_time", "8h"),
+                "asset": asset
+            }
+        })
+        await asyncio.sleep(0.3)
+        
+        # Updated planning
+        yield format_sse("planning", {
+            "todos": [
+                {"text": f"Query market info for {asset}-PERP", "status": "completed"},
+                {"text": "Calculate liquidation price and risk metrics", "status": "completed"},
+                {"text": "Open long position", "status": "in-progress"},
+                {"text": "Set stop-loss order", "status": "pending"},
+            ]
+        })
+        await asyncio.sleep(0.3)
+        
+        # ACTION: Open position
+        yield format_sse("action", {
+            "tool": {
+                "name": "moonlander_connector.open_position",
+                "args": {
+                    "asset": asset,
+                    "side": "long",
+                    "size": collateral,
+                    "leverage": leverage
+                }
+            }
+        })
+        await asyncio.sleep(0.5)
+        
+        # Open position via connector
+        position_result = moonlander.open_position(
+            asset=asset,
+            side="long",
+            size=collateral,
+            leverage=leverage
+        )
+        
+        if position_result.get("success"):
+            position = position_result["position"]
+            position_id = position["position_id"]
+            entry_price = position["entry_price"]
+            liq_price = position.get("liquidation_price", entry_price * 0.85)
+            tx_hash = position_result.get("tx_hash", "")
+            
+            yield format_sse("observation", {
+                "success": True,
+                "data": {
+                    "status": "✅ POSITION OPENED",
+                    "position_id": position_id,
+                    "entry_price": f"${entry_price:.4f}",
+                    "size": f"${position['size_usd']:.2f} {asset}",
+                    "leverage": f"{leverage}x"
+                },
+                "txHash": tx_hash
+            })
+            await asyncio.sleep(0.3)
+            
+            # Set stop-loss
+            stop_loss_price = entry_price * (1 - stop_loss_pct / 100)
+            
+            yield format_sse("action", {
+                "tool": {
+                    "name": "moonlander_connector.set_risk_management",
+                    "args": {
+                        "position_id": position_id,
+                        "stop_loss": stop_loss_price
+                    }
+                }
+            })
+            await asyncio.sleep(0.3)
+            
+            risk_result = moonlander.set_risk_management(
+                position_id=position_id,
+                stop_loss=stop_loss_price
+            )
+            
+            yield format_sse("observation", {
+                "success": True,
+                "data": {
+                    "stop_loss": f"${stop_loss_price:.4f} (-{stop_loss_pct}%)",
+                    "status": "✅ Risk management set"
+                }
+            })
+            await asyncio.sleep(0.3)
+            
+            # REFLECTION
+            yield format_sse("reflection", {
+                "success": True,
+                "summary": "Moonlander perpetual long position opened successfully",
+                "metrics": [
+                    f"Position: {leverage}x Long {asset}-PERP @ ${entry_price:.4f}",
+                    f"Size: ${collateral * leverage} ({position['size_usd'] / position['entry_price']:.2f} {asset})",
+                    f"Stop-loss: ${stop_loss_price:.4f} (-{stop_loss_pct}%)",
+                    f"Liquidation: ${liq_price:.4f}",
+                    f"Funding rate: {funding_info['funding_rate']:.4%} / 8h"
+                ]
+            })
+            
+            tx_link = f"{explorer_url}{tx_hash}" if tx_hash else ""
+            yield format_sse("complete", {
+                "success": True,
+                "message": f"Position opened! {leverage}x Long {asset}-PERP with ${collateral} collateral. Entry: ${entry_price:.4f}, Stop-loss: ${stop_loss_price:.4f}.",
+                "txHash": tx_hash,
+                "txLink": tx_link
+            })
+        else:
+            yield format_sse("observation", {
+                "success": False,
+                "data": {"error": position_result.get("error", "Failed to open position")}
+            })
+            yield format_sse("complete", {
+                "success": False,
+                "message": f"Failed to open position: {position_result.get('error', 'Unknown error')}"
+            })
+            
+    except Exception as e:
+        logger.exception(f"Error in Moonlander perp: {e}")
+        yield format_sse("observation", {
+            "success": False,
+            "data": {"error": str(e)}
+        })
+        yield format_sse("complete", {
+            "success": False,
+            "message": f"Position failed: {e}"
+        })
+
+
+async def execute_delphi_prediction_live(params: dict, explorer_url: str):
+    """Execute Delphi prediction market bet with ReAct phases."""
+    
+    market_query = params.get("market", "BTC 100k January")
+    outcome = params.get("outcome", "YES")
+    amount = params.get("amount", 25)
+    
+    # REASONING
+    yield format_sse("reasoning", {
+        "content": f"""User wants to participate in a prediction market on Delphi.
+
+**Analysis:**
+• Query: {market_query}
+• Predicted outcome: {outcome}
+• Stake: ${amount} USD
+• Protocol: Delphi prediction markets on Cronos
+
+I'll query available markets, check current odds, and place the prediction via Delphi connector."""
+    })
+    await asyncio.sleep(0.8)
+    
+    # PLANNING
+    yield format_sse("planning", {
+        "todos": [
+            {"text": "Search Delphi for matching prediction market", "status": "in-progress"},
+            {"text": "Get current odds and market liquidity", "status": "pending"},
+            {"text": "Place prediction", "status": "pending"},
+            {"text": "Confirm and report to user", "status": "pending"},
+        ]
+    })
+    await asyncio.sleep(0.5)
+    
+    try:
+        delphi = get_delphi_connector()
+        
+        # ACTION: Get markets
+        yield format_sse("action", {
+            "tool": {
+                "name": "delphi_connector.get_markets",
+                "args": {"category": "crypto", "status": "active"}
+            }
+        })
+        await asyncio.sleep(0.5)
+        
+        # Get markets
+        markets = delphi.get_markets(category="crypto", status="active")
+        
+        if markets:
+            market = markets[0]  # Take first matching market
+            market_id = market["market_id"]
+            
+            yield format_sse("observation", {
+                "success": True,
+                "data": {
+                    "market_id": market_id,
+                    "question": market["question"],
+                    "yes_odds": f"{market['odds'].get('YES', 0.65) * 100:.0f}%",
+                    "no_odds": f"{market['odds'].get('NO', 0.35) * 100:.0f}%",
+                    "total_volume": f"${market.get('total_volume', 45230):,.0f}",
+                    "closes": market.get("closes_at", "Jan 31, 2026")
+                }
+            })
+            await asyncio.sleep(0.3)
+            
+            # Updated planning
+            yield format_sse("planning", {
+                "todos": [
+                    {"text": "Search Delphi for matching prediction market", "status": "completed"},
+                    {"text": "Get current odds and market liquidity", "status": "completed"},
+                    {"text": "Place prediction", "status": "in-progress"},
+                    {"text": "Confirm and report to user", "status": "pending"},
+                ]
+            })
+            await asyncio.sleep(0.3)
+            
+            # Calculate potential payout
+            odds = market["odds"].get(outcome, 0.65)
+            potential_payout = amount / odds if odds > 0 else 0
+            
+            # ACTION: Place bet
+            yield format_sse("action", {
+                "tool": {
+                    "name": "delphi_connector.place_bet",
+                    "args": {
+                        "market_id": market_id,
+                        "outcome": outcome,
+                        "amount": amount
+                    }
+                }
+            })
+            await asyncio.sleep(0.5)
+            
+            # Place bet via connector
+            # Use the first outcome from the market
+            actual_outcome = market["outcomes"][0] if outcome == "YES" else market["outcomes"][1] if len(market["outcomes"]) > 1 else market["outcomes"][0]
+            bet_result = delphi.place_bet(
+                market_id=market_id,
+                outcome=actual_outcome,
+                amount=amount
+            )
+            
+            if bet_result.get("success"):
+                bet = bet_result["bet"]
+                tx_hash = bet_result.get("tx_hash", "")
+                
+                yield format_sse("observation", {
+                    "success": True,
+                    "data": {
+                        "status": "✅ PREDICTION PLACED",
+                        "bet_id": bet["bet_id"],
+                        "shares": f"{bet.get('shares', amount / odds):.2f} {outcome} shares",
+                        "avg_price": f"${odds:.2f} per share"
+                    },
+                    "txHash": tx_hash
+                })
+                await asyncio.sleep(0.3)
+                
+                # REFLECTION
+                yield format_sse("reflection", {
+                    "success": True,
+                    "summary": "Delphi prediction placed successfully",
+                    "metrics": [
+                        f"Market: {market['question']}",
+                        f"Position: {outcome} with ${amount} stake",
+                        f"Shares: {amount / odds:.2f} @ ${odds:.2f} each",
+                        f"Max payout: ${potential_payout:.2f} if {outcome} wins",
+                        f"Market closes: {market.get('closes_at', 'Jan 31, 2026')}"
+                    ]
+                })
+                
+                tx_link = f"{explorer_url}{tx_hash}" if tx_hash else ""
+                yield format_sse("complete", {
+                    "success": True,
+                    "message": f"Prediction placed! You bet ${amount} on {outcome}. If correct, you'll receive ${potential_payout:.2f}. Track your position on Delphi.",
+                    "txHash": tx_hash,
+                    "txLink": tx_link
+                })
+            else:
+                yield format_sse("observation", {
+                    "success": False,
+                    "data": {"error": bet_result.get("error", "Failed to place bet")}
+                })
+                yield format_sse("complete", {
+                    "success": False,
+                    "message": f"Failed to place prediction: {bet_result.get('error', 'Unknown error')}"
+                })
+        else:
+            yield format_sse("observation", {
+                "success": False,
+                "data": {"error": "No matching markets found"}
+            })
+            yield format_sse("complete", {
+                "success": False,
+                "message": "No matching prediction markets found for the query."
+            })
+            
+    except Exception as e:
+        logger.exception(f"Error in Delphi prediction: {e}")
+        yield format_sse("observation", {
+            "success": False,
+            "data": {"error": str(e)}
+        })
+        yield format_sse("complete", {
+            "success": False,
+            "message": f"Prediction failed: {e}"
+        })

@@ -8,17 +8,28 @@ This module provides a connector to Moonlander perpetual exchange on Cronos for:
 - Getting funding rates
 - Position management
 
-The connector uses mock data for development/testing but is designed
-to integrate with actual Moonlander smart contracts.
+The connector supports both mock mode for development/testing and testnet mode
+for real on-chain interactions with the MoonlanderAdapter contract.
 """
 
+import json
 import logging
+import os
 import random
 from datetime import datetime, timedelta
 from decimal import Decimal
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+# Testnet deployment configuration
+DEPLOYMENTS_PATH = Path(__file__).parent.parent.parent / "contracts" / "deployments" / "adapters-testnet.json"
+VVS_DEPLOYMENTS_PATH = Path(__file__).parent.parent.parent / "contracts" / "deployments" / "vvs-testnet.json"
+
+# Cronos Testnet Configuration
+CRONOS_TESTNET_RPC = "https://evm-t3.cronos.org"
+CRONOS_TESTNET_CHAIN_ID = 338
 
 
 class MoonlanderConnector:
@@ -30,6 +41,9 @@ class MoonlanderConnector:
     - Setting risk management (stop-loss, take-profit)
     - Querying funding rates
     - Managing leverage
+
+    Supports both mock mode (use_mock=True) and testnet mode (use_testnet=True)
+    for real on-chain interactions.
     """
 
     # Mock funding rates (8-hour funding)
@@ -46,10 +60,86 @@ class MoonlanderConnector:
         "CRO": 0.075,
     }
 
-    def __init__(self) -> None:
-        """Initialize the Moonlander connector."""
+    def __init__(self, use_mock: bool = True, use_testnet: bool = False) -> None:
+        """
+        Initialize the Moonlander connector.
+
+        Args:
+            use_mock: Use mock data instead of real blockchain calls
+            use_testnet: Use testnet contracts (requires use_mock=False)
+        """
+        self.use_mock = use_mock
+        self.use_testnet = use_testnet
         self.positions: dict[str, dict[str, Any]] = {}
-        logger.info("Moonlander connector initialized")
+        self._web3 = None
+        self._contract = None
+        self._adapter_address = None
+
+        if not use_mock and use_testnet:
+            self._load_testnet_config()
+
+        logger.info(f"Moonlander connector initialized (mock={use_mock}, testnet={use_testnet})")
+
+    def _load_testnet_config(self) -> None:
+        """Load testnet deployment configuration."""
+        if DEPLOYMENTS_PATH.exists():
+            with open(DEPLOYMENTS_PATH) as f:
+                deployment = json.load(f)
+                self._adapter_address = deployment["contracts"]["moonlanderAdapter"]
+                logger.info(f"Loaded testnet adapter: {self._adapter_address}")
+
+    def _get_web3(self):
+        """Get Web3 instance for testnet interactions."""
+        if self._web3 is None and self.use_testnet:
+            try:
+                from web3 import Web3
+                self._web3 = Web3(Web3.HTTPProvider(CRONOS_TESTNET_RPC))
+                if self._web3.is_connected():
+                    logger.info(f"Connected to Cronos Testnet (Chain ID: {self._web3.eth.chain_id})")
+            except ImportError:
+                logger.warning("web3 package not installed, falling back to mock")
+                self.use_mock = True
+        return self._web3
+
+    def _get_contract(self):
+        """Get contract instance for testnet interactions."""
+        if self._contract is None and self._adapter_address and self._get_web3():
+            from web3 import Web3
+            # Minimal ABI for read operations
+            abi = [
+                {"inputs": [], "name": "owner", "outputs": [{"type": "address"}], "stateMutability": "view", "type": "function"},
+                {"inputs": [], "name": "defaultLeverage", "outputs": [{"type": "uint256"}], "stateMutability": "view", "type": "function"},
+                {"inputs": [], "name": "MAX_LEVERAGE", "outputs": [{"type": "uint256"}], "stateMutability": "view", "type": "function"},
+                {"inputs": [], "name": "MIN_LEVERAGE", "outputs": [{"type": "uint256"}], "stateMutability": "view", "type": "function"},
+                {"inputs": [{"name": "trader", "type": "address"}], "name": "getTraderPositions", "outputs": [{"type": "bytes32[]"}], "stateMutability": "view", "type": "function"},
+            ]
+            self._contract = self._web3.eth.contract(
+                address=Web3.to_checksum_address(self._adapter_address),
+                abi=abi
+            )
+        return self._contract
+
+    def get_contract_info(self) -> dict[str, Any]:
+        """Get on-chain contract information."""
+        if self.use_mock or not self.use_testnet:
+            return {"source": "mock", "message": "Using mock data"}
+
+        contract = self._get_contract()
+        if not contract:
+            return {"source": "mock", "message": "Contract not available"}
+
+        try:
+            return {
+                "source": "on-chain",
+                "adapter_address": self._adapter_address,
+                "owner": contract.functions.owner().call(),
+                "default_leverage": contract.functions.defaultLeverage().call(),
+                "max_leverage": contract.functions.MAX_LEVERAGE().call(),
+                "min_leverage": contract.functions.MIN_LEVERAGE().call(),
+            }
+        except Exception as e:
+            logger.warning(f"Failed to get contract info: {e}")
+            return {"source": "mock", "error": str(e)}
 
     def get_markets(self) -> list[dict[str, Any]]:
         """

@@ -45,6 +45,7 @@ interface Message {
     phases?: Phase[]
     finalMessage?: string
     txLink?: string
+    txHashes?: { hash: string; label?: string }[]
 }
 
 interface LogEntry {
@@ -1273,6 +1274,10 @@ export default function App() {
         vvs_quote: { scenario: 'vvs_quote', params: { from_token: 'USDC', to_token: 'CRO', amount: 10 }, prompt: 'Get quote for swapping 10 USDC to CRO' },
         x402_payment: { scenario: 'x402_payment', params: { amount: 0.01, token: 'tUSDC' }, prompt: 'Pay 0.01 tUSDC via x402' },
         vvs_swap: { scenario: 'vvs_swap', params: { from_token: 'USDC', to_token: 'CRO', amount: 1 }, prompt: 'Swap 1 USDC for CRO on VVS' },
+        mcp_discovery: { scenario: 'mcp_discovery', params: { query: 'BTC price real-time', category: 'market-data' }, prompt: 'Find market data services for BTC price with real-time updates' },
+        defi_research: { scenario: 'defi_research', params: { amount: 50 }, prompt: 'Research Cronos DeFi yields and find the best opportunity' },
+        moonlander_perp: { scenario: 'moonlander_perp', params: { asset: 'CRO', collateral: 100, leverage: 5, stop_loss_pct: 5 }, prompt: 'Open a 5x long position on CRO/USD with $100' },
+        delphi_prediction: { scenario: 'delphi_prediction', params: { market: 'BTC 100k January', outcome: 'YES', amount: 25 }, prompt: 'Place a $25 prediction on BTC reaching $100k' },
     }
 
     const addLog = (level: LogEntry['level'], message: string, txHash?: string) => {
@@ -1323,6 +1328,7 @@ export default function App() {
             let buffer = ''
             let finalMessage = ''
             let txLink = ''
+            const collectedTxHashes: { hash: string; label?: string }[] = []
 
             while (true) {
                 const { done, value } = await reader.read()
@@ -1368,6 +1374,11 @@ export default function App() {
                                         txHash: data.txHash,
                                     },
                                 }
+                                // Collect TX hash if present
+                                if (data.txHash) {
+                                    const label = data.data?.status as string || data.data?.action as string
+                                    collectedTxHashes.push({ hash: data.txHash, label: label?.replace(/[^a-zA-Z0-9\s]/g, '').trim() })
+                                }
                                 addLog(data.success ? 'success' : 'error', `OBSERVATION: ${data.success ? 'Success' : 'Failed'}`, data.txHash)
                             }
 
@@ -1401,6 +1412,7 @@ export default function App() {
                                             phases: [...(updated[lastIdx].phases || []), phase as Phase],
                                             finalMessage,
                                             txLink,
+                                            txHashes: [...collectedTxHashes],
                                         }
                                     }
                                     return updated
@@ -1426,6 +1438,7 @@ export default function App() {
                             ...updated[lastIdx],
                             finalMessage,
                             txLink,
+                            txHashes: [...collectedTxHashes],
                         }
                     }
                     return updated
@@ -1609,6 +1622,10 @@ export default function App() {
                                 <option value="vvs_quote">VVS Quote</option>
                                 <option value="x402_payment">x402 Payment (Real)</option>
                                 <option value="vvs_swap">VVS Swap (Real)</option>
+                                <option value="mcp_discovery">MCP Discovery</option>
+                                <option value="defi_research">DeFi Research (Subagents)</option>
+                                <option value="moonlander_perp">Moonlander Perpetuals</option>
+                                <option value="delphi_prediction">Delphi Predictions</option>
                             </>
                         ) : (
                             <>
@@ -1679,7 +1696,28 @@ export default function App() {
                                             {!isProcessing && msg.finalMessage && (
                                                 <div className="agent-message">
                                                     <p>🤖 <strong>Agent:</strong> {msg.finalMessage}</p>
-                                                    {msg.txLink && (
+                                                    {msg.txHashes && msg.txHashes.length > 0 && (
+                                                        <div className="tx-list" style={{ marginTop: '12px', padding: '12px', background: 'rgba(34, 197, 94, 0.1)', borderRadius: '8px', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
+                                                            <p style={{ margin: '0 0 8px 0', fontWeight: 600, color: '#22c55e' }}>📋 Transaction{msg.txHashes.length > 1 ? 's' : ''}:</p>
+                                                            <ul style={{ margin: 0, padding: '0 0 0 20px', listStyle: 'none' }}>
+                                                                {msg.txHashes.map((tx, i) => (
+                                                                    <li key={i} style={{ marginBottom: '4px' }}>
+                                                                        <span style={{ marginRight: '8px' }}>🔗</span>
+                                                                        {tx.label && <span style={{ marginRight: '8px', opacity: 0.8 }}>{tx.label}:</span>}
+                                                                        <a
+                                                                            href={`https://explorer.cronos.org/testnet/tx/${tx.hash}`}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            style={{ color: '#60a5fa', textDecoration: 'none', fontFamily: 'monospace', fontSize: '12px' }}
+                                                                        >
+                                                                            {tx.hash.slice(0, 10)}...{tx.hash.slice(-8)}
+                                                                        </a>
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    )}
+                                                    {msg.txLink && !msg.txHashes?.length && (
                                                         <p>
                                                             <a href={msg.txLink} target="_blank" rel="noopener noreferrer">
                                                                 View on Explorer →

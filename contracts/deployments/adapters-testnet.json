@@ -1,0 +1,28 @@
+{
+  "network": "cronosTestnet",
+  "chainId": 338,
+  "deployer": "0x94F8FCF16A45d80f44194B6f46e550906B507dBB",
+  "timestamp": "2026-01-12T01:19:30.172Z",
+  "contracts": {
+    "serviceRegistry": "0xBC7d3774FcFB75A56cA3286D779f70fCE7f8920a",
+    "moonlanderAdapter": "0x9130cf5f27D8EbbDf41eC8FeBC1A675156851Ec4",
+    "delphiAdapter": "0x97CF9b436D1010Fe442c7C102BDbC0c1d658C95f"
+  },
+  "parameters": {
+    "serviceRegistry": {
+      "owner": "0x94F8FCF16A45d80f44194B6f46e550906B507dBB",
+      "reputationRequired": 50,
+      "defaultStake": "100000000000000000"
+    },
+    "moonlanderAdapter": {
+      "tradingRouter": "0x94F8FCF16A45d80f44194B6f46e550906B507dBB",
+      "feeManager": "0x94F8FCF16A45d80f44194B6f46e550906B507dBB",
+      "defaultLeverage": 5
+    },
+    "delphiAdapter": {
+      "marketsRegistry": "0x94F8FCF16A45d80f44194B6f46e550906B507dBB",
+      "feeCollector": "0x94F8FCF16A45d80f44194B6f46e550906B507dBB",
+      "defaultFee": 100
+    }
+  }
+}
