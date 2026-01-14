@@ -105,13 +105,19 @@ class MoonlanderConnector:
         """Get contract instance for testnet interactions."""
         if self._contract is None and self._adapter_address and self._get_web3():
             from web3 import Web3
-            # Minimal ABI for read operations
+            # ABI for MockMoonlander contract
             abi = [
                 {"inputs": [], "name": "owner", "outputs": [{"type": "address"}], "stateMutability": "view", "type": "function"},
-                {"inputs": [], "name": "defaultLeverage", "outputs": [{"type": "uint256"}], "stateMutability": "view", "type": "function"},
-                {"inputs": [], "name": "MAX_LEVERAGE", "outputs": [{"type": "uint256"}], "stateMutability": "view", "type": "function"},
-                {"inputs": [], "name": "MIN_LEVERAGE", "outputs": [{"type": "uint256"}], "stateMutability": "view", "type": "function"},
-                {"inputs": [{"name": "trader", "type": "address"}], "name": "getTraderPositions", "outputs": [{"type": "bytes32[]"}], "stateMutability": "view", "type": "function"},
+                {"inputs": [], "name": "collateralToken", "outputs": [{"type": "address"}], "stateMutability": "view", "type": "function"},
+                {"inputs": [], "name": "positionCounter", "outputs": [{"type": "uint256"}], "stateMutability": "view", "type": "function"},
+                {"inputs": [{"name": "market", "type": "string"}], "name": "getPrice", "outputs": [{"type": "uint256"}], "stateMutability": "view", "type": "function"},
+                {"inputs": [{"name": "market", "type": "string"}], "name": "getFundingRate", "outputs": [{"name": "rate", "type": "uint256"}, {"name": "nextFundingTime", "type": "uint256"}], "stateMutability": "view", "type": "function"},
+                {"inputs": [{"name": "trader", "type": "address"}], "name": "getTraderPositions", "outputs": [{"type": "uint256[]"}], "stateMutability": "view", "type": "function"},
+                {"inputs": [{"name": "positionId", "type": "uint256"}], "name": "getPosition", "outputs": [{"name": "trader", "type": "address"}, {"name": "market", "type": "string"}, {"name": "isLong", "type": "bool"}, {"name": "size", "type": "uint256"}, {"name": "collateral", "type": "uint256"}, {"name": "entryPrice", "type": "uint256"}, {"name": "leverage", "type": "uint256"}, {"name": "stopLoss", "type": "uint256"}, {"name": "takeProfit", "type": "uint256"}, {"name": "isOpen", "type": "bool"}, {"name": "unrealizedPnl", "type": "int256"}], "stateMutability": "view", "type": "function"},
+                {"inputs": [{"name": "market", "type": "string"}, {"name": "isLong", "type": "bool"}, {"name": "collateral", "type": "uint256"}, {"name": "leverage", "type": "uint256"}], "name": "openPosition", "outputs": [{"name": "positionId", "type": "uint256"}], "stateMutability": "nonpayable", "type": "function"},
+                {"inputs": [{"name": "positionId", "type": "uint256"}], "name": "closePosition", "outputs": [{"name": "pnl", "type": "int256"}], "stateMutability": "nonpayable", "type": "function"},
+                {"inputs": [{"name": "positionId", "type": "uint256"}, {"name": "stopLoss", "type": "uint256"}], "name": "setStopLoss", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+                {"inputs": [{"name": "positionId", "type": "uint256"}, {"name": "takeProfit", "type": "uint256"}], "name": "setTakeProfit", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
             ]
             self._contract = self._web3.eth.contract(
                 address=Web3.to_checksum_address(self._adapter_address),
@@ -133,9 +139,10 @@ class MoonlanderConnector:
                 "source": "on-chain",
                 "adapter_address": self._adapter_address,
                 "owner": contract.functions.owner().call(),
-                "default_leverage": contract.functions.defaultLeverage().call(),
-                "max_leverage": contract.functions.MAX_LEVERAGE().call(),
-                "min_leverage": contract.functions.MIN_LEVERAGE().call(),
+                "collateral_token": contract.functions.collateralToken().call(),
+                "position_counter": contract.functions.positionCounter().call(),
+                "btc_price": contract.functions.getPrice("BTC-USDC").call(),
+                "eth_price": contract.functions.getPrice("ETH-USDC").call(),
             }
         except Exception as e:
             logger.warning(f"Failed to get contract info: {e}")

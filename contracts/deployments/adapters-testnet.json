@@ -2,27 +2,66 @@
   "network": "cronosTestnet",
   "chainId": 338,
   "deployer": "0x94F8FCF16A45d80f44194B6f46e550906B507dBB",
-  "timestamp": "2026-01-12T01:19:30.172Z",
+  "timestamp": "2026-01-12T23:07:03.843Z",
+  "collateralToken": "0x1C4719F10f0ADc7A8AcBC688Ecb1AfE1611D16ED",
   "contracts": {
-    "serviceRegistry": "0xBC7d3774FcFB75A56cA3286D779f70fCE7f8920a",
-    "moonlanderAdapter": "0x9130cf5f27D8EbbDf41eC8FeBC1A675156851Ec4",
-    "delphiAdapter": "0x97CF9b436D1010Fe442c7C102BDbC0c1d658C95f"
+    "moonlanderAdapter": "0xf67e94d3a71D1E67210D575247539054053278e0",
+    "delphiAdapter": "0xC709C46C78239FBF1fFC737Ede4fC3ACe99f87f9",
+    "vvsRouter": "0xb495a5F43Be43CB8D086153F08Cd128d15570c09",
+    "moonlanderPerp": "0x6F24b7F8FA30A35c610810274ff3F1418bb0ECE6",
+    "delphiPrediction": "0x912B5dEC611566b19868f53a4791191887826aBB"
   },
-  "parameters": {
-    "serviceRegistry": {
-      "owner": "0x94F8FCF16A45d80f44194B6f46e550906B507dBB",
-      "reputationRequired": 50,
-      "defaultStake": "100000000000000000"
+  "moonlander": {
+    "address": "0xf67e94d3a71D1E67210D575247539054053278e0",
+    "markets": [
+      "BTC-USDC",
+      "ETH-USDC",
+      "CRO-USDC"
+    ],
+    "maxLeverage": {
+      "BTC-USDC": 20,
+      "ETH-USDC": 20,
+      "CRO-USDC": 10
+    }
+  },
+  "delphi": {
+    "address": "0xC709C46C78239FBF1fFC737Ede4fC3ACe99f87f9",
+    "defaultFee": 100,
+    "initialMarkets": 3
+  },
+  "defi": {
+    "network": "cronosTestnet",
+    "chainId": 338,
+    "deployer": "0x94F8FCF16A45d80f44194B6f46e550906B507dBB",
+    "timestamp": "2026-01-14T09:10:26.389Z",
+    "collateralToken": "0x1C4719F10f0ADc7A8AcBC688Ecb1AfE1611D16ED",
+    "contracts": {
+      "vvsRouter": "0xb495a5F43Be43CB8D086153F08Cd128d15570c09",
+      "moonlanderPerp": "0x6F24b7F8FA30A35c610810274ff3F1418bb0ECE6",
+      "delphiPrediction": "0x1EfE0Cfe86D7b1aa659C1348dce1AC949609Cab1"
     },
-    "moonlanderAdapter": {
-      "tradingRouter": "0x94F8FCF16A45d80f44194B6f46e550906B507dBB",
-      "feeManager": "0x94F8FCF16A45d80f44194B6f46e550906B507dBB",
-      "defaultLeverage": 5
+    "vvsRouter": {
+      "address": "0xb495a5F43Be43CB8D086153F08Cd128d15570c09",
+      "pairs": [
+        "CRO-USDC"
+      ],
+      "swapFee": "0.3%"
     },
-    "delphiAdapter": {
-      "marketsRegistry": "0x94F8FCF16A45d80f44194B6f46e550906B507dBB",
-      "feeCollector": "0x94F8FCF16A45d80f44194B6f46e550906B507dBB",
-      "defaultFee": 100
+    "moonlanderPerp": {
+      "address": "0x6F24b7F8FA30A35c610810274ff3F1418bb0ECE6",
+      "markets": [
+        "BTC-USD",
+        "ETH-USD",
+        "CRO-USD"
+      ],
+      "maxLeverage": "100x",
+      "collateralToken": "0x1C4719F10f0ADc7A8AcBC688Ecb1AfE1611D16ED"
+    },
+    "delphiPrediction": {
+      "address": "0x1EfE0Cfe86D7b1aa659C1348dce1AC949609Cab1",
+      "platformFee": "1%",
+      "collateralToken": "0x1C4719F10f0ADc7A8AcBC688Ecb1AfE1611D16ED",
+      "initialMarkets": 3
     }
   }
 }

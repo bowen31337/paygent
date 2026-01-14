@@ -1,4 +1,5 @@
 require("@nomicfoundation/hardhat-toolbox");
+require("dotenv").config();
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -26,7 +27,8 @@ module.exports = {
     cronosTestnet: {
       url: process.env.CRONOS_TESTNET_RPC || "https://evm-t3.cronos.org",
       chainId: 338,
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] :
+        process.env.AGENT_WALLET_PRIVATE_KEY ? [process.env.AGENT_WALLET_PRIVATE_KEY] : [],
       gasPrice: 5000000000000  // 5000 gwei - required for Cronos testnet
     },
     cronosMainnet: {

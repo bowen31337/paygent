@@ -133,13 +133,19 @@ class DelphiConnector:
         """Get contract instance for testnet interactions."""
         if self._contract is None and self._adapter_address and self._get_web3():
             from web3 import Web3
-            # Minimal ABI for read operations
+            # ABI for MockDelphi contract
             abi = [
                 {"inputs": [], "name": "owner", "outputs": [{"type": "address"}], "stateMutability": "view", "type": "function"},
                 {"inputs": [], "name": "defaultFee", "outputs": [{"type": "uint256"}], "stateMutability": "view", "type": "function"},
-                {"inputs": [], "name": "marketsRegistry", "outputs": [{"type": "address"}], "stateMutability": "view", "type": "function"},
+                {"inputs": [], "name": "bettingToken", "outputs": [{"type": "address"}], "stateMutability": "view", "type": "function"},
                 {"inputs": [], "name": "feeCollector", "outputs": [{"type": "address"}], "stateMutability": "view", "type": "function"},
-                {"inputs": [{"name": "better", "type": "address"}], "name": "getBetterBets", "outputs": [{"type": "bytes32[]"}], "stateMutability": "view", "type": "function"},
+                {"inputs": [], "name": "getAllMarkets", "outputs": [{"type": "bytes32[]"}], "stateMutability": "view", "type": "function"},
+                {"inputs": [{"name": "bettor", "type": "address"}], "name": "getBettorBets", "outputs": [{"type": "bytes32[]"}], "stateMutability": "view", "type": "function"},
+                {"inputs": [{"name": "marketId", "type": "bytes32"}], "name": "getMarket", "outputs": [{"name": "question", "type": "string"}, {"name": "category", "type": "string"}, {"name": "outcomes", "type": "string[]"}, {"name": "endTime", "type": "uint256"}, {"name": "totalVolume", "type": "uint256"}, {"name": "minBet", "type": "uint256"}, {"name": "maxBet", "type": "uint256"}, {"name": "isActive", "type": "bool"}, {"name": "isResolved", "type": "bool"}, {"name": "winningOutcome", "type": "uint256"}], "stateMutability": "view", "type": "function"},
+                {"inputs": [{"name": "marketId", "type": "bytes32"}], "name": "getOdds", "outputs": [{"type": "uint256[]"}], "stateMutability": "view", "type": "function"},
+                {"inputs": [{"name": "marketId", "type": "bytes32"}, {"name": "outcomeIndex", "type": "uint256"}, {"name": "amount", "type": "uint256"}], "name": "placeBet", "outputs": [{"name": "betId", "type": "bytes32"}], "stateMutability": "nonpayable", "type": "function"},
+                {"inputs": [{"name": "betId", "type": "bytes32"}], "name": "claimWinnings", "outputs": [{"name": "payout", "type": "uint256"}], "stateMutability": "nonpayable", "type": "function"},
+                {"inputs": [{"name": "betId", "type": "bytes32"}], "name": "getBet", "outputs": [{"name": "marketId", "type": "bytes32"}, {"name": "bettor", "type": "address"}, {"name": "outcomeIndex", "type": "uint256"}, {"name": "amount", "type": "uint256"}, {"name": "timestamp", "type": "uint256"}, {"name": "claimed", "type": "bool"}], "stateMutability": "view", "type": "function"},
             ]
             self._contract = self._web3.eth.contract(
                 address=Web3.to_checksum_address(self._adapter_address),
@@ -157,13 +163,15 @@ class DelphiConnector:
             return {"source": "mock", "message": "Contract not available"}
 
         try:
+            all_markets = contract.functions.getAllMarkets().call()
             return {
                 "source": "on-chain",
                 "adapter_address": self._adapter_address,
                 "owner": contract.functions.owner().call(),
                 "default_fee": contract.functions.defaultFee().call(),
-                "markets_registry": contract.functions.marketsRegistry().call(),
+                "betting_token": contract.functions.bettingToken().call(),
                 "fee_collector": contract.functions.feeCollector().call(),
+                "total_markets": len(all_markets),
             }
         except Exception as e:
             logger.warning(f"Failed to get contract info: {e}")

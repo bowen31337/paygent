@@ -65,9 +65,10 @@ class VVSFinanceConnector:
     ROUTER_ADDRESS = "0x145863Eb42Cf62847A6Ca784e6416C1682b1b2Ae"
 
     # Testnet Router - can be overridden by deployment config or env var
+    # Default: Our deployed VVS-compatible router on Cronos testnet
     TESTNET_ROUTER_ADDRESS = os.getenv(
         "VVS_TESTNET_ROUTER",
-        "0x0000000000000000000000000000000000000000"  # Placeholder - set after deployment
+        "0xe5Da4A58aA595d5E46999Bad5661B364ff747117"  # Our deployed testnet router
     )
 
     # Token addresses on Cronos mainnet
@@ -80,12 +81,13 @@ class VVSFinanceConnector:
     }
 
     # Default testnet token addresses (overridden by deployment config)
+    # These match our deployed contracts in contracts/deployments/vvs-testnet.json
     TESTNET_TOKEN_ADDRESSES = {
-        "WCRO": "0x6a3173618859C7cd40fAF6921b5E9eB6A76f1fD4",
-        "USDC": "0x2336cE47712A4BC7fCC4FC6c4693e54F9D75Cd72",  # devUSDC.e
-        "USDT": "0x2336cE47712A4BC7fCC4FC6c4693e54F9D75Cd72",  # Same as USDC for testnet
-        "CRO": "0x6a3173618859C7cd40fAF6921b5E9eB6A76f1fD4",
-        "VVS": "0x0000000000000000000000000000000000000000",  # Set after deployment
+        "WCRO": "0x52462c26Ad624F8AE6360f7EA8eEca43C92edDA7",  # Our deployed WCRO
+        "USDC": "0x1C4719F10f0ADc7A8AcBC688Ecb1AfE1611D16ED",  # Our deployed tUSDC
+        "USDT": "0x9482BAba40Fd80f2d598937eF17B3fD18097782D",  # Our deployed tUSDT
+        "CRO": "0x52462c26Ad624F8AE6360f7EA8eEca43C92edDA7",   # Same as WCRO
+        "VVS": "0x0B3C5A047c190E548A157Bf8DF6844FCb9B9608D",   # Our deployed tVVS
     }
 
     # UniswapV2-compatible Router ABI (minimal for swaps)

@@ -1211,7 +1211,19 @@ function LogEntryComponent({ log }: { log: LogEntry }) {
             <span className={`log-level ${log.level}`}>{log.level.toUpperCase()}</span>
             <span className="log-message">
                 {log.message}
-                {log.txHash && <span className="log-tx"> {log.txHash}</span>}
+                {log.txHash && (
+                    <span className="log-tx">
+                        {' '}
+                        <a
+                            href={`https://explorer.cronos.org/testnet/tx/${log.txHash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: '#60a5fa', textDecoration: 'none', fontFamily: 'monospace', fontSize: '12px' }}
+                        >
+                            {log.txHash}
+                        </a>
+                    </span>
+                )}
             </span>
         </div>
     )
